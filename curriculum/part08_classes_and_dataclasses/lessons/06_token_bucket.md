@@ -1,0 +1,121 @@
+# State and an injected clock
+
+--- teach
+### Never read the wall clock inside the class
+A rate limiter depends on time, and tests cannot wait for real seconds. So the class takes a `now` function in `__init__`, stores it, and calls `self._now()` whenever it needs the time. The tests pass a fake clock they move by hand; production passes `time.time`.
+```python
+class FakeClock:
+    def __init__(self):
+        self.t = 0.0
+    def __call__(self):
+        return self.t
+
+clock = FakeClock()
+bucket = TokenBucket(capacity=3, refill_per_second=1.0, now=clock)
+```
+`__call__` makes an object callable: `clock()` returns `clock.t`.
+
+--- predict
+What does this print?
+```python
+clock = FakeClock()
+clock.t = 2.5
+print(clock())
+```
+answer: 2.5
+> Calling the object runs `__call__`, which returns the current `t`. The bucket only ever sees whatever the test set.
+
+--- teach
+### All state on `self`, validated up front
+Check the arguments first and raise `ValueError`. Then store everything the object needs later: the capacity and rate, the clock, the token count, and when tokens were last refilled. Tokens are a `float` because half a second at one token per second gives half a token.
+```python
+def __init__(self, capacity, refill_per_second, now):
+    if capacity < 1:
+        raise ValueError(f"capacity must be >= 1, got {capacity}")
+    if refill_per_second <= 0:
+        raise ValueError("refill_per_second must be > 0")
+    self.capacity = capacity
+    self.rate = float(refill_per_second)
+    self._now = now
+    self._tokens = float(capacity)     # starts full
+    self._last = now()
+```
+
+--- quiz
+Why is `self._tokens` stored as `float(capacity)` rather than `capacity`?
+- [ ] Ints cannot be compared with floats
+- [x] Refills add fractions of a token, and `available` must return a float
+- [ ] Floats are faster
+> `elapsed * rate` is usually fractional (0.5 seconds gives 0.5 tokens). Starting as a float keeps the type consistent from the first call.
+
+--- teach
+### One private `_refill`, called at the start of every public call
+Compute how long since the last refill, clamp a negative elapsed to zero (clocks can go backwards), add `elapsed * rate`, and never exceed capacity. Do this in one helper and call it first in `allow`, `available` and `seconds_until`, so the state is updated in exactly one place.
+```python
+def _refill(self):
+    t = self._now()
+    elapsed = max(0.0, t - self._last)
+    self._tokens = min(float(self.capacity), self._tokens + elapsed * self.rate)
+    self._last = t
+```
+
+--- predict
+What does this print?
+```python
+capacity, tokens, elapsed, rate = 3.0, 1.0, 5.0, 1.0
+print(min(capacity, tokens + elapsed * rate))
+```
+answer: 3.0
+> Five seconds would add five tokens, but `min` caps the bucket at capacity. A long wait fills the bucket; it never overflows.
+
+--- teach
+### `allow` and `available`
+`allow(cost)` first rejects a cost that could never succeed, then refills, then spends only if there is enough. A denied call spends nothing. `available` is a property that refills and returns the count.
+```python
+def allow(self, cost=1):
+    if cost > self.capacity:
+        raise ValueError(f"cost {cost} exceeds capacity {self.capacity}")
+    self._refill()
+    if self._tokens >= cost:
+        self._tokens -= cost
+        return True
+    return False
+
+@property
+def available(self):
+    self._refill()
+    return self._tokens
+```
+
+--- fill
+Complete the test so a call is allowed only when there are enough tokens.
+```python
+if self._tokens ___ cost:
+    self._tokens -= cost
+    return True
+return False
+```
+answer: >=
+> Exactly `cost` tokens is enough, so the comparison is `>=`. With `>` a full bucket of 1 would deny a cost of 1.
+
+--- teach
+### `seconds_until`: how long until enough tokens
+After refilling, if the tokens already cover the cost the wait is `0.0`. Otherwise the shortfall divided by the rate is the wait in seconds. The same cost check as `allow` applies.
+```python
+def seconds_until(self, cost=1):
+    if cost > self.capacity:
+        raise ValueError(f"cost {cost} exceeds capacity {self.capacity}")
+    self._refill()
+    if self._tokens >= cost:
+        return 0.0
+    return (cost - self._tokens) / self.rate
+```
+Empty bucket, cost 1, half a token per second: `(1 - 0) / 0.5` is 2.0 seconds.
+
+--- exercise 8.6
+
+--- recap
+- Take a `now` callable in `__init__`; never call `time.time()` in the class.
+- Validate arguments, then keep every piece of state on `self`.
+- One `_refill` helper, called first in every public method; clamp negative elapsed, cap at capacity.
+- `allow` spends only on success; `seconds_until` is `(cost - tokens) / rate`.
