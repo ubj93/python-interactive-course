@@ -33,14 +33,11 @@ class Sleeper:
 
 
 class TestBackoffDelay(unittest.TestCase):
-    def test_exponential_and_capped(self):
-        """Doubles each attempt and never exceeds cap; jitter=0 is exact"""
+    def test_exponential_capped_and_jittered(self):
+        """Doubles each attempt, never exceeds cap, and jitter uses the injected rand"""
         self.assertEqual([backoff_delay(k) for k in range(4)], [0.5, 1.0, 2.0, 4.0])
         self.assertEqual(backoff_delay(10, base=0.5, cap=30.0), 30.0)
         self.assertEqual(backoff_delay(2, base=1.0, cap=3.0), 3.0)
-
-    def test_jitter_uses_injected_rand(self):
-        """Jitter adds delay * jitter * rand() using the injected rand"""
         self.assertEqual(backoff_delay(1, base=1.0, jitter=1.0, rand=lambda: 0.5), 3.0)
         self.assertEqual(backoff_delay(1, base=1.0, jitter=0.5, rand=lambda: 0.5), 2.5)
         self.assertEqual(backoff_delay(1, base=1.0, jitter=1.0, rand=lambda: 0.0), 2.0)
