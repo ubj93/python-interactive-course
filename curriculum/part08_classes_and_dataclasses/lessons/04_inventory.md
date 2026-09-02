@@ -34,17 +34,20 @@ def __getitem__(self, serial):
 ```
 `get(serial, default=None)` is the same idea with `self._by_serial.get(serial, default)`, and `remove` uses `self._by_serial.pop(serial)`, which deletes and returns the value, or raises `KeyError`.
 
---- predict
-What does this print?
+--- code
+Add `__len__` and `__getitem__` methods to the class (indented four spaces) that pass straight through to `_by_serial`.
 ```python
-class Box:
-    def __len__(self):
-        return 3
-
-print(len(Box()))
+class Inventory:
+    def __init__(self):
+        self._by_serial = {"C02X": "mbp-j-doe"}
 ```
-answer: 3
-> `len()` does not count anything itself; it calls the object's `__len__` and trusts the answer.
+check: len(Inventory()) == 1
+check: Inventory()["C02X"] == "mbp-j-doe"
+solution:     def __len__(self):
+solution:         return len(self._by_serial)
+solution:     def __getitem__(self, serial):
+solution:         return self._by_serial[serial]
+> `len(inv)` and `inv[key]` are turned into calls to these two dunders. Delegating to the dict means a missing key already raises `KeyError`, exactly as the exercise wants.
 
 --- teach
 ### `__iter__` must hand out a fresh iterator
@@ -54,6 +57,19 @@ def __iter__(self):
     return iter(self._by_serial.values())
 ```
 A generator function with `yield` also works. What does not work: returning `self` with a `__next__` that keeps a position, because then the inventory can only be looped over once.
+
+--- code
+Add an `__iter__` method (indented four spaces) that returns a fresh iterator over the dict's values, so the inventory can be looped over more than once.
+```python
+class Inventory:
+    def __init__(self):
+        self._by_serial = {"A": "mbp-j-doe", "B": "win-lab-01"}
+```
+check: list(Inventory()) == ["mbp-j-doe", "win-lab-01"]
+check: (lambda inv: list(inv) == list(inv) == ["mbp-j-doe", "win-lab-01"])(Inventory())
+solution:     def __iter__(self):
+solution:         return iter(self._by_serial.values())
+> `iter(...)` on the dict's values creates a brand-new iterator each time `__iter__` is called, so the second loop starts from the beginning instead of finding an exhausted one.
 
 --- quiz
 `__iter__` returns `self`, and `__next__` advances a counter stored on `self`. What goes wrong?
