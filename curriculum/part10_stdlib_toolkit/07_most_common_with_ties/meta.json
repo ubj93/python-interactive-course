@@ -1,0 +1,11 @@
+{
+  "title": "Most common with deterministic ties",
+  "kyu": 6,
+  "tags": ["counter", "sorting", "ties", "inventory"],
+  "time_limit_min": 10,
+  "hints": [
+    "Counter(items) counts everything; .items() gives (item, count) pairs you can sort yourself instead of trusting most_common's tie order.",
+    "sorted(pairs, key=lambda kv: (-kv[1], kv[0])) sorts by count descending then name ascending.",
+    "For include_ties take the count of the n-th entry (index n-1) and keep extending the slice while the next entry has that same count."
+  ]
+}

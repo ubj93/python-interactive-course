@@ -1,0 +1,11 @@
+{
+  "title": "Token-bucket rate limiter",
+  "kyu": 5,
+  "tags": ["state", "injected-clock", "rate-limiting", "api"],
+  "time_limit_min": 20,
+  "hints": [
+    "Store the clock: self._now = now. Never import time. In __init__ set self._tokens = float(capacity) and self._last = now().",
+    "Write one private method _refill() implementing the rule from the description (elapsed, min with capacity, update _last) and call it at the top of allow, available and seconds_until.",
+    "allow: after _refill, `if self._tokens >= cost: self._tokens -= cost; return True` else return False. seconds_until: 0.0 if enough, else (cost - self._tokens) / self.rate. Check cost > capacity before anything else."
+  ]
+}

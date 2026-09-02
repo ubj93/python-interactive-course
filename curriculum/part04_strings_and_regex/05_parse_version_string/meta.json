@@ -1,0 +1,11 @@
+{
+  "title": "Parse a version string",
+  "kyu": 6,
+  "tags": ["regex", "fullmatch", "groups", "versions"],
+  "time_limit_min": 12,
+  "hints": [
+    "Write the shape as one pattern with named groups: major is required, minor, patch and build are each wrapped in an optional (?:...)? group.",
+    "Use pattern.fullmatch(s.strip()); a None result is your ValueError. re.match would accept trailing junk.",
+    "m.group('patch') is None when the group did not match; int(m.group('patch') or 0) gives the default. Remember to escape the parentheses around the build: \\( ... \\)."
+  ]
+}

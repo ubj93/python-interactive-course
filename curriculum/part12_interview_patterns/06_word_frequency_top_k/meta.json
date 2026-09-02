@@ -1,0 +1,12 @@
+{
+  "title": "Top-k words in a log",
+  "kyu": 5,
+  "tags": ["counter", "heap", "sorting", "logs"],
+  "time_limit_min": 15,
+  "hints": [
+    "Pattern: count then select. collections.Counter does the counting; the only work is choosing the top k with the right tie rule.",
+    "re.findall(r\"\\w+\", text.lower()) gives the list of words with punctuation removed.",
+    "Counter.most_common(k) breaks ties by first appearance, not alphabetically, so sort or heap on the key (-count, word) instead.",
+    "heapq.nsmallest(k, counts.items(), key=lambda kv: (-kv[1], kv[0])) returns exactly the required list of (word, count) tuples."
+  ]
+}

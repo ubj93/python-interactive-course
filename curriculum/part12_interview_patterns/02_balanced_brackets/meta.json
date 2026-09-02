@@ -1,0 +1,12 @@
+{
+  "title": "Balanced brackets",
+  "kyu": 6,
+  "tags": ["stack", "strings", "linting"],
+  "time_limit_min": 10,
+  "hints": [
+    "Pattern: stack. A closing bracket must match the most recently opened bracket, and a list with append/pop gives you exactly that.",
+    "Push each opener. On a closer, pop the top and compare it with the opener it should match (a dict from closer to opener helps).",
+    "Two failure cases: popping an empty stack (a closer with nothing open) and a mismatch of kind.",
+    "At the end the stack must be empty; `return not stack` covers the unclosed case."
+  ]
+}

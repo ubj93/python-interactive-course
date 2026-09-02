@@ -1,0 +1,11 @@
+{
+  "title": "Count online devices",
+  "kyu": 8,
+  "tags": ["loops", "dicts", "counting", "mdm"],
+  "time_limit_min": 5,
+  "hints": [
+    "Start a counter at 0, loop over the records, and add 1 when the status matches.",
+    "device.get(\"status\") returns None instead of raising when the key is missing; (value or \"\") turns None into an empty string you can call .strip().lower() on.",
+    "Compare the cleaned status to \"online\" with ==, not `in` (\" on line \" must not count)."
+  ]
+}

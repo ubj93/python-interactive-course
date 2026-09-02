@@ -1,0 +1,11 @@
+{
+  "title": "Load an inventory CSV",
+  "kyu": 6,
+  "tags": ["csv", "files", "validation", "inventory"],
+  "time_limit_min": 15,
+  "hints": [
+    "csv.DictReader(f) yields one dict per row keyed by the header; reader.fieldnames gives the header so you can check the required columns before looping.",
+    "Every cell is a string. Wrap int(...) and float(...) in try/except ValueError and `continue` on failure.",
+    "Short rows put None in the missing keys; long rows add a key of None. Check `None in row` and `row.get(k) is None` to spot both."
+  ]
+}

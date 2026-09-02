@@ -1,0 +1,11 @@
+{
+  "title": "A Device class",
+  "kyu": 6,
+  "tags": ["classes", "dunder-methods", "hashing", "devices"],
+  "time_limit_min": 12,
+  "hints": [
+    "In __init__ assign to self.<name> for each parameter; normalise hostname with .strip().lower() there so every other method can trust it.",
+    "In __repr__ use an f-string with {self.hostname!r}; the !r adds the quotes around strings and leaves ints bare.",
+    "__eq__ should start with `if not isinstance(other, Device): return NotImplemented`, then compare serials. __hash__ returns hash(self.serial) so equal objects hash the same."
+  ]
+}

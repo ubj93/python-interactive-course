@@ -1,0 +1,12 @@
+{
+  "title": "A retry decorator",
+  "kyu": 5,
+  "tags": ["decorators", "exceptions", "closures", "injection"],
+  "time_limit_min": 20,
+  "hints": [
+    "A decorator with arguments is three nested defs: retry(...) returns decorator(func), which returns wrapper(*args, **kwargs).",
+    "Inside wrapper loop `for attempt in range(1, times + 1)`: try to return func(*args, **kwargs); `except exceptions:` catches only the listed types.",
+    "On the last attempt use a bare `raise` to re-raise the same exception; otherwise call sleep(wait) and multiply wait by backoff.",
+    "Put @functools.wraps(func) on wrapper, and check `times < 1` before defining decorator so the ValueError fires at decoration time."
+  ]
+}

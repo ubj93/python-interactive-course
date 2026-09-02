@@ -1,0 +1,12 @@
+{
+  "title": "Flatten and unflatten a dict",
+  "kyu": 5,
+  "tags": ["dicts", "recursion", "nested", "config"],
+  "time_limit_min": 20,
+  "hints": [
+    "flatten: write an inner function walk(node, prefix) that loops over node.items(); build path = prefix + sep + key (no sep when prefix is empty).",
+    "Recurse only when isinstance(value, dict) and value is non-empty; everything else, including {}, is stored as flat[path] = value.",
+    "unflatten: for each key, split on sep; walk the leading parts with node = node.setdefault(part, {}), then assign the last part.",
+    "For the conflict: if setdefault hands you something that is not a dict, or the final slot already holds a non-empty dict, raise ValueError."
+  ]
+}

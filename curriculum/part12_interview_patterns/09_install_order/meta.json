@@ -1,0 +1,12 @@
+{
+  "title": "Package install order",
+  "kyu": 4,
+  "tags": ["graphs", "topological-sort", "packages"],
+  "time_limit_min": 30,
+  "hints": [
+    "Pattern: topological sort (Kahn's algorithm). A package is ready when all of its dependencies are already placed; keep taking ready packages until none are left.",
+    "Build two maps first: remaining[name] = set of unmet dependencies, and dependants[name] = set of packages that need it. Remember to add names that only appear as dependencies.",
+    "Keep the ready packages in a heapq so heappop always gives the alphabetically smallest; after placing a package, remove it from each dependant's remaining set and push any that become empty.",
+    "If the order is shorter than the number of packages there is a cycle. To name it, run a DFS over the leftover packages, marking nodes 'in progress'; hitting an in-progress node closes the cycle."
+  ]
+}

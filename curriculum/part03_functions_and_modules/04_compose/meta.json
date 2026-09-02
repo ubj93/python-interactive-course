@@ -1,0 +1,11 @@
+{
+  "title": "Compose functions",
+  "kyu": 6,
+  "tags": ["higher-order", "closures", "args"],
+  "time_limit_min": 12,
+  "hints": [
+    "Define an inner function inside compose that takes x, and return that inner function (without calling it).",
+    "The inner function loops over the functions and re-assigns x = f(x) each time; use reversed(funcs) so the last one given runs first.",
+    "Check callable(f) for every f in a loop before defining the inner function, raising TypeError; with no functions the loop body never runs and x comes back unchanged."
+  ]
+}

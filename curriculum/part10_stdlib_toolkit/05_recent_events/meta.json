@@ -1,0 +1,12 @@
+{
+  "title": "Sliding window of recent events",
+  "kyu": 5,
+  "tags": ["deque", "counter", "classes", "monitoring"],
+  "time_limit_min": 15,
+  "hints": [
+    "deque(maxlen=n) throws away the leftmost item by itself when you append to a full deque; you never write the eviction code.",
+    "Counter(self._events) counts whatever is currently in the deque; dict(...) turns it into a plain dict without zero entries.",
+    "sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])) orders by count descending and kind ascending in one key.",
+    "is_alerting is a single boolean expression: len(self) == self.maxlen and self.ratio(kind) >= threshold."
+  ]
+}

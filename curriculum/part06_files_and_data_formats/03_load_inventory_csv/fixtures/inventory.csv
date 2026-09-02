@@ -1,0 +1,10 @@
+serial,hostname,os,ram_gb,disk_pct
+C02XG1234ABC,mbp-j-doe,macOS,16,0.62
+7GH2K3Q, win-lab-01 ,Windows, 8 ,0.91
+FVFXC1234A,mbp-a-lee,macOS,32,0.15
+,orphan-box,Linux,4,0.5
+C02ZZ9999XYZ,mbp-broken,macOS,sixteen,0.4
+JK1L2M3,ubuntu-ci,Linux,64
+C02YY8888ABC,mbp-extra,macOS,8,0.33,unexpected
+ABCDEF1,win-lab-02,Windows,16,n/a
+"C02XW5555ABC","mbp-quoted, with comma",macOS,16,0.77

@@ -1,0 +1,11 @@
+{
+  "title": "Count log levels",
+  "kyu": 6,
+  "tags": ["files", "iteration", "dicts", "logs"],
+  "time_limit_min": 12,
+  "hints": [
+    "Start with `counts = {\"ERROR\": 0, \"WARN\": 0, \"INFO\": 0}` so the keys exist and keep their order even when a level never appears.",
+    "Loop `for line in f:` and find the first '[' with str.partition; the text up to the next ']' is the level token.",
+    "Map WARNING to WARN with a small dict, then only increment if the token is a key of counts."
+  ]
+}

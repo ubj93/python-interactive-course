@@ -1,0 +1,12 @@
+{
+  "title": "Longest-enrolled device",
+  "kyu": 7,
+  "tags": ["loops", "running-best", "None", "mdm"],
+  "time_limit_min": 8,
+  "hints": [
+    "Keep a variable for the best record so far, starting at None, and replace it whenever you see an earlier date.",
+    "ISO date strings compare with < directly; no parsing needed.",
+    "Use a strict < comparison so that an equal date does not replace the earlier record, and `continue` past records whose .get(\"enrolled\") is None.",
+    "min(records, key=lambda d: d[\"enrolled\"], default=None) is the one-line version once you have filtered out the undated records."
+  ]
+}

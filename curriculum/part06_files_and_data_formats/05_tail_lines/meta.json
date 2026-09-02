@@ -1,0 +1,11 @@
+{
+  "title": "Tail a log file",
+  "kyu": 6,
+  "tags": ["files", "deque", "iteration", "logs"],
+  "time_limit_min": 10,
+  "hints": [
+    "collections.deque(maxlen=n) keeps only the last n items you append; older ones fall off the front automatically.",
+    "Feed the file object straight in: deque(f, maxlen=n). Iterating a file yields lines with their newline attached.",
+    "Watch n == 0: deque(maxlen=0) is always empty, but check the ValueError case for negatives before opening the file."
+  ]
+}

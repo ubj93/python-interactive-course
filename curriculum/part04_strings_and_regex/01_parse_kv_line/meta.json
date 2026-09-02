@@ -1,0 +1,11 @@
+{
+  "title": "Parse a key=value line",
+  "kyu": 7,
+  "tags": ["strings", "split", "partition", "parsing"],
+  "time_limit_min": 8,
+  "hints": [
+    "line.split(\";\") gives you the fields; strip each one and skip the empty ones before doing anything else.",
+    "field.partition(\"=\") returns (key, sep, value) and splits on the first '=' only; an empty sep means there was no '='.",
+    "Assign result[key.strip()] = value.strip() inside the loop; a later assignment to the same key overwrites the earlier one for free."
+  ]
+}

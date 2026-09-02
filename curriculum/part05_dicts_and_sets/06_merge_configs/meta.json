@@ -1,0 +1,12 @@
+{
+  "title": "Deep-merge configs",
+  "kyu": 5,
+  "tags": ["dicts", "recursion", "merge", "config"],
+  "time_limit_min": 20,
+  "hints": [
+    "Write a helper that merges exactly two dicts, then apply it left to right over *configs starting from {}.",
+    "In the helper: start from a copy of the first dict, then for each key in the second, recurse when BOTH the existing value and the new value are dicts, otherwise just assign the new value.",
+    "isinstance(x, dict) is the test; lists fail it, so they get replaced by the else branch automatically.",
+    "copy.deepcopy(result) before returning guarantees no nested list or dict is shared with the inputs."
+  ]
+}

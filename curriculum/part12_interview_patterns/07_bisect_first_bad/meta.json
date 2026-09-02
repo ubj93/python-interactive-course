@@ -1,0 +1,12 @@
+{
+  "title": "Bisect the first bad build",
+  "kyu": 5,
+  "tags": ["binary-search", "predicate", "builds"],
+  "time_limit_min": 15,
+  "hints": [
+    "Pattern: binary search over a monotone predicate. Good, good, good, bad, bad: halving the range each time finds the boundary in log2(n) steps.",
+    "Keep lo = 1 and hi = n_builds with the invariant \"the first bad build, if there is one, is in [lo, hi]\"; loop while lo < hi.",
+    "If is_bad(mid): the answer could be mid itself, so hi = mid. Otherwise mid is good, so lo = mid + 1. Never set hi = mid - 1.",
+    "When the loop ends lo == hi, but nothing has confirmed that build is bad; one last is_bad(lo) decides between lo and None."
+  ]
+}

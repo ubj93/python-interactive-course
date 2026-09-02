@@ -1,0 +1,11 @@
+{
+  "title": "Stream cleaned lines",
+  "kyu": 6,
+  "tags": ["generators", "files", "yield", "parsing"],
+  "time_limit_min": 10,
+  "hints": [
+    "A file object is iterable line by line: `for line in lines:`. Never call readlines() on it.",
+    "line.split(\"#\", 1)[0] or line.partition(\"#\")[0] gives the text before the first #, whether or not one exists; then .strip().",
+    "Wrap the yield in `if text:` so blank results are skipped. Because the function contains yield, calling it returns a lazy generator automatically."
+  ]
+}

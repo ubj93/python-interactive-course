@@ -1,0 +1,11 @@
+{
+  "title": "Rolling average of CPU samples",
+  "kyu": 6,
+  "tags": ["loops", "slicing", "windows", "monitoring"],
+  "time_limit_min": 12,
+  "hints": [
+    "Loop over the indexes with range(len(samples)) and take a slice ending at i for each one.",
+    "The window is samples[start:i + 1] where start = max(0, i - n + 1); the max() keeps start from going negative, which would slice from the wrong end.",
+    "sum(window) / len(window) is the mean; len(window) is smaller than n at the start, which is exactly what you want. Wrap it in round(..., 2)."
+  ]
+}

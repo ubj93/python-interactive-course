@@ -1,0 +1,11 @@
+{
+  "title": "Find unused tag ranges",
+  "kyu": 6,
+  "tags": ["loops", "zip", "tuples", "inventory"],
+  "time_limit_min": 12,
+  "hints": [
+    "Look at each pair of neighbours: zip(tags, tags[1:]) gives (tags[0], tags[1]), (tags[1], tags[2]), ...",
+    "A pair (prev, cur) hides a gap when cur - prev > 1; the missing range is (prev + 1, cur - 1). Equal neighbours are duplicates and need no special handling.",
+    "If cur < prev the list is not sorted: raise ValueError right there. The empty and single-element cases produce no pairs, so they give [] for free."
+  ]
+}

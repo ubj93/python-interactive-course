@@ -1,0 +1,12 @@
+{
+  "title": "Longest window of distinct hosts",
+  "kyu": 5,
+  "tags": ["sliding-window", "hash-map", "logs"],
+  "time_limit_min": 15,
+  "hints": [
+    "Pattern: sliding window. Keep a start index and grow the end one element at a time; when the window breaks the rule, move start forward just enough to fix it.",
+    "A dict from host to the index where it was last seen tells you, in O(1), whether the current host is already inside the window.",
+    "Only move start when last_seen[host] >= start; a repeat that is behind the window must be ignored (test with 'abbac').",
+    "After updating last_seen and start, the window length is i - start + 1; keep the maximum."
+  ]
+}

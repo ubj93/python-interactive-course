@@ -1,0 +1,12 @@
+{
+  "title": "Folder sizes in a tree",
+  "kyu": 5,
+  "tags": ["recursion", "trees", "disk-usage"],
+  "time_limit_min": 15,
+  "hints": [
+    "Pattern: recursion over a tree. The size of a folder is the sum of its files plus the sizes of its subfolders, and \"size of a subfolder\" is the same question one level down.",
+    "Write a helper walk(node, path) that returns the total for node and stores it in a result dict; isinstance(value, dict) tells a folder from a file.",
+    "Build child paths as path.rstrip(\"/\") + \"/\" + name so the root \"/\" does not produce \"//Applications\".",
+    "Create the result dict inside dir_sizes and pass it (or close over it); a mutable default argument like out={} is shared between calls."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Merge maintenance windows",
+  "kyu": 5,
+  "tags": ["sort-then-sweep", "intervals", "scheduling"],
+  "time_limit_min": 15,
+  "hints": [
+    "Pattern: sort then sweep. Once the windows are sorted by start, only the last merged window can overlap the next one.",
+    "sorted(windows) sorts tuples by start (then end) and returns a new list, so the input stays untouched.",
+    "For each window: if its start <= the end of the last merged window, extend that end with max(); otherwise append it as a new window.",
+    "Validate start <= end for every window before sorting, and raise ValueError on the first bad one."
+  ]
+}

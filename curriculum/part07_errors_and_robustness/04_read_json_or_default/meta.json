@@ -1,0 +1,11 @@
+{
+  "title": "Read JSON or fall back",
+  "kyu": 6,
+  "tags": ["exceptions", "json", "files", "defaults"],
+  "time_limit_min": 12,
+  "hints": [
+    "Use two separate try blocks: one around open()/read() that catches only FileNotFoundError, one around json.loads that catches only json.JSONDecodeError.",
+    "Read the text first, then `if not text.strip(): return default` handles the empty-file case before json sees it.",
+    "Return copy.deepcopy(default) instead of default; and build the ValueError message with f\"{path}: ...\" then `from e`."
+  ]
+}

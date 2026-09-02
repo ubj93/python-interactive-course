@@ -1,0 +1,12 @@
+{
+  "title": "Summarize a configuration profile",
+  "kyu": 5,
+  "tags": ["plist", "dicts", "exceptions", "mdm"],
+  "time_limit_min": 20,
+  "hints": [
+    "plistlib.loads(data) turns the bytes into a dict; PayloadContent is a list of dicts inside it.",
+    "Use dict.get(key, default) for every optional key; for the display name the default is the payload's own PayloadType.",
+    "sorted({p[\"type\"] for p in payloads}) gives the distinct types in order.",
+    "Wrap plistlib.loads in try/except (plistlib.InvalidFileException, ExpatError) as e: raise ValueError(...) from e."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Apply a pipeline of steps",
+  "kyu": 6,
+  "tags": ["higher-order", "callables", "None", "validation"],
+  "time_limit_min": 12,
+  "hints": [
+    "Loop over steps and re-assign value = step(value); the same name carries the result forward.",
+    "Test `value is None`, not `if not value`: 0 and \"\" are legitimate values that must keep flowing.",
+    "Do the callable() check in its own loop before the loop that runs the steps, so a bad step in position 3 does not let steps 1 and 2 run first.",
+    "Checking for None at the top of each iteration (before calling the step) handles both a None starting value and a step that returned None."
+  ]
+}

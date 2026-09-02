@@ -1,0 +1,11 @@
+{
+  "title": "Parse a port number",
+  "kyu": 6,
+  "tags": ["exceptions", "raise", "validation"],
+  "time_limit_min": 10,
+  "hints": [
+    "Order the checks: type (TypeError) -> empty (ValueError) -> digits (ValueError) -> range (ValueError). Each one returns or raises before the next runs.",
+    "bool is a subclass of int, so test isinstance(value, bool) before isinstance(value, int).",
+    "str.isdigit() rejects signs, dots and inner spaces, which is exactly the rule; f\"got {text!r}\" puts quotes around the text for you."
+  ]
+}

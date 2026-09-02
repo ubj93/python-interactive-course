@@ -1,0 +1,11 @@
+{
+  "title": "Write and read a JSON report",
+  "kyu": 6,
+  "tags": ["json", "files", "serialization"],
+  "time_limit_min": 12,
+  "hints": [
+    "json.dump(obj, f, indent=2, sort_keys=True, ensure_ascii=False) does most of the work; json.load(f) reads it back.",
+    "json.dump does not write a trailing newline; call f.write(\"\\n\") after it.",
+    "Pass default=fn where fn(value) returns a JSON-friendly replacement (isoformat(), sorted(set), str(path)) and raises TypeError otherwise."
+  ]
+}

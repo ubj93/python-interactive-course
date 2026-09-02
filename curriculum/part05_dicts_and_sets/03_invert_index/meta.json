@@ -1,0 +1,11 @@
+{
+  "title": "Invert a user-to-devices index",
+  "kyu": 6,
+  "tags": ["dicts", "inversion", "validation"],
+  "time_limit_min": 10,
+  "hints": [
+    "Two nested loops: for user, serials in user_to_devices.items(): for serial in serials: ...",
+    "Before inserting, look the serial up in the result with .get(); if it is already there under a different user, that is the conflict.",
+    "A comprehension {s: u for u, ss in d.items() for s in ss} cannot raise on duplicates, which is exactly why the loop is the right tool here."
+  ]
+}

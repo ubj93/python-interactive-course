@@ -1,0 +1,12 @@
+{
+  "title": "Counters and trackers with closures",
+  "kyu": 5,
+  "tags": ["closures", "nonlocal", "scope", "state"],
+  "time_limit_min": 15,
+  "hints": [
+    "Write a variable in the outer function, define an inner function that uses it, and return the inner function without calling it.",
+    "In make_counter, remember the current value before adding step, and return the remembered one; the add must be `nonlocal current` because += rebinds the name.",
+    "In make_checkin_tracker, keep a dict in the outer function; the inner function does counts[key] = counts.get(key, 0) + 1 and returns counts[key]. No nonlocal: you are mutating the dict, not reassigning the name.",
+    "Normalise with hostname.strip().lower() before using it as the dict key."
+  ]
+}

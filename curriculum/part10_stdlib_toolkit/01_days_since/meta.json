@@ -1,0 +1,11 @@
+{
+  "title": "Days since last check-in",
+  "kyu": 6,
+  "tags": ["datetime", "timezones", "parsing", "mdm"],
+  "time_limit_min": 12,
+  "hints": [
+    "datetime.fromisoformat handles '+02:00' offsets but on Python 3.9 not a trailing 'Z'. Replace the Z with '+00:00' first.",
+    "An aware datetime has dt.tzinfo set. If it is None, dt.replace(tzinfo=timezone.utc) makes it aware; dt.astimezone(timezone.utc) converts any offset to UTC.",
+    "Subtracting two aware datetimes gives a timedelta whose .days is already rounded down; wrap it in max(0, ...) for the future case."
+  ]
+}

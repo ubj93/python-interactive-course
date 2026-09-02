@@ -1,0 +1,11 @@
+{
+  "title": "Most common apps",
+  "kyu": 6,
+  "tags": ["dicts", "sets", "sorting", "counting"],
+  "time_limit_min": 12,
+  "hints": [
+    "Count how many devices have each app: loop over installs.values(), and inside loop over set(apps) so each app counts once per device.",
+    "sorted(counts.items(), key=...) with a key that returns a tuple sorts by the first element, then the second.",
+    "The key (-count, name) sorts counts descending and names ascending at once; then slice [:k]. Handle k <= 0 before any of that."
+  ]
+}

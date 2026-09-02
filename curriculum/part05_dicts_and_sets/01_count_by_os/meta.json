@@ -1,0 +1,11 @@
+{
+  "title": "Count devices by OS",
+  "kyu": 7,
+  "tags": ["dicts", "counting", "get"],
+  "time_limit_min": 5,
+  "hints": [
+    "Start with an empty dict and loop over the devices; for each one work out the key first, then bump its count.",
+    "device.get(\"os\") or \"unknown\" covers a missing key, None and an empty string in one expression.",
+    "counts[key] = counts.get(key, 0) + 1 is the whole counting idiom."
+  ]
+}

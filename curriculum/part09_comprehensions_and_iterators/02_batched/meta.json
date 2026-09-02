@@ -1,0 +1,11 @@
+{
+  "title": "Batch an iterable",
+  "kyu": 6,
+  "tags": ["generators", "itertools", "laziness", "api"],
+  "time_limit_min": 12,
+  "hints": [
+    "Turn the input into an iterator once with it = iter(iterable); repeated islice(it, n) calls then continue where the last one stopped.",
+    "tuple(islice(it, n)) gives the next batch; an empty tuple means the input is exhausted, so return from the generator.",
+    "Because a generator body does not run until next(), do the `if n < 1: raise ValueError` in a normal function and `return _batches(iter(iterable), n)` where _batches is the generator."
+  ]
+}

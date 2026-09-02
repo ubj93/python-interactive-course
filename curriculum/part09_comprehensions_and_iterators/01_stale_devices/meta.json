@@ -1,0 +1,11 @@
+{
+  "title": "Stale devices",
+  "kyu": 7,
+  "tags": ["comprehensions", "dates", "filtering", "devices"],
+  "time_limit_min": 6,
+  "hints": [
+    "Subtracting two dates gives a timedelta; its .days attribute is an int you can compare with max_days.",
+    "Shape: [d[\"hostname\"] for d in devices if <condition>]. Put the None check first, joined with `or`, so the subtraction never sees None.",
+    "The condition is `d[\"last_seen\"] is None or (today - d[\"last_seen\"]).days > max_days`; strictly greater keeps the boundary fresh."
+  ]
+}

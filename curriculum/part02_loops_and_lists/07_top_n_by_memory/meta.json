@@ -1,0 +1,12 @@
+{
+  "title": "Top N devices by memory",
+  "kyu": 6,
+  "tags": ["sorting", "key-functions", "tuples", "inventory"],
+  "time_limit_min": 12,
+  "hints": [
+    "sorted(devices, key=...) returns a new list and leaves the input alone; slice the result with [:n].",
+    "A key that returns a tuple sorts by the first element and breaks ties with the second: (memory, hostname).",
+    "Memory must go down while hostname goes up: negate the memory in the key, (-mem, hostname), instead of using reverse=True which would flip both.",
+    "d.get(\"memory_gb\") or 0 turns both a missing key and None into 0."
+  ]
+}
