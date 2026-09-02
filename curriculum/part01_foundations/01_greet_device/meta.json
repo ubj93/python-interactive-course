@@ -1,0 +1,10 @@
+{
+  "title": "Greet a device",
+  "kyu": 8,
+  "tags": ["strings", "f-strings", "functions"],
+  "time_limit_min": 3,
+  "hints": [
+    "An f-string lets you drop values straight into text: f\"Hello, {hostname}!\"",
+    "The function must return the string, not print it."
+  ]
+}

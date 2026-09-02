@@ -1,0 +1,11 @@
+{
+  "title": "Normalize a hostname",
+  "kyu": 8,
+  "tags": ["strings", "methods"],
+  "time_limit_min": 5,
+  "hints": [
+    "String methods return new strings, so you can chain them: raw.strip().lower()",
+    "\"a.b.c\".split(\".\") gives ['a', 'b', 'c']; index [0] takes the first part.",
+    "str.replace(old, new) replaces every occurrence."
+  ]
+}
