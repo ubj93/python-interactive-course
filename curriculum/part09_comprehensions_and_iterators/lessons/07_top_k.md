@@ -8,6 +8,15 @@ sorted(items, key=key, reverse=True)[:k]
 ```
 The cost: it sorts all `n` items and holds the whole list, even when `k` is ten out of fifty thousand.
 
+--- code
+Set `top2` to the two entries in `usage` with the highest usage (the second element), highest first, using `sorted`.
+```python
+usage = [("mbp-j-doe", 0.91), ("win-lab-01", 0.42), ("mbp-a-lee", 0.97)]
+```
+check: top2 == [("mbp-a-lee", 0.97), ("mbp-j-doe", 0.91)]
+solution: top2 = sorted(usage, key=lambda d: d[1], reverse=True)[:2]
+> The key picks the usage number, `reverse=True` puts the largest first, and the slice keeps two. The whole list was sorted to get there.
+
 --- predict
 What does this print?
 ```python
@@ -27,13 +36,15 @@ answer: [9, 7]
 ```
 `heapq.nsmallest` is the mirror image.
 
---- fill
-Complete the call that returns the `k` items with the largest keys.
+--- code
+Set `top2` to the same two entries, highest usage first, this time with `heapq.nlargest`. The input is a one-shot generator, so do not sort or index it.
 ```python
-return heapq.___(k, items, key=key)
+import heapq
+usage = (row for row in [("mbp-j-doe", 0.91), ("win-lab-01", 0.42), ("mbp-a-lee", 0.97)])
 ```
-answer: nlargest
-> `nlargest(k, iterable, key=...)` takes `k` first, then the items. It returns a list, largest first, of at most `k` items.
+check: top2 == [("mbp-a-lee", 0.97), ("mbp-j-doe", 0.91)]
+solution: top2 = heapq.nlargest(2, usage, key=lambda d: d[1])
+> `nlargest` walks the generator once, keeping only the two best candidates seen so far, and returns them largest first. Same answer as the sort, without ever holding the full list.
 
 --- teach
 ### Edge cases: `k <= 0` and `k` larger than the input

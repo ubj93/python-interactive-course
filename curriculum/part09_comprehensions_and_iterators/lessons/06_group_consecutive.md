@@ -23,6 +23,16 @@ It works, but the shape is common enough that the standard library has it.
 ```
 With no `key`, items are compared directly. Here the key is the status: `lambda r: r[1]`, or `operator.itemgetter(1)`.
 
+--- code
+Set `runs` to a list of `(status, count)` tuples, one per run of adjacent equal statuses, using `groupby`.
+```python
+from itertools import groupby
+statuses = ["pass", "fail", "fail", "pass", "fail"]
+```
+check: runs == [("pass", 1), ("fail", 2), ("pass", 1), ("fail", 1)]
+solution: runs = [(k, len(list(g))) for k, g in groupby(statuses)]
+> Each `g` is the run's items; `list(g)` materialises it and `len` counts. The same status that appears again later starts a fresh group, because only adjacent items are grouped.
+
 --- predict
 What does this print?
 ```python
@@ -64,13 +74,16 @@ failing = [ids for status, ids in group_consecutive(results) if status == "fail"
 return max(failing, key=len, default=[])
 ```
 
---- predict
-What does this print?
+--- code
+Set `longest` to the longest list in `runs` (the earliest one on a tie), and `none` to the same thing computed over an empty list, which should give `[]`.
 ```python
-print(max([[1], [2, 3], [4, 5]], key=len))
+runs = [["b1"], ["b3", "b4"], ["b6", "b7"]]
 ```
-answer: [2, 3]
-> Two lists tie on length 2. `max` keeps the first one it saw, so ties resolve to the earliest.
+check: longest == ["b3", "b4"]
+check: none == []
+solution: longest = max(runs, key=len)
+solution: none = max([], key=len, default=[])
+> `key=len` compares lists by length and `max` keeps the first of the two that tie, so the earlier `["b3", "b4"]` wins. Without `default`, `max([])` raises `ValueError`.
 
 --- exercise 9.6
 

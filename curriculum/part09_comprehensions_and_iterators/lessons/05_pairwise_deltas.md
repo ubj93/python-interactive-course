@@ -29,14 +29,16 @@ answer: [(1, 'x'), (2, 'y')]
 [30, 15, 75]
 ```
 
---- predict
-What does this print?
+--- code
+Set `pairs` to the list of adjacent pairs of `ts`, and `gaps` to the list of differences between each pair.
 ```python
-ts = [0, 30, 45]
-print([b - a for a, b in zip(ts, ts[1:])])
+ts = [0, 30, 45, 120]
 ```
-answer: [30, 15]
-> The pairs are `(0, 30)` and `(30, 45)`; each pair is unpacked into `a` and `b` and the difference is collected.
+check: pairs == [(0, 30), (30, 45), (45, 120)]
+check: gaps == [30, 15, 75]
+solution: pairs = list(zip(ts, ts[1:]))
+solution: gaps = [b - a for a, b in pairs]
+> `ts[1:]` is the same list shifted left by one, so `zip` lines each item up with its successor. Unpacking each pair as `a, b` in the comprehension gives the differences.
 
 --- teach
 ### Subtracting datetimes gives seconds
@@ -50,16 +52,17 @@ answer: [30, 15]
 ```
 `.seconds` is not the same: it ignores the days part. Always use `total_seconds()`.
 
---- predict
-What does this print?
+--- code
+Set `gap` to the number of seconds between `a` and `b`, as a float.
 ```python
 from datetime import datetime
 a = datetime(2024, 5, 1, 9, 0)
-b = datetime(2024, 5, 1, 9, 15)
-print((b - a).total_seconds())
+b = datetime(2024, 5, 3, 9, 15)
 ```
-answer: 900.0
-> Fifteen minutes is 900 seconds, and `total_seconds()` always returns a float.
+check: gap == 2 * 86400 + 900.0
+check: isinstance(gap, float)
+solution: gap = (b - a).total_seconds()
+> Two days and fifteen minutes. `total_seconds()` includes the days; `.seconds` would have reported only the 900 within the last day.
 
 --- teach
 ### Know the index so you can report it
