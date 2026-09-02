@@ -1,6 +1,7 @@
 name: verify
 on:
   push:
+    branches-ignore: [main]
   pull_request:
 jobs:
   verify:
@@ -16,3 +17,15 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: python tools/verify.py --quiet
       - run: python tools/build_web.py --check
+  version:
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Version bumped and CHANGELOG updated
+        run: python tools/release.py check --base origin/${{ github.base_ref }}

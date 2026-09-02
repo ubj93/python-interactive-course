@@ -104,6 +104,31 @@ python3 tools/build_web.py     # refresh the browser bundle
 
 CI runs all three on Python 3.9 and 3.12.
 
+## Development workflow
+
+**Nothing is committed to `main` directly.** Every change lands through a pull request.
+
+1. Install the guard hooks once: `sh tools/install-hooks.sh`. They refuse commits and
+   pushes to `main` locally. Add a branch protection rule on GitHub for the server side
+   (require a PR and green CI).
+2. Branch from `main`, make the change, add a note under **Unreleased** in
+   [`CHANGELOG.md`](CHANGELOG.md).
+3. Bump the version before merging: `python3 tools/release.py bump patch|minor|major`.
+   This moves the Unreleased notes into a dated section and updates
+   `course/__init__.py`. The `version` CI job on the PR fails if the version is not
+   newer than `main` or the changelog section is missing.
+4. Open the PR with detailed notes (what changed, why, how it was verified).
+5. On merge, the `release` workflow tags `vX.Y.Z` and publishes a GitHub Release whose
+   body is that changelog section. Every merge to `main` is therefore a versioned,
+   documented release.
+
+Versioning: MAJOR when saved progress or the exercise format breaks, MINOR for new
+parts, exercises, or commands, PATCH for fixes and wording.
+
+**Backlog** lives in Todoist, project *Python Interactive Course* (board view: Backlog
+→ In progress → In review (PR open) → Done). One task per PR-sized change; move it
+to "In review" when the PR opens and "Done" when the release tag exists.
+
 ## Layout
 
 ```
