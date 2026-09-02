@@ -64,6 +64,8 @@ class Progress:
             "daily": {},       # date -> {"id": .., "done": bool}
             "interview": None, # {"ids": [...], "started": iso, "deadline": iso}
             "last": None,      # last exercise id touched
+            "cards": {},       # "lesson_id:card_index" -> {"done": bool, "correct": bool|None, "tries": int}
+            "last_lesson": None,
         }
         self.load()
 
@@ -252,6 +254,44 @@ class Progress:
 
     def today_daily(self) -> Optional[dict]:
         return self.data["daily"].get(_today())
+
+    # ---- guided lessons -------------------------------------------
+    def card_state(self, lesson_id: str, idx: int) -> dict:
+        return self.data.setdefault("cards", {}).get(f"{lesson_id}:{idx}", {"done": False, "correct": None, "tries": 0})
+
+    def record_card(self, lesson_id: str, idx: int, checkable: bool, correct: Optional[bool] = None) -> int:
+        """Mark a card as seen/answered. Returns xp awarded (only for a correct first try)."""
+        key = f"{lesson_id}:{idx}"
+        cards = self.data.setdefault("cards", {})
+        state = cards.get(key, {"done": False, "correct": None, "tries": 0})
+        xp = 0
+        today = _today()
+        if today not in self.data["days"]:
+            self.data["days"].append(today)
+        if checkable:
+            state["tries"] = int(state.get("tries", 0)) + 1
+            if correct and not state["done"]:
+                if state["tries"] == 1:
+                    xp = 1
+                    self.data["xp"] = self.xp + xp
+                state["done"] = True
+                state["correct"] = True
+            elif correct is False and not state["done"]:
+                state["correct"] = False
+                if state["tries"] >= 2:
+                    state["done"] = True  # second miss: move on, no xp
+        else:
+            state["done"] = True
+        cards[key] = state
+        self.data["last_lesson"] = lesson_id
+        self.save()
+        return xp
+
+    def lesson_progress(self, lesson) -> Tuple[int, int, bool]:
+        """(cards_done, cards_total, complete) where complete also needs the lesson's exercises solved."""
+        done = sum(1 for i in range(len(lesson.cards)) if self.card_state(lesson.id, i)["done"])
+        ex_ok = all(self.is_solved(e) for e in lesson.exercise_ids)
+        return done, len(lesson.cards), done == len(lesson.cards) and ex_ok
 
     def forget(self, ex_id: str) -> None:
         """Reset one exercise (keeps XP already earned)."""

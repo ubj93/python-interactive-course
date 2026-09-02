@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT))
 from course import __version__  # noqa: E402
 from course.catalog import KYU_XP, load_catalog, total_xp  # noqa: E402
 from course.progress import BADGES, RANKS  # noqa: E402
+from course.lessons import CARD_XP, load_lessons  # noqa: E402
 
 OUT = ROOT / "docs" / "exercises.js"
 HARNESS = ROOT / "course" / "harness.py"
@@ -44,13 +45,38 @@ def read_fixtures(ex_dir: Path) -> dict:
 def build() -> str:
     catalog = load_catalog()
     parts = []
+    lesson_xp = 0
     for part in catalog:
+        lessons = load_lessons(part)
+        lesson_xp += sum(l.xp for l in lessons)
         parts.append(
             {
                 "num": part.num,
                 "slug": part.slug,
                 "title": part.title,
                 "lesson": part.lesson_file.read_text(encoding="utf-8") if part.lesson_file.exists() else "",
+                "lessons": [
+                    {
+                        "id": l.id,
+                        "num": l.num,
+                        "slug": l.slug,
+                        "title": l.title,
+                        "xp": l.xp,
+                        "cards": [
+                            {
+                                "kind": c.kind,
+                                "body": c.body,
+                                "options": c.options,
+                                "correct": c.correct,
+                                "answers": c.answers,
+                                "explanation": c.explanation,
+                                "exercise_id": c.exercise_id,
+                            }
+                            for c in l.cards
+                        ],
+                    }
+                    for l in lessons
+                ],
                 "exercises": [
                     {
                         "id": ex.id,
@@ -76,7 +102,8 @@ def build() -> str:
         )
     data = {
         "version": __version__,
-        "total_xp": total_xp(catalog),
+        "total_xp": total_xp(catalog) + lesson_xp,
+        "card_xp": CARD_XP,
         "kyu_xp": KYU_XP,
         "ranks": RANKS,
         "badges": {k: list(v) for k, v in BADGES.items()},

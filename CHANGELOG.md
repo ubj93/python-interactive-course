@@ -13,6 +13,22 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-02
+
+### Added
+- Guided lessons: every exercise is now reached through a sequence of bite-sized
+  cards (teach, quiz, predict-the-output, fill-in-the-blank, recap) that end in the
+  exercise, in the style of Mimo. 88 lessons in `curriculum/*/lessons/`.
+- `course learn` (interactive, resumable; `--list`, `--show`, `--restart`) and a
+  browser Learn flow with progress dots, two tries per check, and explanations.
+- Card checks earn 1 xp on a correct first answer; ranks now include card xp.
+- Authoring guide section for lesson cards; the verifier validates card structure and
+  that every exercise is reached by exactly one lesson.
+
+### Changed
+- Home screens lead with "Continue learning"; the exercise list is now "Practice".
+- `course lesson` and the site's "Reference chapter" keep the long-form chapters.
+
 ## [0.2.0] - 2026-09-02
 
 ### Added
