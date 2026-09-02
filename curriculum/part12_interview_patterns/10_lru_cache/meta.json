@@ -1,0 +1,12 @@
+{
+  "title": "LRU cache",
+  "kyu": 4,
+  "tags": ["ordereddict", "cache", "classes", "invariants"],
+  "time_limit_min": 25,
+  "hints": [
+    "Pattern: LRU cache. The invariant is \"entries are stored in usage order, oldest first\"; every get and put must keep that true.",
+    "collections.OrderedDict has move_to_end(key) to mark a key as most recently used and popitem(last=False) to remove the oldest.",
+    "get: if the key is missing return None; otherwise move_to_end and return the value. put: assign, move_to_end, then evict the oldest if the length exceeds the capacity.",
+    "Assign first and evict after the length check, so updating an existing key never triggers an eviction."
+  ]
+}

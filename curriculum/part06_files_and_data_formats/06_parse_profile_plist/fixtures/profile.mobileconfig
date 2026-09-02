@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>AutoJoin</key>
+			<true/>
+			<key>EncryptionType</key>
+			<string>WPA2</string>
+			<key>HIDDEN_NETWORK</key>
+			<false/>
+			<key>PayloadDisplayName</key>
+			<string>Corp Wi-Fi</string>
+			<key>PayloadIdentifier</key>
+			<string>com.corp.profile.wifi-and-security.wifi</string>
+			<key>PayloadType</key>
+			<string>com.apple.wifi.managed</string>
+			<key>PayloadUUID</key>
+			<string>8B1D2C3E-0000-4000-8000-000000000001</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>SSID_STR</key>
+			<string>CorpNet</string>
+		</dict>
+		<dict>
+			<key>PayloadContent</key>
+			<data>
+			LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJzekNDQVZt
+			Z0F3SUJBZ0lVUT09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+			</data>
+			<key>PayloadDisplayName</key>
+			<string>Corp Root CA</string>
+			<key>PayloadIdentifier</key>
+			<string>com.corp.profile.wifi-and-security.ca</string>
+			<key>PayloadType</key>
+			<string>com.apple.security.pem</string>
+			<key>PayloadUUID</key>
+			<string>8B1D2C3E-0000-4000-8000-000000000002</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>Defer</key>
+			<true/>
+			<key>Enable</key>
+			<string>On</string>
+			<key>PayloadIdentifier</key>
+			<string>com.corp.profile.wifi-and-security.filevault</string>
+			<key>PayloadType</key>
+			<string>com.apple.MCX.FileVault2</string>
+			<key>PayloadUUID</key>
+			<string>8B1D2C3E-0000-4000-8000-000000000003</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>ShowRecoveryKey</key>
+			<false/>
+		</dict>
+		<dict>
+			<key>AutoJoin</key>
+			<false/>
+			<key>EncryptionType</key>
+			<string>None</string>
+			<key>PayloadDisplayName</key>
+			<string>Guest Wi-Fi</string>
+			<key>PayloadIdentifier</key>
+			<string>com.corp.profile.wifi-and-security.guest</string>
+			<key>PayloadType</key>
+			<string>com.apple.wifi.managed</string>
+			<key>PayloadUUID</key>
+			<string>8B1D2C3E-0000-4000-8000-000000000004</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>SSID_STR</key>
+			<string>CorpGuest</string>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Configures the corporate wireless network and baseline security.</string>
+	<key>PayloadDisplayName</key>
+	<string>Corp Wi-Fi and Security</string>
+	<key>PayloadIdentifier</key>
+	<string>com.corp.profile.wifi-and-security</string>
+	<key>PayloadOrganization</key>
+	<string>Example Corp</string>
+	<key>PayloadRemovalDisallowed</key>
+	<true/>
+	<key>PayloadScope</key>
+	<string>System</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>3F2504E0-4F89-11D3-9A0C-0305E82C3301</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>

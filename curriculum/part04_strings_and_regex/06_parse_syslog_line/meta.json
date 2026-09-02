@@ -1,0 +1,12 @@
+{
+  "title": "Parse syslog lines",
+  "kyu": 5,
+  "tags": ["regex", "named-groups", "parsing", "logs"],
+  "time_limit_min": 20,
+  "hints": [
+    "Build the pattern left to right with a named group per field: (?P<timestamp>...) (?P<host>\\S+) (?P<process>...) and so on. Test it in the REPL on the example lines as you go.",
+    "The timestamp is [A-Z][a-z]{2} [ \\d]\\d \\d\\d:\\d\\d:\\d\\d; the padded day is why the day group is [ \\d]\\d.",
+    "Make the pid optional as a whole: (?:\\[(?P<pid>\\d+)\\])?. The process class must not include '[' or ':' or it will swallow them: [\\w.-]+.",
+    "m.groupdict() gives the dict; then set parsed['pid'] = int(...) if m.group('pid') else None. parse_syslog is a loop that keeps non-None results."
+  ]
+}

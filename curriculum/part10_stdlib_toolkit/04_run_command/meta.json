@@ -1,0 +1,12 @@
+{
+  "title": "Subprocess wrapper with a fake runner",
+  "kyu": 5,
+  "tags": ["subprocess", "dependency-injection", "errors", "osquery"],
+  "time_limit_min": 20,
+  "hints": [
+    "First turn cmd into a list: shlex.split(cmd) if it is a str, else list(cmd). Check for emptiness before calling runner.",
+    "runner(argv, capture_output=True, text=True, timeout=timeout) returns an object with .returncode, .stdout, .stderr; build CommandResult from those.",
+    "Wrap the runner call in try/except subprocess.TimeoutExpired and raise CommandError(...) from it; after the call, if check and returncode != 0 raise CommandError with returncode and stderr.",
+    "query_osquery is two lines: run_command([\"osqueryi\", \"--json\", sql], runner=runner).stdout, then json.loads unless it is blank."
+  ]
+}

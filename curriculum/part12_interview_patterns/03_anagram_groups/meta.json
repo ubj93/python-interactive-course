@@ -1,0 +1,11 @@
+{
+  "title": "Group anagram names",
+  "kyu": 5,
+  "tags": ["hash-map", "canonical-key", "grouping"],
+  "time_limit_min": 15,
+  "hints": [
+    "Pattern: canonical key. Turn each name into a form that is identical for all its anagrams, then group by that form in a dict.",
+    "\"\".join(sorted(name)) is the same string for 'listen', 'silent' and 'enlist'.",
+    "dict.setdefault(key, []).append(name) builds the groups; Python dicts keep insertion order, so list(groups.values()) is already in first-appearance order."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Validate a serial number",
+  "kyu": 7,
+  "tags": ["strings", "validation", "booleans"],
+  "time_limit_min": 10,
+  "hints": [
+    "Handle the empty/None case first with `if not serial: return False`.",
+    "str.isalnum() is true for lowercase and accented letters too, so compare each character against an explicit set of allowed characters instead.",
+    "any(ch.isdigit() for ch in serial) tells you whether at least one digit is present."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Two packages that fill the budget",
+  "kyu": 6,
+  "tags": ["hash-map", "one-pass", "packages"],
+  "time_limit_min": 10,
+  "hints": [
+    "Pattern: hash map. Instead of searching the list for the partner of each size, remember the sizes you have already seen in a dict.",
+    "For each size, the partner you need is target - size. Ask the dict whether that value has been seen and at which index.",
+    "Check the dict before you store the current size; storing first lets a value pair with itself.",
+    "seen.setdefault(size, j) keeps the earliest index for a repeated size; with [4, 4] the pair is (0, 1)."
+  ]
+}

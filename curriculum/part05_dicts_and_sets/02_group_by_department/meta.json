@@ -1,0 +1,11 @@
+{
+  "title": "Group hostnames by department",
+  "kyu": 6,
+  "tags": ["dicts", "grouping", "setdefault"],
+  "time_limit_min": 10,
+  "hints": [
+    "Loop over the devices, compute the group key for each, and append the hostname to that key's list.",
+    "(device.get(\"department\") or \"\").strip() or \"unassigned\" turns missing, None and blank into the same key in one line.",
+    "groups.setdefault(key, []).append(hostname) creates the list the first time and returns the existing one afterwards. Skip a device before that line when its hostname is None."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Mask secrets in a log line",
+  "kyu": 6,
+  "tags": ["regex", "sub", "security", "logging"],
+  "time_limit_min": 12,
+  "hints": [
+    "re.sub accepts a function as the replacement; it is called with each Match and returns the text to put in its place.",
+    "Capture the part to keep and the value separately: r\"((?:password|token)\\s*[=:]\\s*)([^\\s;,&]+)\" with re.IGNORECASE. The replacement returns m.group(1) + masked_value.",
+    "Masking is a slice: '*' * (len(v) - 4) + v[-4:] when len(v) > 4, otherwise '*' * len(v).",
+    "Handle Bearer with a second pattern r\"(Bearer )([A-Za-z0-9._~+/=-]+)\" (or one alternation) and reuse the same replacement function."
+  ]
+}

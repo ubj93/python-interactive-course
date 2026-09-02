@@ -1,0 +1,12 @@
+{
+  "title": "Find large files",
+  "kyu": 5,
+  "tags": ["pathlib", "sorting", "filesystem"],
+  "time_limit_min": 20,
+  "hints": [
+    "Path(root).rglob(\"*\") yields every path below root, directories included; keep only those where p.is_file().",
+    "p.stat().st_size is the size in bytes; p.suffix is the extension with its dot; p.relative_to(root).as_posix() is the display path.",
+    "Normalise suffixes once: lowercase, and prepend '.' unless it is already there or the string is empty.",
+    "One sort with key=lambda item: (-item[1], item[0]) gives size descending and path ascending together."
+  ]
+}

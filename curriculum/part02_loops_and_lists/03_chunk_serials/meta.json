@@ -1,0 +1,11 @@
+{
+  "title": "Batch serial numbers",
+  "kyu": 7,
+  "tags": ["slicing", "range", "lists"],
+  "time_limit_min": 8,
+  "hints": [
+    "Validate size first: if it is under 1, raise ValueError before doing anything else.",
+    "range(0, len(serials), size) yields 0, size, 2*size, ... which are the start indexes of each batch.",
+    "serials[start:start + size] is one batch; a slice that runs past the end just returns what is there, so the last short batch is free."
+  ]
+}

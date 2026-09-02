@@ -1,0 +1,11 @@
+{
+  "title": "Convert to int safely",
+  "kyu": 7,
+  "tags": ["exceptions", "try-except", "conversion"],
+  "time_limit_min": 5,
+  "hints": [
+    "Let int() do the work and catch what it raises: `try: return int(value)`.",
+    "int(\"abc\") raises ValueError; int(None) raises TypeError. One except clause can name both: except (ValueError, TypeError).",
+    "Return `default` from the except branch; do not use a bare except."
+  ]
+}

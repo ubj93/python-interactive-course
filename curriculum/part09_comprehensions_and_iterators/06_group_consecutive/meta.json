@@ -1,0 +1,11 @@
+{
+  "title": "Runs of build results",
+  "kyu": 5,
+  "tags": ["itertools", "groupby", "runs", "builds"],
+  "time_limit_min": 15,
+  "hints": [
+    "itertools.groupby(results, key=lambda r: r[1]) yields (status, group) for each run of adjacent equal statuses; it does not sort, which is what you want here.",
+    "Each group is an iterator you must consume before moving on: [build_id for build_id, _ in group] inside the loop or comprehension.",
+    "For the streak, filter the runs to status == \"fail\" and take max(runs, key=len, default=[]); max returns the first of equal-length candidates, which gives the earliest run."
+  ]
+}

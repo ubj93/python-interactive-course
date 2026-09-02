@@ -1,0 +1,12 @@
+{
+  "title": "Render a text table",
+  "kyu": 6,
+  "tags": ["formatting", "format-spec", "reporting"],
+  "time_limit_min": 15,
+  "hints": [
+    "Do it in phases: validate, turn every cell into its text, compute one width per column, then build the lines.",
+    "widths[i] = max(len(headers[i]), max(len(row[i]) for row in text_rows)); zip(*rows) transposes a list of rows into columns if you prefer.",
+    "A format spec can take its width from a variable: f\"{text:<{w}}\" left-aligns, f\"{text:>{w}}\" right-aligns. Decide the alignment from the original value, not its text.",
+    "isinstance(True, int) is True, so check `not isinstance(v, bool)` before treating an int as a number. Finish with '\\n'.join(line.rstrip() for line in lines)."
+  ]
+}

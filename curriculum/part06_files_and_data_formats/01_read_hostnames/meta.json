@@ -1,0 +1,11 @@
+{
+  "title": "Read a hostname list",
+  "kyu": 7,
+  "tags": ["files", "with", "strings"],
+  "time_limit_min": 8,
+  "hints": [
+    "Use `with open(path, encoding=\"utf-8\") as f:` and loop `for raw in f:`; each line arrives with its newline still attached.",
+    "Strip first, then decide: `if not line or line.startswith(\"#\"): continue`.",
+    "Do not wrap `open` in try/except; the spec wants FileNotFoundError to propagate."
+  ]
+}

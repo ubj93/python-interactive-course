@@ -1,0 +1,12 @@
+{
+  "title": "Parse --flags into a dict",
+  "kyu": 6,
+  "tags": ["functions", "args", "strings", "cli"],
+  "time_limit_min": 12,
+  "hints": [
+    "*args arrives as a tuple of strings; loop over it and build a dict, assigning flags[key] = ... so repeats overwrite.",
+    "Check arg.startswith(\"--\") first and raise ValueError otherwise; then work with arg[2:].",
+    "str.partition(\"=\") returns (key, sep, value) and only splits once; sep is \"\" when there was no equals sign, which is your signal to store True instead of the (empty) value.",
+    "An empty key after stripping \"--\" is an error; replace \"-\" with \"_\" in the key before storing it."
+  ]
+}

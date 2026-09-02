@@ -1,0 +1,11 @@
+{
+  "title": "Classify a platform string",
+  "kyu": 8,
+  "tags": ["strings", "conditionals", "in"],
+  "time_limit_min": 8,
+  "hints": [
+    "Normalise first: s = (os_string or \"\").strip().lower(). The `or` handles None.",
+    "The `in` operator tests substrings: \"mac\" in \"macos 14\" is True.",
+    "str.startswith accepts a tuple of prefixes; any(k in s for k in keywords) tests several substrings."
+  ]
+}

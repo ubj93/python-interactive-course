@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Python for CPE · interactive course</title>
+<meta name="description" content="Auto-graded Python exercises for Client Platform Engineering interviews. Runs entirely in your browser.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<style>
+:root{
+  --bg:#f6f7f9;--panel:#ffffff;--ink:#1c2128;--muted:#6b7380;--line:#e1e4e8;
+  --accent:#2f6fed;--accent-ink:#ffffff;--ok:#1a9e5c;--bad:#d64545;--warn:#c98a00;
+  --kyu8:#8a939e;--kyu7:#8a939e;--kyu6:#d9a400;--kyu5:#d9a400;--kyu4:#2f6fed;--kyu3:#2f6fed;--kyu2:#8e44ad;--kyu1:#8e44ad;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1218;--panel:#171b23;--ink:#e6e9ef;--muted:#8b94a3;--line:#262c37;--accent:#5b8dff;}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:var(--accent);text-decoration:none}
+header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header .brand{font-weight:700;letter-spacing:.2px}
+header .brand small{color:var(--muted);font-weight:400;margin-left:6px}
+.spacer{flex:1}
+.rank{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.rank b{color:var(--ink)}
+.xpbar{width:120px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.xpbar i{display:block;height:100%;background:var(--ok);width:0}
+main{max-width:980px;margin:0 auto;padding:16px 14px 80px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+h1{font-size:22px;margin:0 0 8px}
+h2{font-size:18px;margin:0 0 8px}
+.muted{color:var(--muted)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:9px 14px;font-weight:600;font-size:14px;cursor:pointer}
+.btn.secondary{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.kyu{display:inline-block;font-family:var(--mono);font-size:12px;padding:1px 7px;border-radius:999px;border:1px solid currentColor}
+.k8,.k7{color:var(--kyu8)}.k6,.k5{color:var(--kyu6)}.k4,.k3{color:var(--kyu4)}.k2,.k1{color:var(--kyu2)}
+.list{display:flex;flex-direction:column;gap:6px}
+.item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink)}
+.item:hover{border-color:var(--accent)}
+.item .t{flex:1;min-width:0}
+.item .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .t small{color:var(--muted)}
+.mark{width:22px;text-align:center;font-size:16px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.pbar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.pbar i{display:block;height:100%;background:var(--ok)}
+.desc p{margin:8px 0}
+.desc pre,.desc code{font-family:var(--mono);font-size:13px}
+.desc pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}
+.desc code{background:var(--bg);padding:1px 4px;border-radius:4px}
+.desc ul,.desc ol{margin:6px 0 6px 20px;padding:0}
+.editor{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.CodeMirror{height:auto;min-height:220px;font-family:var(--mono);font-size:13.5px;line-height:1.45}
+textarea.fallback{width:100%;min-height:260px;font-family:var(--mono);font-size:13px;border:0;padding:10px;background:var(--panel);color:var(--ink);resize:vertical}
+.results{margin-top:10px}
+.tc{padding:6px 8px;border-radius:6px;font-size:14px}
+.tc pre{margin:4px 0 0 24px;white-space:pre-wrap;font-size:12.5px;color:var(--muted)}
+.status{font-size:13px;color:var(--muted);min-height:20px}
+.banner{padding:12px 14px;border-radius:10px;margin-top:10px;font-weight:600}
+.banner.pass{background:rgba(26,158,92,.12);color:var(--ok)}
+.banner.fail{background:rgba(214,69,69,.12);color:var(--bad)}
+.hint{padding:8px 10px;border-left:3px solid var(--warn);background:rgba(201,138,0,.08);border-radius:6px;margin:6px 0}
+.lesson{line-height:1.6}
+.lesson pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:13px}
+.lesson code{font-family:var(--mono);font-size:13px;background:var(--bg);padding:1px 4px;border-radius:4px}
+.lesson pre code{background:none;padding:0}
+.lesson table{border-collapse:collapse;margin:8px 0;font-size:14px;display:block;overflow-x:auto}
+.lesson th,.lesson td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+.lesson blockquote{margin:8px 0;padding:6px 12px;border-left:3px solid var(--accent);color:var(--muted)}
+.lesson h1{font-size:22px}.lesson h2{font-size:18px;margin-top:22px}.lesson h3{font-size:16px}
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.badge{padding:6px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px}
+.badge.locked{opacity:.45}
+.crumbs{font-size:13px;color:var(--muted);margin-bottom:8px}
+.crumbs a{color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+pre.sol{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:13px;font-family:var(--mono)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.stat{padding:10px;border:1px solid var(--line);border-radius:10px}
+.stat b{display:block;font-size:20px}
+.stat small{color:var(--muted)}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{padding:6px 12px;border-radius:8px;border:1px solid var(--line);cursor:pointer;font-size:14px}
+.tab.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+@media (max-width:600px){ header .rank .xpbar{display:none} main{padding:12px 10px 90px} .card{padding:12px} }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="#/">Python for CPE <small>interactive course</small></a>
+  <span class="spacer"></span>
+  <a class="rank" href="#/profile" id="rankbox"></a>
+</header>
+<main id="app"></main>
+<div class="toast" id="toast"></div>
+
+<script src="exercises.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script>
+"use strict";
+const DATA = window.COURSE_DATA;
+const STORE_KEY = "cpe-course-progress-v1";
+const DRAFT_KEY = "cpe-course-draft:";
+const ALL = [];
+const BY_ID = {};
+for (const p of DATA.parts) for (const e of p.exercises) { e.part = p; ALL.push(e); BY_ID[e.id] = e; }
+const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+// ------------------------------------------------------------------ progress
+function today() { return new Date().toISOString().slice(0, 10); }
+function nowIso() { return new Date().toISOString(); }
+function blankProgress() {
+  return { version: 1, xp: 0, solved: {}, attempts: {}, hints: {}, opened: {}, peeked: [], days: [], badges: {}, daily: {}, last: null };
+}
+function loadProgress() {
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) return Object.assign(blankProgress(), JSON.parse(raw)); } catch (e) {}
+  return blankProgress();
+}
+function saveProgress() { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); } catch (e) {} }
+let P = loadProgress();
+
+function rankFor(xp) {
+  const frac = DATA.total_xp ? xp / DATA.total_xp : 0;
+  let cur = DATA.ranks[0], next = null;
+  DATA.ranks.forEach((r, i) => { if (frac >= r[0] - 1e-9) { cur = r; next = DATA.ranks[i + 1] || null; } });
+  const need = next ? Math.max(0, Math.ceil(next[0] * DATA.total_xp) - xp) : null;
+  return { kyu: cur[1], title: cur[2], frac, need };
+}
+function streak() {
+  const days = [...new Set(P.days)].sort();
+  if (!days.length) return 0;
+  const d = (s) => new Date(s + "T00:00:00Z").getTime() / 86400000;
+  const t = d(today());
+  if (t - d(days[days.length - 1]) > 1) return 0;
+  let n = 1;
+  for (let i = days.length - 1; i > 0; i--) { if (d(days[i]) - d(days[i - 1]) === 1) n++; else break; }
+  return n;
+}
+function solvedToday() { const t = today(); return Object.values(P.solved).filter((s) => (s.passed_at || "").startsWith(t)).length; }
+function xpFor(ex, attempts, hints, seconds, peeked) {
+  let mult = 1, notes = [];
+  if (peeked) { mult *= 0.1; notes.push("solution peeked ×0.1"); }
+  else {
+    if (attempts === 1) { mult *= 1.25; notes.push("first try ×1.25"); }
+    if (hints) { const pen = Math.max(0.25, 1 - 0.25 * hints); mult *= pen; notes.push(`${hints} hint${hints > 1 ? "s" : ""} ×${pen.toFixed(2)}`); }
+    if (ex.time_limit_min && seconds != null && seconds <= ex.time_limit_min * 60) { mult *= 1.1; notes.push("inside time limit ×1.1"); }
+  }
+  return { xp: Math.max(1, Math.round(ex.xp * mult)), notes };
+}
+function award(name, list) { if (!P.badges[name]) { P.badges[name] = today(); list.push(name); } }
+function checkBadges(ex, attempts, hints, seconds) {
+  const list = [];
+  const sv = Object.values(P.solved);
+  award("first_blood", list);
+  if (solvedToday() >= 3) award("hat_trick", list);
+  if (sv.filter((s) => !s.hints).length >= 10) award("clean_sweep", list);
+  if (sv.filter((s) => s.attempts === 1).length >= 5) award("first_try", list);
+  if (attempts >= 4) award("comeback", list);
+  if (ex.kyu <= 5 && ex.time_limit_min && seconds != null && seconds <= ex.time_limit_min * 60) award("speed_demon", list);
+  const st = streak();
+  if (st >= 7) award("week_streak", list);
+  if (st >= 30) award("month_streak", list);
+  if (Object.values(P.daily).filter((d) => d.done).length >= 5) award("daily_5", list);
+  if (ALL.every((e) => P.solved[e.id])) award("graduate", list);
+  return list;
+}
+function recordRun(ex, passed) {
+  P.opened[ex.id] = P.opened[ex.id] || nowIso();
+  P.last = ex.id;
+  const t = today();
+  if (!P.days.includes(t)) P.days.push(t);
+  P.attempts[ex.id] = (P.attempts[ex.id] || 0) + 1;
+  const out = { xp: 0, notes: [], badges: [], already: !!P.solved[ex.id], daily: 0 };
+  if (passed && !P.solved[ex.id]) {
+    const attempts = P.attempts[ex.id], hints = P.hints[ex.id] || 0;
+    const seconds = (Date.now() - new Date(P.opened[ex.id]).getTime()) / 1000;
+    const r = xpFor(ex, attempts, hints, seconds, P.peeked.includes(ex.id));
+    P.solved[ex.id] = { passed_at: nowIso(), attempts, hints, seconds: Math.round(seconds), xp: r.xp };
+    P.xp += r.xp; out.xp = r.xp; out.notes = r.notes;
+    const d = P.daily[t];
+    if (d && d.id === ex.id && !d.done) { d.done = true; P.xp += 5; out.daily = 5; }
+    out.badges = checkBadges(ex, attempts, hints, seconds);
+  }
+  saveProgress();
+  return out;
+}
+function dailyExercise() {
+  const t = today();
+  if (P.daily[t] && BY_ID[P.daily[t].id]) return BY_ID[P.daily[t].id];
+  let pool = ALL.filter((e) => !P.solved[e.id]);
+  if (!pool.length) pool = ALL;
+  const frontier = Math.min(...pool.map((e) => e.part.num));
+  const near = pool.filter((e) => e.part.num === frontier || e.part.num === frontier + 1);
+  const src = near.length ? near : pool;
+  let h = 0; for (const ch of t) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const ex = src[h % src.length];
+  P.daily[t] = { id: ex.id, done: false }; saveProgress();
+  return ex;
+}
+function nextUnsolved(after) {
+  let start = 0;
+  if (after) { const i = ALL.findIndex((e) => e.id === after.id); start = i + 1; }
+  const order = ALL.slice(start).concat(ALL.slice(0, start));
+  return order.find((e) => !P.solved[e.id]) || null;
+}
+
+// ------------------------------------------------------------------ python runner
+let worker = null, workerReady = false, pending = null, bootPromise = null;
+function bootWorker() {
+  if (worker) return bootPromise;
+  worker = new Worker("worker.js");
+  workerReady = false;
+  bootPromise = new Promise((resolve, reject) => {
+    worker.onmessage = (ev) => {
+      const m = ev.data;
+      if (m.type === "status") setStatus(m.msg);
+      else if (m.type === "ready") { workerReady = true; setStatus(""); resolve(); }
+      else if (m.type === "result" && pending && pending.id === m.id) { const p = pending; pending = null; p.resolve(m.result); }
+      else if (m.type === "error") { if (pending && pending.id === m.id) { const p = pending; pending = null; p.reject(new Error(m.error)); } else { setStatus("Python runtime failed to load: " + m.error); reject(new Error(m.error)); } }
+    };
+    worker.onerror = (e) => { setStatus("Worker error: " + e.message); reject(e); };
+    worker.postMessage({ type: "boot" });
+  });
+  return bootPromise;
+}
+function runInPython(ex, code) {
+  return bootWorker().then(() => new Promise((resolve, reject) => {
+    const id = Math.random().toString(36).slice(2);
+    const files = { "exercise.py": code, "test_exercise.py": ex.tests };
+    for (const [name, content] of Object.entries(ex.fixtures || {})) files[name] = content;
+    const timer = setTimeout(() => {
+      pending = null;
+      try { worker.terminate(); } catch (e) {}
+      worker = null; bootPromise = null;
+      resolve({ timed_out: true, tests: [] });
+    }, (ex.timeout_s || 10) * 1000 + 2000);
+    pending = { id, resolve: (r) => { clearTimeout(timer); resolve(r); }, reject: (e) => { clearTimeout(timer); reject(e); } };
+    worker.postMessage({ type: "run", id, slug: ex.part.num + "_" + ex.dir, harness: DATA.harness, files });
+  }));
+}
+
+// ------------------------------------------------------------------ rendering helpers
+const $ = (sel, root) => (root || document).querySelector(sel);
+const app = $("#app");
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function inline(s) { return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>"); }
+function descToHtml(text) {
+  const lines = text.split("\n"); let html = "", para = [], code = [], list = [], listTag = "ul";
+  const flushP = () => { if (para.length) { html += "<p>" + inline(para.join(" ")) + "</p>"; para = []; } };
+  const flushC = () => { if (code.length) { html += "<pre>" + esc(code.join("\n")) + "</pre>"; code = []; } };
+  const flushL = () => { if (list.length) { html += "<" + listTag + ">" + list.map((l) => "<li>" + inline(l) + "</li>").join("") + "</" + listTag + ">"; list = []; } };
+  for (const line of lines) {
+    if (/^ {4}|\t/.test(line)) { flushP(); flushL(); code.push(line.replace(/^ {4}|\t/, "")); continue; }
+    flushC();
+    if (!line.trim()) { flushP(); flushL(); continue; }
+    let m;
+    if ((m = line.match(/^[-*] (.*)$/))) { flushP(); if (list.length && listTag !== "ul") flushL(); listTag = "ul"; list.push(m[1]); continue; }
+    if ((m = line.match(/^\d+[.)] (.*)$/))) { flushP(); if (list.length && listTag !== "ol") flushL(); listTag = "ol"; list.push(m[1]); continue; }
+    if (list.length && /^\s+/.test(line)) { list[list.length - 1] += " " + line.trim(); continue; }
+    flushL(); para.push(line.trim());
+  }
+  flushP(); flushC(); flushL();
+  return html;
+}
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2200); }
+function setStatus(msg) { const el = $("#status"); if (el) el.textContent = msg; }
+function kyuTag(k) { return `<span class="kyu k${k}">${k} kyu</span>`; }
+function mark(ex) { return P.solved[ex.id] ? '<span class="mark ok">✔</span>' : (P.attempts[ex.id] ? '<span class="mark warn">…</span>' : '<span class="mark muted">○</span>'); }
+function itemHtml(ex) {
+  return `<a class="item" href="#/ex/${ex.id}">${mark(ex)}<span class="t"><b>${ex.id} · ${esc(ex.title)}</b><small>${esc(ex.part.title)} · ${ex.tags.map((t) => "#" + esc(t)).join(" ")}</small></span>${kyuTag(ex.kyu)}<small class="muted">${ex.xp} xp</small></a>`;
+}
+function renderHeader() {
+  const r = rankFor(P.xp);
+  $("#rankbox").innerHTML = `<span class="kyu k${r.kyu}">${r.kyu} kyu</span> <b>${esc(r.title)}</b> <span class="xpbar"><i style="width:${(r.frac * 100).toFixed(1)}%"></i></span> ${P.xp} xp ${streak() ? "🔥" + streak() : ""}`;
+}
+
+// ------------------------------------------------------------------ views
+function viewHome() {
+  const r = rankFor(P.xp), nxt = nextUnsolved(null), daily = dailyExercise(), d = P.daily[today()];
+  let html = `<div class="card">
+    <h1>Python for Client Platform Engineering</h1>
+    <p class="muted">Substantive lessons, Codewars-style auto-graded exercises, and mock interviews. Everything runs in your browser; nothing leaves your device.</p>
+    <div class="grid">
+      <div class="stat"><b>${r.kyu} kyu</b><small>${esc(r.title)}${r.need != null ? " · " + r.need + " xp to next" : ""}</small></div>
+      <div class="stat"><b>${P.xp} / ${DATA.total_xp}</b><small>xp</small></div>
+      <div class="stat"><b>${Object.keys(P.solved).length} / ${ALL.length}</b><small>solved</small></div>
+      <div class="stat"><b>${streak()} 🔥</b><small>day streak · ${solvedToday()} today</small></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      ${nxt ? `<a class="btn" href="#/ex/${nxt.id}">Continue: ${nxt.id} ${esc(nxt.title)}</a>` : `<span class="ok">All exercises solved 🎓</span>`}
+      <a class="btn secondary" href="#/ex/${daily.id}">Daily kata ${d && d.done ? "✔" : "· +5 xp"}</a>
+      <a class="btn secondary" href="#/interview">Mock interview</a>
+    </div>
+  </div>`;
+  html += `<div class="card"><h2>Parts</h2><div class="list">`;
+  for (const p of DATA.parts) {
+    const s = p.exercises.filter((e) => P.solved[e.id]).length;
+    html += `<a class="item" href="#/part/${p.num}"><span class="mark muted">${p.num}</span><span class="t"><b>${esc(p.title)}</b><small>${s}/${p.exercises.length} solved · ${p.exercises.reduce((a, e) => a + e.xp, 0)} xp</small><div class="pbar"><i style="width:${(100 * s / p.exercises.length).toFixed(0)}%"></i></div></span></a>`;
+  }
+  html += `</div></div>
+  <div class="card"><h2>How to use this</h2>
+  <ol>
+    <li>Read the lesson for a part (10–20 minutes), then work its exercises in order.</li>
+    <li>Each exercise: read the description, write the function, press <b>Run tests</b> (<kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>Enter</kbd>). Red tests are the spec; make them green.</li>
+    <li>After a pass, compare with the reference solutions. That is where most of the learning happens.</li>
+    <li>Come back daily for the kata to keep the streak, and run a timed mock interview once a week from Part 9 onward.</li>
+  </ol>
+  <p class="muted">Prefer the terminal? Clone the repository and run <code>python3 course.py</code>. Progress can be exported and imported from the <a href="#/profile">profile</a> page.</p></div>`;
+  app.innerHTML = html;
+}
+function viewPart(num) {
+  const p = DATA.parts.find((x) => x.num === num); if (!p) return viewHome();
+  const s = p.exercises.filter((e) => P.solved[e.id]).length;
+  app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › Part ${p.num}</div>
+  <div class="card"><h1>Part ${p.num} · ${esc(p.title)}</h1><p class="muted">${s}/${p.exercises.length} solved</p>
+  <div class="row"><a class="btn" href="#/lesson/${p.num}">Read the lesson</a>${p.num > 1 ? `<a class="btn secondary" href="#/part/${p.num - 1}">‹ Part ${p.num - 1}</a>` : ""}${p.num < DATA.parts.length ? `<a class="btn secondary" href="#/part/${p.num + 1}">Part ${p.num + 1} ›</a>` : ""}</div></div>
+  <div class="list">${p.exercises.map(itemHtml).join("")}</div>`;
+}
+function viewLesson(num) {
+  const p = DATA.parts.find((x) => x.num === num); if (!p) return viewHome();
+  const body = window.marked ? marked.parse(p.lesson) : "<pre>" + esc(p.lesson) + "</pre>";
+  app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › <a href="#/part/${p.num}">Part ${p.num}</a> › Lesson</div>
+  <div class="card lesson">${body}<hr><div class="row"><a class="btn" href="#/part/${p.num}">Go to the exercises</a></div></div>`;
+}
+let editor = null;
+function viewExercise(id) {
+  const ex = BY_ID[id]; if (!ex) return viewHome();
+  P.opened[ex.id] = P.opened[ex.id] || nowIso(); P.last = ex.id; saveProgress();
+  const solved = !!P.solved[ex.id], hintsUsed = P.hints[ex.id] || 0, d = P.daily[today()];
+  let draft = null; try { draft = localStorage.getItem(DRAFT_KEY + ex.id); } catch (e) {}
+  const code = draft != null ? draft : ex.stub;
+  app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › <a href="#/part/${ex.part.num}">Part ${ex.part.num}</a> › ${ex.id}</div>
+  <div class="card">
+    <div class="row"><h1 style="margin:0">${ex.id} · ${esc(ex.title)}</h1>${kyuTag(ex.kyu)}<span class="muted">${ex.xp} xp${ex.time_limit_min ? " · ⏱ " + ex.time_limit_min + " min" : ""}${d && d.id === ex.id ? " · 📅 today's kata" : ""}</span>${solved ? '<span class="ok">✔ solved</span>' : ""}</div>
+    <div class="desc">${descToHtml(ex.description)}</div>
+    <div id="hints">${ex.hints.slice(0, solved ? ex.hints.length : hintsUsed).map((h, i) => `<div class="hint"><b>Hint ${i + 1}.</b> ${inline(h)}</div>`).join("")}</div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn small secondary" id="hintbtn" ${hintsUsed >= ex.hints.length ? "disabled" : ""}>${solved ? "All hints shown" : `Hint (${ex.hints.length - hintsUsed} left, −25% xp)`}</button>
+      <button class="btn small secondary" id="testsbtn">Show tests</button>
+      <button class="btn small secondary" id="resetbtn">Reset code</button>
+      <a class="btn small secondary" href="#/lesson/${ex.part.num}">Lesson</a>
+    </div>
+    <pre class="sol" id="testsview" hidden>${esc(ex.tests)}</pre>
+  </div>
+  <div class="card">
+    <div class="editor" id="editor"><textarea class="fallback" id="code">${esc(code)}</textarea></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="runbtn">▶ Run tests</button>
+      <span class="status" id="status"></span>
+    </div>
+    <div class="results" id="results"></div>
+    <div id="after"></div>
+  </div>`;
+  editor = null;
+  if (window.CodeMirror) {
+    editor = CodeMirror.fromTextArea($("#code"), { mode: "python", lineNumbers: true, indentUnit: 4, tabSize: 4, indentWithTabs: false, theme: isDark ? "material-darker" : "default", viewportMargin: Infinity, extraKeys: { Tab: (cm) => cm.replaceSelection("    ", "end"), "Cmd-Enter": runTests, "Ctrl-Enter": runTests } });
+    editor.on("change", () => { try { localStorage.setItem(DRAFT_KEY + ex.id, editor.getValue()); } catch (e) {} });
+  } else {
+    $("#code").addEventListener("input", (e) => { try { localStorage.setItem(DRAFT_KEY + ex.id, e.target.value); } catch (e2) {} });
+    $("#code").addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runTests(); });
+  }
+  const getCode = () => (editor ? editor.getValue() : $("#code").value);
+  $("#runbtn").onclick = runTests;
+  $("#hintbtn").onclick = () => {
+    const n = P.hints[ex.id] || 0; if (n >= ex.hints.length) return;
+    if (!solved) { P.hints[ex.id] = n + 1; saveProgress(); }
+    $("#hints").insertAdjacentHTML("beforeend", `<div class="hint"><b>Hint ${n + 1}.</b> ${inline(ex.hints[n])}</div>`);
+    const left = ex.hints.length - n - 1; $("#hintbtn").textContent = `Hint (${left} left, −25% xp)`; if (!left) $("#hintbtn").disabled = true;
+  };
+  $("#testsbtn").onclick = () => { const v = $("#testsview"); v.hidden = !v.hidden; $("#testsbtn").textContent = v.hidden ? "Show tests" : "Hide tests"; };
+  $("#resetbtn").onclick = () => { if (editor) editor.setValue(ex.stub); else $("#code").value = ex.stub; try { localStorage.removeItem(DRAFT_KEY + ex.id); } catch (e) {} };
+  if (solved) showAfterPass(ex, null);
+  bootWorker().catch(() => {});
+
+  async function runTests() {
+    const btn = $("#runbtn"); btn.disabled = true; setStatus("Running…"); $("#results").innerHTML = "";
+    try {
+      const res = await runInPython(ex, getCode());
+      renderResults(ex, res);
+    } catch (e) {
+      $("#results").innerHTML = `<div class="banner fail">Could not run tests: ${esc(e.message || e)}</div>`;
+    } finally { btn.disabled = false; setStatus(""); }
+  }
+}
+function shortTb(tb) {
+  if (!tb) return "";
+  const lines = tb.trim().split("\n"); const frames = []; const tail = []; let i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (l.startsWith("  File ")) { const f = [l]; i++; while (i < lines.length && lines[i].startsWith("    ")) { f.push(lines[i]); i++; } frames.push(f); continue; }
+    if (!l.startsWith("Traceback")) tail.push(l); i++;
+  }
+  const keep = frames.filter((f) => !f[0].includes("/unittest/") && !f[0].includes("harness.py")).slice(-3);
+  const exc = tail.join("\n").trim();
+  if (exc.startsWith("NotImplementedError")) return "not implemented yet: " + exc.split(":").slice(1).join(":").trim();
+  const out = [];
+  for (const f of keep) { out.push(f[0].replace(/^\s*File "(?:.*\/)?([^/"]+)", line (\d+)(?:, in (.+))?$/, (m, a, b, c) => a + ":" + b + (c ? " in " + c : ""))); for (const l of f.slice(1)) if (l.trim()) out.push("    " + l.trim()); }
+  out.push(exc); return out.join("\n");
+}
+function renderResults(ex, res) {
+  const box = $("#results"); let html = "";
+  if (res.timed_out) { html = `<div class="banner fail">⏱ Timed out. Infinite loop? Each run is limited to ${ex.timeout_s || 10} seconds.</div>`; box.innerHTML = html; recordRun(ex, false); renderHeader(); return; }
+  if (res.import_error) { html = `<div class="banner fail">Your code could not be imported</div><pre class="sol">${esc(shortTb(res.import_error))}</pre>`; box.innerHTML = html; recordRun(ex, false); renderHeader(); return; }
+  const tests = res.tests || []; const total = tests.filter((t) => t.status !== "skip").length; const passed = tests.filter((t) => t.status === "pass").length;
+  for (const t of tests) {
+    const icon = t.status === "pass" ? '<span class="ok">✔</span>' : t.status === "skip" ? '<span class="warn">–</span>' : '<span class="bad">✘</span>';
+    html += `<div class="tc">${icon} ${esc(t.doc || t.name)}${t.status === "fail" || t.status === "error" ? `<pre>${esc(shortTb(t.traceback || t.message))}</pre>` : ""}</div>`;
+  }
+  if (res.stdout && res.stdout.trim()) html += `<div class="tc muted">── your output ──<pre>${esc(res.stdout.trim())}</pre></div>`;
+  const ok = total > 0 && passed === total;
+  const summary = recordRun(ex, ok);
+  if (ok) {
+    let line = `✔ All ${total} tests passed`;
+    if (summary.already) line += " · already solved, no extra xp";
+    else line += ` · +${summary.xp} xp${summary.notes.length ? " (" + summary.notes.join(", ") + ")" : ""}${summary.daily ? " · +5 daily bonus" : ""}`;
+    html += `<div class="banner pass">${esc(line)}</div>`;
+    for (const b of summary.badges) { const [icon, desc] = DATA.badges[b]; html += `<div class="banner pass">${icon} Badge unlocked: ${esc(desc)}</div>`; toast(icon + " " + desc); }
+    if (!summary.already) { const r = rankFor(P.xp), before = rankFor(P.xp - summary.xp - summary.daily); if (r.kyu < before.kyu) { html += `<div class="banner pass">★ Rank up! You are now ${r.kyu} kyu · ${esc(r.title)}</div>`; toast("★ Rank up: " + r.kyu + " kyu"); } }
+  } else {
+    html += `<div class="banner fail">✘ ${passed}/${total} tests passed · attempt ${P.attempts[ex.id]}</div>`;
+  }
+  box.innerHTML = html; renderHeader();
+  if (ok) showAfterPass(ex, nextUnsolved(ex));
+}
+function showAfterPass(ex, nxt) {
+  const n = nxt || nextUnsolved(ex);
+  $("#after").innerHTML = `<div class="row" style="margin-top:12px"><button class="btn secondary" id="solbtn">Show reference solutions</button>${n ? `<a class="btn" href="#/ex/${n.id}">Next: ${n.id} ${esc(n.title)} ›</a>` : ""}</div><pre class="sol" id="solview" hidden>${esc(ex.solution)}</pre>`;
+  $("#solbtn").onclick = () => { const v = $("#solview"); v.hidden = !v.hidden; };
+}
+function viewProfile() {
+  const r = rankFor(P.xp);
+  let html = `<div class="crumbs"><a href="#/">Home</a> › Profile</div><div class="card"><h1>${r.kyu} kyu · ${esc(r.title)}</h1>
+  <div class="grid"><div class="stat"><b>${P.xp}</b><small>xp of ${DATA.total_xp}</small></div><div class="stat"><b>${Object.keys(P.solved).length}</b><small>solved of ${ALL.length}</small></div><div class="stat"><b>${streak()}</b><small>day streak</small></div><div class="stat"><b>${P.days.length}</b><small>days practised</small></div></div>
+  <h2 style="margin-top:16px">Ranks</h2><div class="list">${DATA.ranks.map((k) => `<div class="item"><span class="kyu k${k[1]}">${k[1]} kyu</span><span class="t"><b>${esc(k[2])}</b><small>${Math.ceil(k[0] * DATA.total_xp)} xp</small></span>${P.xp >= Math.ceil(k[0] * DATA.total_xp) - 1e-9 ? '<span class="ok">✔</span>' : ""}</div>`).join("")}</div>
+  <h2 style="margin-top:16px">Badges</h2><div class="badges">${Object.entries(DATA.badges).map(([k, [icon, desc]]) => `<span class="badge ${P.badges[k] ? "" : "locked"}" title="${esc(desc)}">${icon} ${esc(desc)}</span>`).join("")}</div>
+  <h2 style="margin-top:16px">Sync progress</h2><p class="muted">Progress lives in this browser. Export it to move to another device or to merge with the terminal version (<code>.course_progress.json</code> uses the same format).</p>
+  <div class="row"><button class="btn secondary" id="exportbtn">Export</button><button class="btn secondary" id="importbtn">Import</button><button class="btn secondary" id="wipebtn">Reset all progress</button></div>
+  <textarea class="fallback" id="io" style="margin-top:10px;min-height:120px;border:1px solid var(--line);border-radius:8px" placeholder="Exported JSON appears here; paste JSON here to import."></textarea></div>`;
+  app.innerHTML = html;
+  $("#exportbtn").onclick = () => { $("#io").value = JSON.stringify(P, null, 2); $("#io").select(); toast("Copy the JSON from the box"); };
+  $("#importbtn").onclick = () => { try { const d = JSON.parse($("#io").value); if (!d || typeof d.xp !== "number") throw new Error("not a progress file"); P = Object.assign(blankProgress(), d); saveProgress(); renderHeader(); toast("Imported"); viewProfile(); } catch (e) { toast("Import failed: " + e.message); } };
+  $("#wipebtn").onclick = () => { if (confirm("Delete all progress in this browser?")) { P = blankProgress(); saveProgress(); renderHeader(); viewProfile(); } };
+}
+function viewInterview() {
+  const key = "cpe-course-interview"; let s = null; try { s = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
+  const render = () => {
+    if (!s) {
+      app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › Mock interview</div><div class="card"><h1>Mock interview</h1><p>Three random problems from Part 9 onward, 45 minutes. Talk out loud, restate the problem, write the brute force, then improve. Finish when the clock runs out, not when you are happy.</p><div class="row"><button class="btn" id="start">Start a 45-minute round</button></div></div>`;
+      $("#start").onclick = () => {
+        let pool = ALL.filter((e) => e.part.num >= 9 && !P.solved[e.id]); if (pool.length < 3) pool = ALL.filter((e) => e.part.num >= 9);
+        const picks = []; const arr = pool.slice(); while (picks.length < 3 && arr.length) picks.push(arr.splice(Math.floor(Math.random() * arr.length), 1)[0]);
+        s = { ids: picks.map((e) => e.id), started: Date.now(), deadline: Date.now() + 45 * 60000, before: picks.filter((e) => P.solved[e.id]).map((e) => e.id) };
+        localStorage.setItem(key, JSON.stringify(s)); render();
+      };
+      return;
+    }
+    const left = Math.round((s.deadline - Date.now()) / 60000);
+    const done = s.ids.filter((id) => P.solved[id] && !s.before.includes(id));
+    app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › Mock interview</div><div class="card"><h1>Mock interview</h1><p class="${left > 0 ? "" : "bad"}">${left > 0 ? "⏱ " + left + " minutes left" : "⏱ Time is up"} · ${done.length}/${s.ids.length} passed</p><div class="list">${s.ids.map((id) => itemHtml(BY_ID[id])).join("")}</div><div class="row" style="margin-top:12px"><button class="btn" id="finish">Finish round</button></div></div>`;
+    $("#finish").onclick = () => { if (done.length === s.ids.length && Date.now() < s.deadline) { const l = []; award("interviewer", l); if (l.length) toast("🎤 Badge: aced a mock interview"); saveProgress(); } localStorage.removeItem(key); s = null; render(); renderHeader(); };
+  };
+  render();
+}
+
+// ------------------------------------------------------------------ router
+function route() {
+  const h = location.hash || "#/";
+  window.scrollTo(0, 0);
+  let m;
+  if ((m = h.match(/^#\/ex\/([\d.]+)/))) return viewExercise(m[1]);
+  if ((m = h.match(/^#\/part\/(\d+)/))) return viewPart(parseInt(m[1], 10));
+  if ((m = h.match(/^#\/lesson\/(\d+)/))) return viewLesson(parseInt(m[1], 10));
+  if (h.startsWith("#/profile")) return viewProfile();
+  if (h.startsWith("#/interview")) return viewInterview();
+  viewHome();
+}
+window.addEventListener("hashchange", route);
+renderHeader(); route();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "title": "Classify disk usage",
+  "kyu": 8,
+  "tags": ["conditionals", "comparisons", "None"],
+  "time_limit_min": 5,
+  "hints": [
+    "Check for None and the out-of-range case first, then you can assume a valid number.",
+    "Chained comparison: 0 <= x <= 1 is valid Python.",
+    "Test the highest threshold first; if it is not CRIT, then check WARN, else OK."
+  ]
+}

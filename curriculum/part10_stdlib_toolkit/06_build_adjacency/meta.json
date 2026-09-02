@@ -1,0 +1,11 @@
+{
+  "title": "Undirected adjacency from an edge list",
+  "kyu": 6,
+  "tags": ["defaultdict", "sets", "graphs", "packages"],
+  "time_limit_min": 10,
+  "hints": [
+    "adj = defaultdict(set); then adj[a].add(b) never needs an 'is the key there yet' check.",
+    "Add both directions for every edge, but skip the add when a == b. Simply evaluating adj[a] creates the key with an empty set.",
+    "Return dict(adj) so the result is a normal dict; for neighbors use sorted(adj.get(node, ()))."
+  ]
+}

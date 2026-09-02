@@ -1,0 +1,12 @@
+{
+  "title": "Retry policy from **kwargs",
+  "kyu": 6,
+  "tags": ["functions", "kwargs", "validation", "http"],
+  "time_limit_min": 12,
+  "hints": [
+    "Start from a copy of the defaults (dict(DEFAULTS)) and .update() it with the overrides; never modify DEFAULTS itself.",
+    "set(overrides) - set(DEFAULTS) is the set of unknown keys; if it is non-empty raise TypeError mentioning one of them.",
+    "Validate after merging, because the max_delay >= base_delay rule needs both values, whichever one the caller changed.",
+    "tuple(sorted(set(retry_on))) removes duplicates, sorts, and freezes the statuses in one expression."
+  ]
+}

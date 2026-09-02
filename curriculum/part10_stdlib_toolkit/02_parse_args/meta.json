@@ -1,0 +1,12 @@
+{
+  "title": "Parse command-line arguments",
+  "kyu": 6,
+  "tags": ["argparse", "cli", "validation"],
+  "time_limit_min": 12,
+  "hints": [
+    "argparse.ArgumentParser(prog=\"devreport\") then parser.add_argument(...) once per option; parser.parse_args(argv) takes the list you give it.",
+    "type=int converts and validates; choices=[...] restricts values; action=\"store_true\" makes a boolean flag; action=\"append\" with dest=\"tags\" collects repeats.",
+    "group = parser.add_mutually_exclusive_group(); add --online and --offline to the group instead of to the parser.",
+    "Build a brand-new parser inside parse_args so the append default cannot leak between calls."
+  ]
+}

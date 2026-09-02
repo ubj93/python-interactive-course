@@ -1,0 +1,11 @@
+{
+  "title": "Multi-key device sort",
+  "kyu": 5,
+  "tags": ["sorting", "key-functions", "tuples", "devices"],
+  "time_limit_min": 15,
+  "hints": [
+    "sorted(devices, key=f) where f returns a tuple: tuples compare element by element, so (os, ..., name) gives you the tie-breaking for free.",
+    "A date cannot be negated, but d[\"last_seen\"].toordinal() is an int and -that sorts newest first. Guard the None case before calling it.",
+    "Put a boolean before the date: (d[\"os\"], seen is None, -seen.toordinal() if seen else 0, d[\"name\"]). False sorts before True, so real dates come first and None last."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Log triage: top offenders",
+  "kyu": 4,
+  "tags": ["regex", "json", "counting", "logs"],
+  "time_limit_min": 30,
+  "hints": [
+    "Decide the format per line: strip it, an empty line is junk, a line starting with { goes to json.loads inside try/except ValueError, everything else goes to one anchored regex with named groups.",
+    "The syslog regex needs an optional pid: (?P<process>[^\\s\\[:]+)(?:\\[\\d+\\])?: then \\s*(?P<message>.*)$. Check isinstance(obj, dict) and that host and message are strings before trusting JSON.",
+    "count_offenders is a Counter keyed by the tuple (host, error_class); skip records where classify returns None.",
+    "Do not use Counter.most_common for ties. Build (host, class, count) tuples and sort with key=lambda r: (-r[2], r[0], r[1]), then slice [:n]."
+  ]
+}

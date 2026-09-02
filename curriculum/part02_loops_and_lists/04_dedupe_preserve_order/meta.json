@@ -1,0 +1,11 @@
+{
+  "title": "Dedupe hostnames, keep order",
+  "kyu": 7,
+  "tags": ["sets", "loops", "dedupe"],
+  "time_limit_min": 8,
+  "hints": [
+    "Keep a set of what you have already seen and a list of what you are keeping; append only when the item is new.",
+    "Put the cleaned form (strip().lower()) into the set, but append the original string to the result.",
+    "Alternative: a dict from cleaned name to original spelling; dict.setdefault keeps the first value and dicts preserve insertion order."
+  ]
+}

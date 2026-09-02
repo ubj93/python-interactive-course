@@ -1,0 +1,12 @@
+{
+  "title": "Validate a device record",
+  "kyu": 5,
+  "tags": ["validation", "collect-errors", "dicts", "regex"],
+  "time_limit_min": 20,
+  "hints": [
+    "Three passes over the record: missing required fields, then per-field checks for fields that are present, then unknown keys. Append to one `errors` list; never return early.",
+    "Write each rule as a small function that returns a bool and never raises: isinstance first, then the content test. For dates, try date.fromisoformat inside try/except ValueError.",
+    "isinstance(True, int) is True, so ram_gb needs `not isinstance(v, bool)`. Build messages with f\"...got {value!r}\" so strings are quoted and numbers are not.",
+    "Unknown keys: sorted(set(record) - set(REQUIRED))."
+  ]
+}

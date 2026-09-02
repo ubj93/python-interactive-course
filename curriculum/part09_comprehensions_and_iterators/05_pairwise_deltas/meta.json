@@ -1,0 +1,11 @@
+{
+  "title": "Gaps between check-ins",
+  "kyu": 6,
+  "tags": ["zip", "iteration", "datetime", "check-ins"],
+  "time_limit_min": 10,
+  "hints": [
+    "zip(checkins, checkins[1:]) yields (earlier, later) pairs and naturally stops one short, so empty and single-element inputs produce nothing.",
+    "Subtracting two datetimes gives a timedelta; call .total_seconds() on it to get a float.",
+    "Wrap the zip in enumerate(..., start=1) so you have the index of `later` for the ValueError message when later < earlier."
+  ]
+}

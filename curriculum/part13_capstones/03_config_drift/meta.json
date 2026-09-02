@@ -1,0 +1,12 @@
+{
+  "title": "Config drift",
+  "kyu": 4,
+  "tags": ["recursion", "dicts", "sorting", "compliance"],
+  "time_limit_min": 30,
+  "hints": [
+    "Recurse with the path as a parameter: diff_values(expected[k], actual[k], f\"{path}.{k}\" if path else str(k)). Three branches: both dicts, both lists, everything else.",
+    "For the dict branch loop over expected's keys (missing or recurse), then over actual's keys that are not in expected (extra). For lists loop over range(max(len(a), len(b))).",
+    "Equality must be type-aware: type(expected) is not type(actual) or expected != actual. Plain == says True == 1 and 1 == 1.0.",
+    "Filter and sort in config_drift, not in the walk: sorted(records, key=lambda r: tuple(r[\"path\"].split(\".\"))). is_ignored is path == p or path.startswith(p + \".\")."
+  ]
+}

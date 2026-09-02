@@ -1,0 +1,11 @@
+{
+  "title": "An Inventory container",
+  "kyu": 5,
+  "tags": ["containers", "dunder-methods", "composition", "devices"],
+  "time_limit_min": 18,
+  "hints": [
+    "Keep one private dict, self._by_serial, mapping serial -> Device. Every method reads or writes that dict.",
+    "dict.pop(key) raises KeyError when the key is missing and returns the value otherwise, which is exactly what remove() needs. dict[key] does the same for __getitem__.",
+    "__iter__ can simply `return iter(self._by_serial.values())`. In __contains__, branch on isinstance(item, Device) vs isinstance(item, str) and answer False for anything else."
+  ]
+}

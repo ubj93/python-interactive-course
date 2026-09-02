@@ -1,0 +1,12 @@
+{
+  "title": "snake_case and camelCase",
+  "kyu": 7,
+  "tags": ["strings", "regex", "case"],
+  "time_limit_min": 10,
+  "hints": [
+    "For snake_to_camel: split on '_', throw away empty pieces, lowercase everything, then capitalize every word except the first and join.",
+    "str.capitalize() uppercases the first character and lowercases the rest; that is the per-word rule you want.",
+    "For camel_to_snake use re.sub with a backreference: re.sub(r\"([a-z0-9])([A-Z])\", r\"\\1_\\2\", name).lower() handles everything except acronyms.",
+    "Acronyms need one more substitution first: re.sub(r\"([A-Z]+)([A-Z][a-z])\", r\"\\1_\\2\", name) turns 'HTTPSProxy' into 'HTTPS_Proxy'."
+  ]
+}

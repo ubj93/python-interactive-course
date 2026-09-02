@@ -1,0 +1,11 @@
+{
+  "title": "Diff the fleet across sources",
+  "kyu": 6,
+  "tags": ["sets", "difference", "inventory"],
+  "time_limit_min": 10,
+  "hints": [
+    "Turn each input into a set of normalised serials first: {s.strip().upper() for s in source if s.strip()}.",
+    "With sets m and i: only_mdm is m - i, only_inventory is i - m, both is m & i.",
+    "neither is purchased minus (m | i); when purchased is None use an empty set. Wrap every result in sorted() to get a list."
+  ]
+}

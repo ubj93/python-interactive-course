@@ -1,0 +1,11 @@
+{
+  "title": "A config error hierarchy",
+  "kyu": 6,
+  "tags": ["exceptions", "classes", "raise-from"],
+  "time_limit_min": 15,
+  "hints": [
+    "A custom exception is `class MissingKeyError(ConfigError):` with an __init__ that calls super().__init__(message) and then sets self.key.",
+    "Use `if key not in config: raise MissingKeyError(key)`; `config.get(key)` cannot tell None from absent.",
+    "In get_int: `try: return int(value) except (ValueError, TypeError) as e: raise InvalidValueError(key, value) from e`."
+  ]
+}

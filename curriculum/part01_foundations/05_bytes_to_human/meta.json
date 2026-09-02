@@ -1,0 +1,11 @@
+{
+  "title": "Human-readable byte counts",
+  "kyu": 7,
+  "tags": ["loops", "formatting", "numbers"],
+  "time_limit_min": 10,
+  "hints": [
+    "Keep a list of unit names and loop over it, dividing by 1024 until the value drops under 1024.",
+    "f\"{value:.1f}\" formats with one decimal. Bytes are the special case with no decimal.",
+    "Watch the last unit: when you reach PiB you must stop dividing even if the value is still large."
+  ]
+}

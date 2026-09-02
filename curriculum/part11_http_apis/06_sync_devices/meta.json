@@ -1,0 +1,12 @@
+{
+  "title": "Sync local devices to a remote API",
+  "kyu": 4,
+  "tags": ["diffing", "sets", "dependency-injection", "mdm"],
+  "time_limit_min": 30,
+  "hints": [
+    "Index both lists into dicts keyed by the normalised serial (serial.strip().upper()); while indexing, raise ValueError on a blank serial or a key you have already seen. Do this before touching the client.",
+    "Set arithmetic gives the groups: local - remote to create, remote - local to delete, local & remote to compare. Sort each.",
+    "For a shared serial build changes = {f: mine.get(f) for f in fields if mine.get(f) != theirs.get(f)}; an empty dict means unchanged.",
+    "Separate planning from acting: compute the three lists, then loop over them calling the client unless dry_run; the summary is just the serial lists."
+  ]
+}

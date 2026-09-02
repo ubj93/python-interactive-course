@@ -1,0 +1,11 @@
+{
+  "title": "A tolerant Platform enum",
+  "kyu": 6,
+  "tags": ["enum", "classmethod", "normalisation", "platforms"],
+  "time_limit_min": 15,
+  "hints": [
+    "Normalise first: raw.strip().lower(), then cut at the first digit (re.split(r\"\\d\", s, maxsplit=1)[0] or a loop), then \" \".join(s.split()) to collapse whitespace.",
+    "cls(text) looks a member up by value and raises ValueError when there is none; wrap it in try/except and fall back to ALIASES.get(text).",
+    "Put ALIASES = {\"macos\": Platform.MAC, ...} at module level *after* the class. Try the full text, then text.split(\" \", 1)[0]; if both miss, raise ValueError(f\"unknown platform: {raw!r}\")."
+  ]
+}

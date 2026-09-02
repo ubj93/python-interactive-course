@@ -1,0 +1,11 @@
+{
+  "title": "Tickets as a sortable dataclass",
+  "kyu": 6,
+  "tags": ["dataclasses", "ordering", "classmethod", "tickets"],
+  "time_limit_min": 12,
+  "hints": [
+    "Delete the placeholder __init__: @dataclass(order=True) writes __init__, __repr__, __eq__ and the comparison operators from the annotated fields.",
+    "Mutable defaults need field(default_factory=list); fields without defaults must come before fields with defaults.",
+    "__post_init__ runs after the generated __init__: check `1 <= self.priority <= 4` there. In from_dict, build with cls(...) and use data.get(\"assignee\") and list(data.get(\"tags\", [])) for the optional keys."
+  ]
+}

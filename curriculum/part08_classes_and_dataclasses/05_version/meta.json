@@ -1,0 +1,11 @@
+{
+  "title": "A comparable Version type",
+  "kyu": 4,
+  "tags": ["ordering", "total_ordering", "parsing", "versions"],
+  "time_limit_min": 25,
+  "hints": [
+    "Parse in __init__: strip, drop a leading 'v', split on '.', check every piece with str.isdigit() (it is False for the empty string, which rejects '1..2' and '1.' for free), then map int over them.",
+    "Strip trailing zeros with a while loop that stops when one element is left. After that, (1, 2) == (1, 2) and (1, 2) < (1, 2, 1) are exactly the answers you need, so __eq__ and __lt__ just compare self.parts.",
+    "Both comparison methods should `return NotImplemented` when other is not a Version. __hash__ is hash(self.parts). repr is f\"Version({str(self)!r})\"."
+  ]
+}

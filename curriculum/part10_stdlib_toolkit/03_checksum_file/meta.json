@@ -1,0 +1,12 @@
+{
+  "title": "Chunked SHA-256 checksum",
+  "kyu": 6,
+  "tags": ["hashlib", "files", "streaming", "packages"],
+  "time_limit_min": 12,
+  "hints": [
+    "hashlib.sha256() gives an object; call .update(bytes) as many times as you like, then .hexdigest() once.",
+    "Loop: chunk = fileobj.read(chunk_size); stop when chunk is empty (b\"\" is falsy). Or use iter(lambda: f.read(n), b\"\").",
+    "Open the file with open(path, \"rb\") in a with block and hand the file object to sha256_stream.",
+    "For verify_checksum normalise expected: strip(), lower(), drop a leading \"sha256:\" and compare to sha256_file(path)."
+  ]
+}

@@ -1,0 +1,9 @@
+#!/bin/sh
+# Refuse commits on main. Work happens on a branch and lands through a pull request.
+branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+  echo "pre-commit: refusing to commit directly to '$branch'." >&2
+  echo "  git switch -c feature/<name>   # then commit, push, and open a PR" >&2
+  exit 1
+fi
+exit 0

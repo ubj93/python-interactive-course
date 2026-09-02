@@ -1,0 +1,12 @@
+{
+  "title": "Stale device report",
+  "kyu": 4,
+  "tags": ["csv", "dates", "sorting", "reporting"],
+  "time_limit_min": 35,
+  "hints": [
+    "csv.DictReader(text.splitlines()) parses the header for you; missing trailing columns come back as None, so normalise with (raw.get(k) or \"\").strip().",
+    "Collapse duplicates before deciding: build a dict serial -> best row, replacing the entry when the new row's date parses and is newer. date.fromisoformat raises ValueError on junk; wrap it in a small helper that returns None.",
+    "One sort key does the whole ordering: (os.lower(), 0 if days is None else 1, -(days or 0), serial). Never-checked-in rows get 0 so they sort first.",
+    "Build the report as a list of lines and \"\\n\".join at the end. Group consecutive rows by os (the list is already sorted), and add the blank line before each section rather than after, so there is no trailing newline."
+  ]
+}

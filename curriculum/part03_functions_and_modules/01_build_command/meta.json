@@ -1,0 +1,12 @@
+{
+  "title": "Build a pkgctl command",
+  "kyu": 7,
+  "tags": ["functions", "defaults", "keyword-args", "subprocess"],
+  "time_limit_min": 8,
+  "hints": [
+    "Start with argv = [\"pkgctl\", action, package] and append the optional parts with one `if` each, in the order the usage line shows.",
+    "Validate action and package at the top and raise ValueError before building anything.",
+    "`if timeout is not None` (not `if timeout`) so that timeout=0 still appears; list.extend adds several items at once, and str(timeout) makes the number a string.",
+    "extra_args defaults to None, not []; `if extra_args: argv.extend(extra_args)` handles both None and an empty sequence."
+  ]
+}
