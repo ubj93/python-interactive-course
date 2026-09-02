@@ -97,6 +97,19 @@ def run_tests(ex: Exercise, python: str = sys.executable, timeout: Optional[int]
     return res
 
 
+def run_code_card(card, learner_code: str, python: str = sys.executable, timeout: int = 10) -> RunResult:
+    """Grade a lesson 'code' card: run the learner's snippet against the card's generated tests."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp) / "card"
+        d.mkdir()
+        (d / "exercise.py").write_text(learner_code, encoding="utf-8")
+        (d / "test_exercise.py").write_text(card.test_source(), encoding="utf-8")
+        ex = Exercise(0, 0, "card", d, {"timeout_s": timeout})
+        return run_tests(ex, python=python)
+
+
 def run_solution(ex: Exercise, python: str = sys.executable) -> RunResult:
     """Run the tests against solution.py instead of exercise.py (used by tools/verify.py)."""
     import shutil

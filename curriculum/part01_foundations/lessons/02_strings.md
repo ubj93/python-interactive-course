@@ -19,6 +19,15 @@ print("MBP".lower())
 answer: mbp
 > `lower()` returns a lowercase copy. The original "MBP" is untouched.
 
+--- code
+Make `clean` hold `raw` without the surrounding spaces and newline, in lowercase.
+```python
+raw = "  MBP-J-DOE \n"
+```
+check: clean == "mbp-j-doe"
+solution: clean = raw.strip().lower()
+> `strip()` removes the whitespace at both ends, then `lower()` lowercases the result.
+
 --- teach
 ### The four methods you will use every day
 - `strip()` removes spaces, tabs and newlines from both ends.
@@ -63,6 +72,15 @@ What is `"a_b_c".replace("_", "-")`?
 - [ ] `'a-b_c'`
 - [ ] `['a', 'b', 'c']`
 > `replace` swaps every occurrence, not just the first. `split` is the one that returns a list.
+
+--- code
+Print only the machine name (the part before the first dot), with underscores turned into hyphens.
+```python
+fqdn = "win_lab_01.corp.example.com"
+```
+expect: win-lab-01
+solution: print(fqdn.split(".")[0].replace("_", "-"))
+> `split(".")[0]` keeps the first piece, then `replace` fixes the underscores. Order does not matter here, but chaining keeps it on one line.
 
 --- exercise 1.2
 

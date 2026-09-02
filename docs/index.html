@@ -425,13 +425,17 @@ function viewLearn(id) {
     } else if (c.kind === "predict" || c.kind === "fill") {
       body = md(c.body) + `<input class="answer" id="ans" placeholder="${c.kind === "fill" ? "what goes in the blank" : "the exact output"}" autocomplete="off" autocapitalize="off" spellcheck="false">`;
       controls = `<button class="btn" id="checkbtn">Check</button>`;
+    } else if (c.kind === "code") {
+      let draft = null; try { draft = localStorage.getItem(DRAFT_KEY + "card:" + l.id + ":" + state.i); } catch (e) {}
+      body = md(c.prompt || "") + `<div class="editor" style="margin-top:8px"><textarea class="fallback" id="cardcode" style="min-height:120px" spellcheck="false">${esc(draft != null ? draft : (c.starter || "") + "\n")}</textarea></div><div class="status" id="status"></div>`;
+      controls = `<button class="btn" id="runcard">▶ Run</button> <button class="btn small secondary" id="showsol">Show solution</button>`;
     } else if (c.kind === "exercise") {
       const ex = BY_ID[c.exercise_id];
       const solved = ex && P.solved[ex.id];
       body = `<h3>Put it together: ${ex ? ex.id + " · " + esc(ex.title) : c.exercise_id}</h3>` + (ex ? `<div class="desc">${descToHtml(ex.description.split("\n\n").slice(0, 2).join("\n\n"))}</div><p class="muted">${kyuTag(ex.kyu)} ${ex.xp} xp${ex.time_limit_min ? " · ⏱ " + ex.time_limit_min + " min" : ""}</p>` : "");
       controls = solved ? `<span class="ok">✔ solved</span> <button class="btn" id="nextbtn">Continue ›</button>` : `<a class="btn" href="#/ex/${c.exercise_id}?from=${l.id}">Open the exercise ›</a> <button class="btn secondary" id="skipbtn">Skip for now</button>`;
     }
-    const kindLabel = { teach: "Learn", quiz: "Quick check", predict: "What does this print?", fill: "Fill in the blank", exercise: "Exercise", recap: "Recap" }[c.kind];
+    const kindLabel = { teach: "Learn", quiz: "Quick check", predict: "What does this print?", fill: "Fill in the blank", code: "Try it: write the code", exercise: "Exercise", recap: "Recap" }[c.kind];
     app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › <a href="#/part/${p.num}">Part ${p.num}</a> › Lesson ${l.id}</div>
       <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Lesson ${l.id} · ${esc(l.title)}</h2><span class="muted">${state.i + 1}/${l.cards.length}</span></div><div class="dots" style="margin-top:8px">${dots}</div>
       <div class="kind">${kindLabel}</div><div class="cardbody">${body}</div><div id="feedback"></div>
@@ -457,6 +461,51 @@ function viewLearn(id) {
       document.querySelectorAll(".opt").forEach((b) => { b.disabled = ok || state.tries >= 2; });
     };
     document.querySelectorAll(".opt").forEach((b) => { b.onclick = () => { const j = parseInt(b.dataset.j, 10); state.tries++; const ok = checkCard(c, j); b.classList.add(ok ? "right" : "wrong"); if (!ok && state.tries >= 2) document.querySelectorAll(".opt")[c.correct].classList.add("right"); answered(ok, c.options[c.correct]); }; });
+    const rc = $("#runcard");
+    if (rc) {
+      let cardEditor = null;
+      if (window.CodeMirror) {
+        cardEditor = CodeMirror.fromTextArea($("#cardcode"), { mode: "python", lineNumbers: false, indentUnit: 4, tabSize: 4, indentWithTabs: false, theme: isDark ? "material-darker" : "default", viewportMargin: Infinity, extraKeys: { Tab: (cm) => cm.replaceSelection("    ", "end"), "Cmd-Enter": () => rc.click(), "Ctrl-Enter": () => rc.click() } });
+      } else {
+        $("#cardcode").addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") rc.click(); });
+      }
+      const getCode = () => (cardEditor ? cardEditor.getValue() : $("#cardcode").value);
+      const remember = () => { try { localStorage.setItem(DRAFT_KEY + "card:" + l.id + ":" + state.i, getCode()); } catch (e) {} };
+      const fakeEx = { part: l.part, dir: "card_" + l.id.replace(".", "_") + "_" + state.i, tests: c.test_source, fixtures: {}, timeout_s: 10 };
+      const showSolution = (label) => {
+        $("#feedback").insertAdjacentHTML("beforeend", `<div class="expl"><b>${label}</b><pre style="margin:6px 0 0">${esc(c.solution || "")}</pre>${c.explanation ? "<div style='margin-top:6px'>" + inline(c.explanation) + "</div>" : ""}</div><div class="row" style="margin-top:10px"><button class="btn" id="go">Continue ›</button></div>`);
+        $("#go").onclick = advance;
+      };
+      $("#showsol").onclick = () => { if (!cardState(l.id, state.i).done) { recordCard(l.id, state.i, true, false); recordCard(l.id, state.i, true, false); } $("#feedback").innerHTML = ""; showSolution("One way to do it"); };
+      rc.onclick = async () => {
+        remember(); rc.disabled = true; setStatus("Running…"); $("#feedback").innerHTML = "";
+        try {
+          const res = await runInPython(fakeEx, getCode());
+          const tests = res.tests || []; const ok = !res.timed_out && !res.import_error && tests.length > 0 && tests.every((t) => t.status === "pass");
+          state.tries++;
+          const xp = recordCard(l.id, state.i, true, ok); renderHeader();
+          let html = "";
+          if (res.timed_out) html += `<div class="banner fail">⏱ Timed out. Infinite loop?</div>`;
+          else if (res.import_error) html += `<div class="banner fail">Python could not run that</div><pre class="sol">${esc(shortTb(res.import_error))}</pre>`;
+          else {
+            for (const t of tests) html += `<div class="tc">${t.status === "pass" ? '<span class="ok">✔</span>' : '<span class="bad">✘</span>'} ${esc(t.doc || t.name)}${t.status !== "pass" ? `<pre>${esc(shortTb(t.traceback || t.message))}</pre>` : ""}</div>`;
+            if (res.stdout && res.stdout.trim()) html += `<div class="tc muted">your output<pre>${esc(res.stdout.trim())}</pre></div>`;
+          }
+          if (ok) {
+            state.sessionXp += xp;
+            html += `<div class="banner pass">✔ It runs and does the job${xp ? " · +" + xp + " xp" : ""}</div>` + (c.explanation ? `<div class="expl">${inline(c.explanation)}</div>` : "") + `<div class="row" style="margin-top:10px"><button class="btn" id="go">Continue ›</button></div>`;
+            $("#feedback").innerHTML = html; $("#go").onclick = advance;
+          } else {
+            html += `<div class="banner fail">✘ Not yet${state.tries < 2 ? " · fix it and run again" : ""}</div>`;
+            $("#feedback").innerHTML = html;
+            if (state.tries >= 2) showSolution("Here is one way to do it");
+          }
+        } catch (e) {
+          $("#feedback").innerHTML = `<div class="banner fail">Could not run: ${esc(e.message || e)}</div>`;
+        } finally { rc.disabled = false; setStatus(""); }
+      };
+      bootWorker().catch(() => {});
+    }
     const cb = $("#checkbtn");
     if (cb) { const go = () => { const v = $("#ans").value; if (!v.trim()) return; state.tries++; answered(checkCard(c, v), c.answers[0]); }; cb.onclick = go; $("#ans").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); }); $("#ans").focus(); }
   };

@@ -21,6 +21,17 @@ Text is a `str` (string), whole numbers are `int`, decimals are `float`, and `Tr
 ```
 Quotes make text. `"16"` is text that happens to look like a number; `16` is a number.
 
+--- code
+Create a name `ram_gb` holding the whole number 16, then print its type.
+```python
+# your code here
+```
+expect: <class 'int'>
+check: ram_gb == 16
+solution: ram_gb = 16
+solution: print(type(ram_gb))
+> Two statements: `name = value` stores the number, and `print(type(ram_gb))` shows the type Python chose.
+
 --- quiz
 What does `type(3.5)` return?
 - [ ] `<class 'int'>`
@@ -56,6 +67,16 @@ print(f"{count} devices online")
 ```
 answer: 5 devices online
 > `2 + 3` was evaluated when `count` was created, so the f-string sees `5`.
+
+--- code
+Print exactly `MBP-J-DOE has 16 GB` using an f-string and the two names.
+```python
+hostname = "MBP-J-DOE"
+ram_gb = 16
+```
+expect: MBP-J-DOE has 16 GB
+solution: print(f"{hostname} has {ram_gb} GB")
+> The braces pull in each value; everything else is typed literally, including the spaces.
 
 --- teach
 ### Functions take values in and hand a value back

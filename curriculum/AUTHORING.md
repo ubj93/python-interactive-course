@@ -189,6 +189,16 @@ if used ___ None:
 answer: is
 > `is None` is the idiom.
 
+--- code
+Print the status for a disk that is 85% full, using the function above.
+```python
+def disk_status(pct):
+    return "CRIT" if pct >= 0.95 else "WARN" if pct >= 0.80 else "OK"
+```
+expect: WARN
+solution: print(disk_status(0.85))
+> Call the function and print what it returns.
+
 --- exercise 3.3
 
 --- recap
@@ -203,10 +213,20 @@ Card types and rules:
 | `predict` | "What does this print?" | `answer:` line; the exact printed text; alternatives separated by `\|` |
 | `fill` | complete a line of code | code contains `___`; `answer:` is what goes in the blank |
 | `quiz` | multiple choice | 2 to 4 options, exactly one `[x]`; wrong options are plausible mistakes |
+| `code` | **learn by doing**: the learner writes one or two real lines under a starter and it runs | starter fence (1–3 lines that set things up, or one `# your code here` comment); `expect:` exact stdout and/or `check:` expressions true afterwards; `solution:` the model line(s), one `solution:` per line; deterministic (no input, files, randomness) |
 | `exercise` | the put-it-together step | `--- exercise P.N`; the last card, a `recap` may follow |
 | `recap` | bullets | 3 to 5 bullets; the lesson in one screen |
 
 - 6 to 12 cards per lesson; at least two checks; start with a `teach` card.
+- **One to three `code` cards per lesson.** Place each right after the teach card whose
+  idea it practises, so the learner types the thing they just read about. The final
+  exercise then combines what the code cards practised. This is what makes a lesson
+  "learn by doing" instead of reading with quizzes.
+- The learner's lines are appended after the starter and the whole snippet runs.
+  `expect:` compares the stripped stdout (use `\n` inside it for several lines);
+  `check:` is evaluated in the snippet's namespace, so `check: n == 12` works for
+  "set `n` to ...". Prefer `check:` when the task is to compute a value and `expect:`
+  when it is to print.
 - Every check has a `>` explanation line: what the right answer is *and why*, shown
   after answering. Explanations are where the teaching lands.
 - Teach only what the exercise needs, in the order the exercise needs it. If the

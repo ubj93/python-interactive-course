@@ -43,10 +43,22 @@ A lesson file is a title line followed by cards separated by ``--- <type>`` line
     --- recap
     - bullets that summarise the lesson
 
+    --- code
+    Print the hostname in lowercase.
+    ```python
+    hostname = "MBP-J-DOE"
+    ```
+    expect: mbp-j-doe
+    solution: print(hostname.lower())
+    > lower() returns a lowercase copy; print shows it.
+
 Card types: ``teach`` (no check), ``quiz`` (exactly one ``[x]`` option), ``predict`` and
-``fill`` (an ``answer:`` line; several accepted answers separated by ``|``), ``exercise``
-(the id of an exercise in the same part), ``recap`` (no check). A ``>`` line after the
-answer is the explanation shown once the learner has answered.
+``fill`` (an ``answer:`` line; several accepted answers separated by ``|``), ``code``
+(the learner writes real Python under the starter snippet and it is run: ``expect:`` is
+the exact stdout, ``check:`` lines are expressions that must be true afterwards, and
+``solution:`` is the model answer shown after two failed runs), ``exercise`` (the id of
+an exercise in the same part), ``recap`` (no check). A ``>`` line after the answer is
+the explanation shown once the learner has answered.
 """
 from __future__ import annotations
 
@@ -58,9 +70,12 @@ from typing import Dict, List, Optional
 from .catalog import Part
 
 _LESSON_FILE_RE = re.compile(r"^(\d{2})_([a-z0-9_]+)\.md$")
-_CARD_RE = re.compile(r"^---\s+(teach|quiz|predict|fill|exercise|recap)(?:\s+(\S+))?\s*$")
+_CARD_RE = re.compile(r"^---\s+(teach|quiz|predict|fill|code|exercise|recap)(?:\s+(\S+))?\s*$")
 _OPTION_RE = re.compile(r"^- \[([ xX])\]\s+(.*)$")
 _ANSWER_RE = re.compile(r"^answer:\s*(.+?)\s*$")
+_EXPECT_RE = re.compile(r"^expect:\s*(.*?)\s*$")
+_CHECK_RE = re.compile(r"^check:\s*(.+?)\s*$")
+_SOLUTION_RE = re.compile(r"^solution:(?: ?(.*?))?\s*$")  # keeps indentation after the first space
 
 CARD_XP = 1  # xp for a correct first answer on a checkable card
 
@@ -82,10 +97,58 @@ class Card:
     answers: List[str] = field(default_factory=list)   # predict/fill accepted answers
     explanation: str = ""
     exercise_id: Optional[str] = None                   # exercise
+    expect: Optional[str] = None                        # code: exact stdout (stripped)
+    checks: List[str] = field(default_factory=list)    # code: expressions that must be true
+    solution: str = ""                                  # code: model answer
 
     @property
     def checkable(self) -> bool:
-        return self.kind in ("quiz", "predict", "fill")
+        return self.kind in ("quiz", "predict", "fill", "code")
+
+    @property
+    def starter(self) -> str:
+        """For code cards: the code inside the fence, which the learner extends."""
+        m = re.search(r"```(?:python)?\n(.*?)```", self.body, re.S)
+        return m.group(1).rstrip("\n") + "\n" if m else ""
+
+    @property
+    def prompt(self) -> str:
+        """For code cards: the body without the fence."""
+        return re.sub(r"```(?:python)?\n.*?```", "", self.body, flags=re.S).strip()
+
+    def test_source(self) -> str:
+        """Generated unittest module that grades a code card (runs in the harness or Pyodide)."""
+        lines = [
+            "import contextlib, io, runpy, unittest",
+            "",
+            "",
+            "def _run():",
+            "    buf = io.StringIO()",
+            "    with contextlib.redirect_stdout(buf):",
+            "        ns = runpy.run_path('exercise.py')",
+            "    return buf.getvalue(), ns",
+            "",
+            "",
+            "class TestCard(unittest.TestCase):",
+        ]
+        if self.expect is not None:
+            exp = self.expect.replace("\\n", "\n")
+            lines += [
+                "    def test_output(self):",
+                f"        {repr('Prints: ' + exp.replace(chr(10), ' / '))}",
+                "        out, _ = _run()",
+                f"        self.assertEqual(out.strip(), {repr(exp)})",
+                "",
+            ]
+        for i, expr in enumerate(self.checks, 1):
+            lines += [
+                f"    def test_check_{i}(self):",
+                f"        {repr('Afterwards: ' + expr)}",
+                "        _, ns = _run()",
+                f"        self.assertTrue(eval({repr(expr)}, dict(ns)), {repr(expr + ' is not true')})",
+                "",
+            ]
+        return "\n".join(lines) + "\n"
 
     def check(self, given: str) -> bool:
         if self.kind == "quiz":
@@ -183,6 +246,20 @@ def _fill_card(card: Card, body: List[str]) -> None:
         if am and card.kind in ("predict", "fill"):
             card.answers = [a.strip() for a in am.group(1).split("|") if a.strip()]
             continue
+        if card.kind == "code":
+            em = _EXPECT_RE.match(line)
+            if em:
+                card.expect = em.group(1)
+                continue
+            cm = _CHECK_RE.match(line)
+            if cm:
+                card.checks.append(cm.group(1))
+                continue
+            sm = _SOLUTION_RE.match(line)
+            if sm:
+                piece = sm.group(1) or ""
+                card.solution = (card.solution + "\n" + piece) if card.solution else piece
+                continue
         if line.startswith(">"):
             expl.append(line[1:].strip())
             continue
@@ -242,7 +319,7 @@ def validate_lesson(lesson: Lesson, part: Part) -> List[str]:
     ex_ids = {e.id for e in part.exercises}
     for idx, c in enumerate(lesson.cards, 1):
         ctag = f"{tag} card {idx} ({c.kind})"
-        if c.kind in ("teach", "quiz", "predict", "fill") and not c.body:
+        if c.kind in ("teach", "quiz", "predict", "fill", "code") and not c.body:
             problems.append(f"{ctag} is empty")
         if c.kind == "teach" and len(c.body.split()) > 170:
             problems.append(f"{ctag} is too long ({len(c.body.split())} words; keep under 170)")
@@ -255,6 +332,13 @@ def validate_lesson(lesson: Lesson, part: Part) -> List[str]:
             problems.append(f"{ctag} has no 'answer:' line")
         if c.kind == "fill" and "___" not in c.body:
             problems.append(f"{ctag} needs a ___ blank in its code")
+        if c.kind == "code":
+            if "```" not in c.body:
+                problems.append(f"{ctag} needs a starter code fence (it may be a single comment line)")
+            if c.expect is None and not c.checks:
+                problems.append(f"{ctag} needs an 'expect:' or at least one 'check:' line")
+            if not c.solution:
+                problems.append(f"{ctag} needs a 'solution:' line")
         if c.checkable and not c.explanation:
             problems.append(f"{ctag} needs a '>' explanation line")
         if c.kind == "exercise":

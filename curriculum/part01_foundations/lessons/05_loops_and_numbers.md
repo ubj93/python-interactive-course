@@ -21,6 +21,16 @@ print(total)
 answer: 6
 > Each pass adds the current item: 0+1, 1+2, 3+3. After the loop, `total` is 6.
 
+--- code
+Use a `for` loop to print each hostname in `hosts` in uppercase, one per line.
+```python
+hosts = ["mbp-j-doe", "win-lab-01"]
+```
+expect: MBP-J-DOE\nWIN-LAB-01
+solution: for h in hosts:
+solution:     print(h.upper())
+> The loop body runs once per item with `h` bound to that item. `upper()` gives the uppercase copy to print.
+
 --- teach
 ### `while` repeats until a condition is false
 Use `while` when you do not know how many times in advance: keep dividing while the value is still big.
@@ -73,6 +83,20 @@ line = f"{value:___} {unit}"
 ```
 answer: .1f
 > `.1f` is "fixed-point with 1 digit after the point". `.2f` would give two.
+
+--- code
+Divide `n` by 1024 until it is under 1024, counting how many times you divided in `steps`, then print `steps`.
+```python
+n = 5 * 1024 ** 3
+steps = 0
+```
+expect: 3
+check: n == 5
+solution: while n >= 1024:
+solution:     n = n / 1024
+solution:     steps = steps + 1
+solution: print(steps)
+> Three divisions take 5 GiB down to 5, so `steps` is 3 and `n` ends as 5.0, which equals 5.
 
 --- quiz
 Your function is given a negative byte count, which makes no sense. The description says to raise `ValueError`. Which line does that?

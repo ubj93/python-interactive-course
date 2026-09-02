@@ -38,6 +38,16 @@ has_digit = any(ch.___() for ch in serial)
 answer: isdigit
 > `str.isdigit()` is True for a single digit character. `any` stops as soon as it finds one.
 
+--- code
+Set `ok` to True only if every character of `serial` is in `ALLOWED`.
+```python
+ALLOWED = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+serial = "C02XG1234ABC"
+```
+check: ok is True
+solution: ok = all(ch in ALLOWED for ch in serial)
+> `all(...)` is True when every character passes the membership test. Change one character to lowercase and it would become False.
+
 --- quiz
 Why is `serial.isalnum()` not enough to check "uppercase letters and digits only"?
 - [ ] It returns a string, not a bool
@@ -52,6 +62,18 @@ When the answer is a yes/no, return the expression instead of wrapping it in `if
 return len(serial) in (10, 12)
 ```
 `in` with a tuple tests membership in a fixed set of choices. Interviewers read this as fluent Python.
+
+--- code
+Write `has_ok_length(serial)` that returns True when the length is 7, 10 or 12, and print the result for the given serial.
+```python
+serial = "7GH2K3Q"
+```
+expect: True
+check: has_ok_length("ABCDEFGH") is False
+solution: def has_ok_length(serial):
+solution:     return len(serial) in (7, 10, 12)
+solution: print(has_ok_length(serial))
+> Returning the `in` expression directly gives a real bool, and the tuple lists the accepted lengths in one place.
 
 --- exercise 1.6
 

@@ -328,3 +328,77 @@ answer: strip
         self.assertEqual(p.xp, 1)
         done, total, complete = p.lesson_progress(self.lesson)
         self.assertEqual((done, total, complete), (3, 6, False))
+
+
+class TestCodeCards(unittest.TestCase):
+    SRC = """# Code
+
+--- teach
+### Idea
+Text.
+
+--- code
+Print the hostname in lowercase.
+```python
+hostname = "MBP-J-DOE"
+```
+expect: mbp-j-doe
+check: hostname == "MBP-J-DOE"
+solution: print(hostname.lower())
+> lower() returns a lowercase copy.
+
+--- code
+Set `n` to the number of characters in `serial`.
+```python
+serial = "C02XG1234ABC"
+```
+check: n == 12
+solution: n = len(serial)
+> len counts characters.
+
+--- quiz
+Q
+- [x] a
+- [ ] b
+> e
+
+--- exercise 1.1
+"""
+
+    def setUp(self):
+        from course.lessons import parse_lesson
+
+        self.tmp = Path(tempfile.mkdtemp())
+        f = self.tmp / "01_code.md"
+        f.write_text(self.SRC)
+        self.lesson = parse_lesson(f, 1, 1, "code")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def test_parse_and_validate(self):
+        from course.lessons import validate_lesson
+
+        c = self.lesson.cards[1]
+        self.assertEqual(c.kind, "code")
+        self.assertEqual(c.expect, "mbp-j-doe")
+        self.assertEqual(c.checks, ['hostname == "MBP-J-DOE"'])
+        self.assertEqual(c.solution, "print(hostname.lower())")
+        self.assertEqual(c.starter, 'hostname = "MBP-J-DOE"\n')
+        self.assertEqual(c.prompt, "Print the hostname in lowercase.")
+        self.assertTrue(c.checkable)
+        self.assertEqual(self.lesson.xp, 3)
+        self.assertEqual(validate_lesson(self.lesson, load_catalog()[0]), [])
+
+    def test_grading(self):
+        from course.runner import run_code_card
+
+        c = self.lesson.cards[1]
+        self.assertTrue(run_code_card(c, c.starter + c.solution + "\n").ok)
+        bad = run_code_card(c, c.starter + "print(hostname)\n")
+        self.assertFalse(bad.ok)
+        self.assertEqual([t.status for t in bad.tests], ["fail", "pass"])
+        c2 = self.lesson.cards[2]
+        self.assertTrue(run_code_card(c2, c2.starter + "n = len(serial)\n").ok)
+        self.assertFalse(run_code_card(c2, c2.starter + "n = 11\n").ok)
+        self.assertFalse(run_code_card(c2, c2.starter + "print(\n").ok)

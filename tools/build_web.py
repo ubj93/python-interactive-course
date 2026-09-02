@@ -71,6 +71,10 @@ def build() -> str:
                                 "answers": c.answers,
                                 "explanation": c.explanation,
                                 "exercise_id": c.exercise_id,
+                                "starter": c.starter if c.kind == "code" else None,
+                                "prompt": c.prompt if c.kind == "code" else None,
+                                "solution": c.solution if c.kind == "code" else None,
+                                "test_source": c.test_source() if c.kind == "code" else None,
                             }
                             for c in l.cards
                         ],

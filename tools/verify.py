@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from course.catalog import KYU_XP, all_exercises, find_exercise, find_part, load_catalog, total_xp  # noqa: E402
-from course.runner import run_solution, run_tests  # noqa: E402
+from course.runner import run_code_card, run_solution, run_tests  # noqa: E402
 from course.lessons import load_lessons, validate_lesson  # noqa: E402
 
 FORBIDDEN_IMPORTS = re.compile(r"^\s*(?:import|from)\s+(requests|numpy|pandas|pytest|yaml|httpx|aiohttp)\b", re.M)
@@ -85,6 +85,7 @@ def main(argv: list) -> int:
         print("no curriculum found")
         return 1
     problems: list = []
+    refs = [a for a in argv if not a.startswith("--")]
 
     # Structural checks across the catalog
     ids = [e.id for e in all_exercises(catalog)]
@@ -104,15 +105,25 @@ def main(argv: list) -> int:
             referenced = {}
             for l in lessons:
                 problems.extend(validate_lesson(l, part))
+                if not refs or any(find_part(catalog, r) is part for r in refs if find_part(catalog, r)):
+                    for idx, c in enumerate(l.cards, 1):
+                        if c.kind != "code":
+                            continue
+                        ok = run_code_card(c, c.starter + c.solution + "\n")
+                        if not ok.ok:
+                            why = ok.import_error or "; ".join(f"{t.doc}: {t.message}" for t in ok.tests if t.status != "pass")
+                            problems.append(f"[lesson {l.id}] card {idx} (code): solution does not pass: {why[:300]}")
+                        if run_code_card(c, c.starter).ok:
+                            problems.append(f"[lesson {l.id}] card {idx} (code): the starter alone already passes; the check is not meaningful")
                 for eid in l.exercise_ids:
                     referenced.setdefault(eid, []).append(l.id)
                 lesson_xp += l.xp
             for e in part.exercises:
-                refs = referenced.get(e.id, [])
-                if not refs:
+                users = referenced.get(e.id, [])
+                if not users:
                     problems.append(f"[part {part.num}] exercise {e.id} is not reached by any lesson")
-                elif len(refs) > 1:
-                    problems.append(f"[part {part.num}] exercise {e.id} is used by several lessons: {refs}")
+                elif len(users) > 1:
+                    problems.append(f"[part {part.num}] exercise {e.id} is used by several lessons: {users}")
         nums = [e.num for e in part.exercises]
         if nums != list(range(1, len(nums) + 1)):
             problems.append(f"[part {part.num}] exercise numbers must be 01..N without gaps (got {nums})")

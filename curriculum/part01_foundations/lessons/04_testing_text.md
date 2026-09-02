@@ -35,6 +35,15 @@ print(repr((os_string or "").strip()))
 answer: ''
 > `None or ""` evaluates to `""`. `repr` shows the empty string as two quotes.
 
+--- code
+Set `s` to the cleaned-up version of `os_string`: stripped and lowercased, and an empty string if `os_string` is None.
+```python
+os_string = "  Microsoft Windows 11 "
+```
+check: s == "microsoft windows 11"
+solution: s = (os_string or "").strip().lower()
+> The `or ""` handles None, then `strip()` and `lower()` do the cleaning. Test it in your head with `os_string = None` too.
+
 --- teach
 ### Testing several possibilities at once
 `startswith` accepts a tuple of prefixes. For "contains any of these", use `any()` with a generator: it stops at the first match.
@@ -52,6 +61,19 @@ What does `any(k in "rhel 9" for k in ("ubuntu", "rhel"))` return?
 - [ ] `False`
 - [ ] `'rhel'`
 > `any` returns True as soon as one test is true. "rhel" is in "rhel 9". It returns a bool, never the matching item.
+
+--- code
+Print `linux` if `s` contains any of the words in `LINUX_WORDS`, otherwise print `other`.
+```python
+s = "ubuntu 22.04"
+LINUX_WORDS = ("linux", "ubuntu", "debian")
+```
+expect: linux
+solution: if any(k in s for k in LINUX_WORDS):
+solution:     print("linux")
+solution: else:
+solution:     print("other")
+> `any(k in s for k in LINUX_WORDS)` reads as "any keyword is in s". Wrap it in an `if` to choose the label.
 
 --- teach
 ### Check the specific case before the general one

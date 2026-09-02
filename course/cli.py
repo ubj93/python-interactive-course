@@ -16,7 +16,7 @@ from .catalog import ROOT, Exercise, Part, all_exercises, find_exercise, find_pa
 from .progress import BADGES, RANKS, Progress
 from . import backup as backup_mod
 from .lessons import CARD_XP, Card, Lesson, find_lesson, load_all_lessons
-from .runner import RunResult, run_tests
+from .runner import RunResult, run_code_card, run_tests
 
 
 class App:
@@ -619,6 +619,8 @@ class App:
                     return 0
                 elif ans == "q":
                     return "quit"
+        if card.kind == "code":
+            return self.play_code_card(lesson, i, card)
         # checkable cards
         print(self.render_card_body(card.body))
         if card.kind == "quiz":
@@ -652,6 +654,94 @@ class App:
                 print(ui.wrap(card.explanation.replace("`", "")))
             print()
             return 0
+
+    def play_code_card(self, lesson: Lesson, i: int, card: Card):
+        p = self.progress
+        print(ui.wrap(card.prompt.replace("`", "")))
+        starter = card.starter
+        if starter.strip():
+            print(ui.dim("\n  Starter (already there, do not retype it):"))
+            for line in starter.rstrip("\n").splitlines():
+                print("      " + line)
+        print(ui.dim("\n  Type your Python below. Empty line runs it. `q` quits, `s` shows the solution."))
+        fails = 0
+        while True:
+            lines: List[str] = []
+            while True:
+                try:
+                    raw = input(ui.dim("  » " if not lines else "  … "))
+                except EOFError:
+                    return "quit"
+                if not lines and raw.strip().lower() == "q":
+                    return "quit"
+                if not lines and raw.strip().lower() == "s":
+                    print(ui.yellow("  Solution:"))
+                    for sl in card.solution.splitlines():
+                        print("      " + sl)
+                    if card.explanation:
+                        print(ui.wrap(card.explanation.replace("`", "")))
+                    p.record_card(lesson.id, i, checkable=True, correct=False)
+                    p.record_card(lesson.id, i, checkable=True, correct=False)
+                    print()
+                    return 0
+                if raw.strip() == "" and lines:
+                    break
+                if raw.strip() == "" and not lines:
+                    continue
+                lines.append(raw)
+            code = starter + "\n".join(lines) + "\n"
+            res = run_code_card(card, code)
+            if res.ok:
+                xp = p.record_card(lesson.id, i, checkable=True, correct=True)
+                if res.stdout.strip():
+                    print(ui.dim("  output: ") + res.stdout.strip().replace("\n", "\n          "))
+                print(ui.green("  ✔ It runs and does the job") + (ui.yellow(f"  +{xp} xp") if xp else ""))
+                if card.explanation:
+                    print(ui.wrap(card.explanation.replace("`", "")))
+                print()
+                return xp
+            fails += 1
+            p.record_card(lesson.id, i, checkable=True, correct=False)
+            if res.import_error:
+                print(ui.red("  ✘ Python could not run that:"))
+                print(_indent(_short_tb(res.import_error), "      "))
+            elif res.timed_out:
+                print(ui.red("  ✘ Timed out (infinite loop?)"))
+            else:
+                for t in res.tests:
+                    if t.status != "pass":
+                        print(ui.red(f"  ✘ {t.doc or t.name}"))
+                        print(_indent(_short_tb(t.traceback or t.message, keep_frames=0), "      "))
+                if res.stdout.strip():
+                    print(ui.dim("  your output: ") + res.stdout.strip().replace("\n", "\n               "))
+            if fails >= 2:
+                print(ui.yellow("  Here is one way to do it:"))
+                for sl in card.solution.splitlines():
+                    print("      " + sl)
+                if card.explanation:
+                    print(ui.wrap(card.explanation.replace("`", "")))
+                print(ui.dim("  Type it yourself to run it, or press Enter twice to move on."))
+                fails = 0
+                p.data["cards"][f"{lesson.id}:{i}"]["done"] = True
+                p.save()
+                # one more round: if they just press Enter, move on
+                try:
+                    raw = input(ui.dim("  » "))
+                except EOFError:
+                    return 0
+                if raw.strip() == "":
+                    print()
+                    return 0
+                lines = [raw]
+                while True:
+                    raw = input(ui.dim("  … "))
+                    if raw.strip() == "":
+                        break
+                    lines.append(raw)
+                res = run_code_card(card, starter + "\n".join(lines) + "\n")
+                print((ui.green("  ✔ It runs and does the job") if res.ok else ui.red("  ✘ Still not quite; moving on.")) + "\n")
+                return 0
+            print(ui.dim("  Try again."))
 
     def cmd_backup(self, args) -> int:
         dest = Path(args.to).expanduser() if args.to else None

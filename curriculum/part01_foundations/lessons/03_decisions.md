@@ -27,6 +27,18 @@ else:
 answer: WARN
 > 0.85 is not >= 0.95, so the first branch is skipped; it is >= 0.80, so the second branch runs and the rest are ignored.
 
+--- code
+Print `WARN` if `pct` is 0.80 or more, otherwise print `OK`.
+```python
+pct = 0.9
+```
+expect: WARN
+solution: if pct >= 0.80:
+solution:     print("WARN")
+solution: else:
+solution:     print("OK")
+> The condition line ends with a colon and the branch bodies are indented four spaces.
+
 --- teach
 ### Order matters
 Python checks branches top to bottom and stops at the first true one. If you tested `>= 0.80` first, 0.99 would be labelled WARN and never reach the CRIT check. Put the most specific (highest) threshold first.
@@ -57,6 +69,19 @@ if used ___ None:
 ```
 answer: is
 > `is None` is the idiom. `== None` usually works but `is` is faster, clearer, and what reviewers expect.
+
+--- code
+Write the body of `status`: return `"UNKNOWN"` when `used` is None, otherwise return `"OK"`. Then print `status(None)`.
+```python
+def status(used):
+```
+expect: UNKNOWN
+check: status(0.5) == "OK"
+solution:     if used is None:
+solution:         return "UNKNOWN"
+solution:     return "OK"
+solution: print(status(None))
+> The guard returns early, so the last `return "OK"` only runs for real values. The body lines are indented four spaces; the `print` is not, because it is outside the function.
 
 --- teach
 ### Return early
