@@ -17,13 +17,14 @@ hostnames = [d["hostname"] for d in devices]
 ```
 The brackets say "build a list". Interviewers read this as fluent Python; the four-line version reads as translated from another language.
 
---- predict
-What does this print?
+--- code
+Set `hostnames` to the list of each device's `"hostname"`, using one list comprehension.
 ```python
-print([n * 2 for n in [1, 2, 3]])
+devices = [{"hostname": "mbp-j-doe"}, {"hostname": "win-lab-01"}]
 ```
-answer: [2, 4, 6]
-> For each `n`, the expression `n * 2` is evaluated and collected into a new list. The original list is unchanged.
+check: hostnames == ["mbp-j-doe", "win-lab-01"]
+solution: hostnames = [d["hostname"] for d in devices]
+> The expression `d["hostname"]` is evaluated once per device and the results are collected in order. No empty list, no `append`.
 
 --- teach
 ### Add `if` to keep only some items
@@ -38,14 +39,14 @@ online = [d["hostname"] for d in devices if d["online"]]
 ```
 Read: *expression* for *item* in *iterable* if *condition*.
 
---- predict
-What does this print?
+--- code
+Set `stale` to the hostnames of the devices whose `"days"` is greater than 30, in input order, using one comprehension.
 ```python
-hosts = ["mbp-j-doe", "win-lab-01", "mbp-a-lee"]
-print([h for h in hosts if h.startswith("mbp")])
+devices = [{"hostname": "a", "days": 2}, {"hostname": "b", "days": 61}, {"hostname": "c", "days": 45}]
 ```
-answer: ['mbp-j-doe', 'mbp-a-lee']
-> Only the hosts where the condition is true are collected, in their original order. `win-lab-01` is skipped.
+check: stale == ["b", "c"]
+solution: stale = [d["hostname"] for d in devices if d["days"] > 30]
+> The `if` at the end keeps only the devices that pass the test; the expression at the front picks what to collect from each one.
 
 --- teach
 ### Days between two dates

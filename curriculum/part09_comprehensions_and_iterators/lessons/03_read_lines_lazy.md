@@ -18,6 +18,15 @@ if line:
     ...                         # something real
 ```
 
+--- code
+Set `text` to `line` with the comment removed and the whitespace stripped from both ends.
+```python
+line = "mbp-j-doe   # jane's laptop\n"
+```
+check: text == "mbp-j-doe"
+solution: text = line.split("#", 1)[0].strip()
+> `split("#", 1)[0]` keeps everything before the first `#`; `strip()` then drops the spaces before the comment and the newline at the end.
+
 --- predict
 What does this print?
 ```python
@@ -25,14 +34,6 @@ print("win-lab-01#lab\n".split("#", 1)[0].strip())
 ```
 answer: win-lab-01
 > `split("#", 1)` cuts at the first `#` and `[0]` keeps the left part. `strip()` then removes the newline, leaving the clean hostname.
-
---- fill
-Complete the clean-up so the newline and surrounding spaces are removed.
-```python
-text = line.split("#", 1)[0].___()
-```
-answer: strip
-> `strip()` removes whitespace from both ends, including `\n`. `rstrip()` would also drop the newline but would leave leading spaces.
 
 --- teach
 ### The loop version, then the generator
@@ -46,14 +47,20 @@ def read_lines_lazy(lines):
 ```
 No `result` list, no `return`. `list(read_lines_lazy(fh))` gives the list when you want one.
 
---- predict
-What does this print?
+--- code
+Write a generator function `non_blank(lines)` that yields each line stripped, skipping the ones that are empty afterwards. Then print `next(non_blank(["", " a ", "b"]))`.
 ```python
-gen = read_lines_lazy(["# header", "  mbp-j-doe  ", "", "win-lab-01 # lab"])
-print(next(gen), next(gen))
+# your code here
 ```
-answer: mbp-j-doe win-lab-01
-> The first pull skips the comment line and yields the stripped second line. The second pull skips the blank line and yields the fourth, with its inline comment removed.
+expect: a
+check: list(non_blank(["", " a ", "b", "  "])) == ["a", "b"]
+solution: def non_blank(lines):
+solution:     for line in lines:
+solution:         line = line.strip()
+solution:         if line:
+solution:             yield line
+solution: print(next(non_blank(["", " a ", "b"])))
+> The loop skips the empty first line, strips the second and yields `"a"`, then pauses. `next()` asked for one value, so `"b"` is never even looked at.
 
 --- quiz
 The tests feed an infinite generator and call `next()` twice. Which version passes?

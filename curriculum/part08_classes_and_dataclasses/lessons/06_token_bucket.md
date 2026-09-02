@@ -15,15 +15,20 @@ bucket = TokenBucket(capacity=3, refill_per_second=1.0, now=clock)
 ```
 `__call__` makes an object callable: `clock()` returns `clock.t`.
 
---- predict
-What does this print?
+--- code
+Write a class `FakeClock` whose `__init__` sets `self.t = 0.0` and whose `__call__` returns `self.t`. Then create `clock = FakeClock()`.
 ```python
-clock = FakeClock()
-clock.t = 2.5
-print(clock())
+# your code here
 ```
-answer: 2.5
-> Calling the object runs `__call__`, which returns the current `t`. The bucket only ever sees whatever the test set.
+check: clock() == 0.0
+check: (setattr(clock, "t", 2.5), clock())[1] == 2.5
+solution: class FakeClock:
+solution:     def __init__(self):
+solution:         self.t = 0.0
+solution:     def __call__(self):
+solution:         return self.t
+solution: clock = FakeClock()
+> `__call__` is the dunder behind `clock()`. The bucket never knows it is talking to a fake; it just calls `self._now()` and gets whatever `t` the test set.
 
 --- teach
 ### All state on `self`, validated up front
@@ -59,14 +64,17 @@ def _refill(self):
     self._last = t
 ```
 
---- predict
-What does this print?
+--- code
+Apply the refill rule: update `tokens` from the seconds elapsed between `last` and `now`, clamping a negative elapsed to zero and capping at `capacity`.
 ```python
-capacity, tokens, elapsed, rate = 3.0, 1.0, 5.0, 1.0
-print(min(capacity, tokens + elapsed * rate))
+capacity, rate = 3, 1.0
+tokens, last, now = 0.5, 10.0, 12.0
 ```
-answer: 3.0
-> Five seconds would add five tokens, but `min` caps the bucket at capacity. A long wait fills the bucket; it never overflows.
+check: tokens == 2.5
+check: isinstance(tokens, float)
+solution: elapsed = max(0.0, now - last)
+solution: tokens = min(float(capacity), tokens + elapsed * rate)
+> Two seconds at one token per second adds 2.0 to the 0.5 already there. `max(0.0, ...)` protects against a clock that went backwards, and `min(capacity, ...)` stops the bucket overflowing after a long wait.
 
 --- teach
 ### `allow` and `available`

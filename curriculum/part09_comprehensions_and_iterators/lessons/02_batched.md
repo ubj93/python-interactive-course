@@ -17,6 +17,19 @@ def countdown(n):
 ```
 `for` loops, `list()` and `next()` all pull values this way.
 
+--- code
+Write a generator function `evens(n)` that yields 0, 2, 4, ... for every even number below `n`. Then print `list(evens(7))`.
+```python
+# your code here
+```
+expect: [0, 2, 4, 6]
+check: next(evens(5)) == 0
+solution: def evens(n):
+solution:     for i in range(0, n, 2):
+solution:         yield i
+solution: print(list(evens(7)))
+> `yield` inside the loop hands out one value per pass and pauses. `list()` keeps asking until the loop ends, which is when the generator is exhausted.
+
 --- predict
 What does this print?
 ```python
@@ -43,16 +56,16 @@ answer: mbp-j-doe
 ```
 This works on any iterable: a list, a file, an infinite `count()`.
 
---- predict
-What does this print?
+--- code
+Set `batch` to a tuple of the first two items pulled from `it`, leaving the rest in place.
 ```python
 from itertools import islice
-it = iter([1, 2, 3])
-tuple(islice(it, 2))
-print(tuple(islice(it, 2)))
+it = iter(["a", "b", "c"])
 ```
-answer: (3,)
-> The first `islice` consumed 1 and 2. The second asks for two more but only 3 is left, so the tuple is shorter. A third call would give `()`.
+check: batch == ("a", "b")
+check: next(it) == "c"
+solution: batch = tuple(islice(it, 2))
+> `islice(it, 2)` pulls exactly two items from the shared iterator and `tuple()` collects them. The iterator remembers its position, so the next pull starts at `"c"`.
 
 --- teach
 ### The batching loop

@@ -13,6 +13,18 @@ if not all(p.isdigit() for p in pieces):
 numbers = [int(p) for p in pieces]
 ```
 
+--- code
+Set `parts` to a tuple of ints parsed from `text`: strip it, drop the leading `v`, split on `.`, convert each piece.
+```python
+text = " v14.5.1 "
+```
+check: parts == (14, 5, 1)
+solution: text = text.strip()
+solution: if text[:1] in ("v", "V"):
+solution:     text = text[1:]
+solution: parts = tuple(int(p) for p in text.split("."))
+> Strip first so the `v` is really at position 0, slice it off, then `int()` each piece of the split. `tuple(...)` freezes the result so it can be compared and hashed later.
+
 --- predict
 What does this print?
 ```python
@@ -20,13 +32,6 @@ print("".isdigit(), "12".isdigit(), "1a".isdigit())
 ```
 answer: False True False
 > `isdigit` is True only for a non-empty string made entirely of digits. That single check rejects empty pieces, letters and suffixes like `-beta`.
-
---- quiz
-Which line drops exactly one optional leading `v`?
-- [ ] `text.lstrip("vV")`
-- [x] `text[1:] if text[:1] in ("v", "V") else text`
-- [ ] `text.replace("v", "")`
-> `lstrip("vV")` would strip `"vv1"` down to `"1"` and `replace` would touch a `v` anywhere. Slicing `text[:1]` is safe on an empty string, and comparing with a tuple avoids the trap that `"" in "vV"` is `True`.
 
 --- teach
 ### Trailing zeros go, but keep at least one part
@@ -37,6 +42,20 @@ while len(numbers) > 1 and numbers[-1] == 0:
 self.parts = tuple(numbers)      # "1.2.0" -> (1, 2); "0.0.0" -> (0,)
 ```
 The properties are then simple: `major` is `self.parts[0]`, and `minor` is `self.parts[1] if len(self.parts) > 1 else 0`.
+
+--- code
+Remove trailing zeros from `numbers` in place, but never make it shorter than one element. Do the same to `zeros`.
+```python
+numbers = [1, 2, 0, 0]
+zeros = [0, 0, 0]
+```
+check: numbers == [1, 2]
+check: zeros == [0]
+solution: while len(numbers) > 1 and numbers[-1] == 0:
+solution:     numbers.pop()
+solution: while len(zeros) > 1 and zeros[-1] == 0:
+solution:     zeros.pop()
+> The `len(...) > 1` guard is what stops `[0, 0, 0]` from collapsing to an empty list. `pop()` with no argument removes the last element.
 
 --- predict
 What does this print?
