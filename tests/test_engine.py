@@ -160,3 +160,73 @@ class TestProgress(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestBackupRestore(unittest.TestCase):
+    """Backup/restore against the real catalog, using a temp progress file and one edited exercise."""
+
+    def setUp(self):
+        from course.catalog import load_catalog as _lc
+
+        self.tmp = Path(tempfile.mkdtemp())
+        self.catalog = _lc()
+        self.ex = self.catalog[0].exercises[0]
+        self.original = self.ex.exercise_file.read_text(encoding="utf-8")
+        self.progress_path = self.tmp / "progress.json"
+        Progress(self.progress_path).record_run(self.ex, True)
+
+    def tearDown(self):
+        self.ex.exercise_file.write_text(self.original, encoding="utf-8")
+        bak = self.ex.exercise_file.with_suffix(".py.bak")
+        if bak.exists():
+            bak.unlink()
+        shutil.rmtree(self.tmp)
+
+    def test_backup_contains_only_edited_exercises(self):
+        from course import backup as b
+
+        path, n, has_progress = b.backup(self.catalog, self.progress_path, self.tmp / "b.zip")
+        self.assertTrue(has_progress)
+        self.assertEqual(n, 0)
+        self.ex.exercise_file.write_text(self.original + "\n# edited\n", encoding="utf-8")
+        path, n, _ = b.backup(self.catalog, self.progress_path, self.tmp / "b2.zip")
+        self.assertEqual(n, 1)
+        manifest = b.inspect(path)
+        self.assertEqual(manifest["exercises"], [self.ex.exercise_file.relative_to(ROOT).as_posix()])
+
+    def test_restore_refuses_to_clobber_progress_without_force(self):
+        from course import backup as b
+
+        path, _, _ = b.backup(self.catalog, self.progress_path, self.tmp / "b.zip")
+        with self.assertRaises(FileExistsError):
+            b.restore(path, self.progress_path)
+        result = b.restore(path, self.progress_path, force=True)
+        self.assertEqual(result["progress"], str(self.progress_path))
+        self.assertTrue(self.progress_path.with_suffix(".json.bak").exists())
+
+    def test_round_trip_restores_exercise_and_progress(self):
+        from course import backup as b
+
+        self.ex.exercise_file.write_text("def greet_device(h, o, r):\n    return 'edited'\n", encoding="utf-8")
+        path, n, _ = b.backup(self.catalog, self.progress_path, self.tmp / "b.zip")
+        self.assertEqual(n, 1)
+        # Simulate a fresh clone: stub restored, progress gone.
+        self.ex.exercise_file.write_text(self.original, encoding="utf-8")
+        self.progress_path.unlink()
+        result = b.restore(path, self.progress_path)
+        self.assertIn("edited", self.ex.exercise_file.read_text(encoding="utf-8"))
+        self.assertTrue(Progress(self.progress_path).is_solved(self.ex.id))
+        self.assertEqual(len(result["exercises"]), 1)
+
+    def test_restore_rejects_paths_outside_curriculum(self):
+        import zipfile
+        from course import backup as b
+
+        evil = self.tmp / "evil.zip"
+        with zipfile.ZipFile(evil, "w") as zf:
+            zf.writestr("manifest.json", json.dumps({"exercises": ["../outside/exercise.py", "course/cli.py"]}))
+            zf.writestr("../outside/exercise.py", "x")
+            zf.writestr("course/cli.py", "x")
+        result = b.restore(evil, self.tmp / "p.json")
+        self.assertEqual(result["exercises"], [])
+        self.assertEqual(len(result["skipped"]), 2)
