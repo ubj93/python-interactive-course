@@ -1,0 +1,12 @@
+{
+  "title": "Fetch every page by cursor",
+  "kyu": 5,
+  "tags": ["pagination", "urllib", "loops", "http"],
+  "time_limit_min": 20,
+  "hints": [
+    "Loop at most max_pages times: body = get(next_url); extend items with body.get(\"items\") or []; read body.get(\"next_cursor\").",
+    "Keep a set of cursors you have used; if the new cursor is in it, raise PaginationError. Falling out of the for loop without returning means the budget is spent: raise too.",
+    "To build the next URL: parts = urlsplit(url); pairs = [(k, v) for k, v in parse_qsl(parts.query) if k != \"cursor\"]; pairs.append((\"cursor\", c)); urlunsplit(parts._replace(query=urlencode(pairs))).",
+    "Always rebuild from the original url, never from the previous page's URL, or cursors pile up."
+  ]
+}

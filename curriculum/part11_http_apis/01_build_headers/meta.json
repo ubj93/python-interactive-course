@@ -1,0 +1,11 @@
+{
+  "title": "Request headers and URLs",
+  "kyu": 7,
+  "tags": ["dicts", "urllib", "http"],
+  "time_limit_min": 8,
+  "hints": [
+    "Create the dict literal inside the function so every call gets a fresh one; add Authorization with an if, and finish with headers.update(extra or {}).",
+    "(token or \"\").strip() turns None, \"\" and \"  \" into \"\" which is falsy.",
+    "base.rstrip(\"/\") + \"/\" + path.lstrip(\"/\") gives exactly one slash; drop None values with a dict comprehension before urlencode(params, doseq=True)."
+  ]
+}

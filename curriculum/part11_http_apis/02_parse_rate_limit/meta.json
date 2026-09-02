@@ -1,0 +1,12 @@
+{
+  "title": "Parse rate-limit headers",
+  "kyu": 6,
+  "tags": ["parsing", "headers", "http", "rate-limits"],
+  "time_limit_min": 12,
+  "hints": [
+    "Write a helper that finds a header by comparing key.lower() to the wanted name, returning None when absent.",
+    "Write a second helper: try float(text.strip()) and return None on ValueError. Both fields then become one-liners.",
+    "Order matters for reset_in: check Retry-After first; else max(0.0, reset - now); else None.",
+    "wait_seconds: if Retry-After is present or remaining <= 0 return reset_in or 0.0, else 0.0."
+  ]
+}

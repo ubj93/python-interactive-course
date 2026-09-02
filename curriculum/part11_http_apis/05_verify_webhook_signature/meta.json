@@ -1,0 +1,12 @@
+{
+  "title": "Verify a webhook signature",
+  "kyu": 5,
+  "tags": ["hmac", "security", "parsing", "webhooks"],
+  "time_limit_min": 20,
+  "hints": [
+    "hmac.new(secret_bytes, message_bytes, hashlib.sha256).hexdigest(); the message is f\"{timestamp}.\".encode() + body_bytes. Convert str to bytes with .encode(\"utf-8\").",
+    "Find the header by comparing key.lower() == \"x-signature\"; then split the value on \",\" and each piece on \"=\" with partition, stripping whitespace.",
+    "Collect all v1 values into a list and int() the t value inside try/except ValueError; any failure returns False.",
+    "Check abs(now - t) <= tolerance, recompute sign_payload with the header's t, and return any(hmac.compare_digest(expected, s) for s in sigs)."
+  ]
+}

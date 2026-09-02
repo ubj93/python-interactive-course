@@ -1,0 +1,12 @@
+{
+  "title": "Exponential backoff with jitter",
+  "kyu": 5,
+  "tags": ["retries", "backoff", "dependency-injection", "http"],
+  "time_limit_min": 25,
+  "hints": [
+    "backoff_delay is two lines: delay = min(cap, base * 2 ** attempt); return delay + delay * jitter * rand().",
+    "Loop for attempt in range(max_attempts): call send() inside try/except OSError; a status that is not 429 or 5xx returns immediately.",
+    "Sleep only when another attempt follows: if attempt + 1 == max_attempts: break, then sleep(...) at the bottom of the loop body.",
+    "For the delay, read response.headers.get(\"Retry-After\") and float() it when present; otherwise backoff_delay(attempt, base, cap, jitter, rand). After the loop raise RetryError(..., response=last_response, attempts=max_attempts)."
+  ]
+}
