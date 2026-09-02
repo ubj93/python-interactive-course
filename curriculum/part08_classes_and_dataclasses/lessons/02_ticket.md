@@ -16,13 +16,19 @@ Ticket(priority=2, title='Wi-Fi drops')
 ```
 No `self.priority = priority` lines. The annotation `priority: int` is what makes it a field.
 
---- predict
-What does this print?
+--- code
+Declare a dataclass `Ticket` with fields `priority: int` and `title: str`, then print `Ticket(2, "Wi-Fi drops")`.
 ```python
-print(Ticket(2, "a") == Ticket(2, "a"))
+from dataclasses import dataclass
 ```
-answer: True
-> The generated `__eq__` compares field by field. Two tickets with the same values are equal, even though they are different objects.
+expect: Ticket(priority=2, title='Wi-Fi drops')
+check: Ticket(2, "a") == Ticket(2, "a")
+solution: @dataclass
+solution: class Ticket:
+solution:     priority: int
+solution:     title: str
+solution: print(Ticket(2, "Wi-Fi drops"))
+> Two annotated lines are the whole class. The decorator generates the constructor, the repr you see printed, and the field-by-field `__eq__` that makes the check true.
 
 --- teach
 ### Defaults, and the `default_factory` rule
@@ -100,13 +106,17 @@ def is_urgent(self):
     return self.priority == 1
 ```
 
---- fill
-Complete the call that parses the ISO timestamp string.
+--- code
+Set `created` to the `datetime` parsed from `data["created"]`, and `tags` to a copy of `data["tags"]` that falls back to an empty list when the key is missing.
 ```python
-created = datetime.___(data["created"])
+from datetime import datetime
+data = {"priority": 1, "created": "2024-05-01T09:30:00", "title": "Laptop stolen"}
 ```
-answer: fromisoformat
-> `datetime.fromisoformat("2024-05-01T09:30:00")` returns a `datetime`. `strptime` would work too but needs a format string you would have to get exactly right.
+check: created == datetime(2024, 5, 1, 9, 30)
+check: tags == [] and tags is not data.get("tags")
+solution: created = datetime.fromisoformat(data["created"])
+solution: tags = list(data.get("tags", []))
+> `fromisoformat` parses the ISO string in one call. `data.get("tags", [])` returns the default when the key is absent, and `list(...)` makes a copy so the caller's list is never shared with the ticket.
 
 --- exercise 8.2
 

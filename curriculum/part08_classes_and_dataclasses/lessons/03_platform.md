@@ -17,13 +17,18 @@ ValueError: 'darwin' is not a valid Platform
 ```
 Note that `Platform.MAC == "mac"` is `False`: a member is not its value.
 
---- predict
-What does this print?
+--- code
+Declare an Enum `Platform` with members `MAC = "mac"` and `WINDOWS = "windows"`, then print the `.name` of the member whose value is `"windows"`.
 ```python
-print(Platform("windows").name)
+from enum import Enum
 ```
-answer: WINDOWS
-> `Platform("windows")` looks the member up by value and returns `Platform.WINDOWS`; `.name` is the identifier you declared it with.
+expect: WINDOWS
+check: Platform("mac") is Platform.MAC
+solution: class Platform(Enum):
+solution:     MAC = "mac"
+solution:     WINDOWS = "windows"
+solution: print(Platform("windows").name)
+> `Platform("windows")` looks the member up by value; `.name` is the identifier you declared it with. The lookup returns the one and only `Platform.WINDOWS` object.
 
 --- teach
 ### Turn the lookup into "member or None"
@@ -68,13 +73,16 @@ text = " ".join(text.split())        # "mac os x"
 ```
 Guard first: `None` or blank input raises `ValueError` before any of this.
 
---- predict
-What does this print?
+--- code
+Set `text` to the normalised form of `raw`: stripped, lowercased, cut at the first digit, with runs of whitespace collapsed to one space.
 ```python
-print(" ".join("mac   os  x ".split()))
+import re
+raw = "  Mac OS   X 10.15.7 "
 ```
-answer: mac os x
-> `split()` with no separator splits on any run of whitespace and ignores the ends, giving `['mac', 'os', 'x']`. Joining with one space gives the collapsed text.
+check: text == "mac os x"
+solution: text = re.split(r"\d", raw.strip().lower(), maxsplit=1)[0]
+solution: text = " ".join(text.split())
+> The split at the first digit drops the version; `split()` with no argument breaks on any whitespace and ignores the ends, so joining with one space gives the clean key to look up.
 
 --- teach
 ### Try the whole text, then the first word; add the property
