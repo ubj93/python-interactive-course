@@ -1,0 +1,11 @@
+{
+  "title": "Top k by key",
+  "kyu": 5,
+  "tags": ["heapq", "sorting", "key-functions", "disk-usage"],
+  "time_limit_min": 12,
+  "hints": [
+    "heapq.nlargest(k, iterable, key=...) returns the k largest items ordered largest first and accepts a key function just like sorted().",
+    "Handle k <= 0 with an early `return []` so the answer is explicit rather than relying on library behaviour.",
+    "The full-sort alternative is sorted(items, key=key, reverse=True)[:k]. Both keep ties in input order; the heap wins on memory and time when k is much smaller than n."
+  ]
+}
