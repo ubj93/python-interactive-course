@@ -1,0 +1,12 @@
+{
+  "title": "Manifest resolver",
+  "kyu": 3,
+  "tags": ["graphs", "recursion", "sets", "munki"],
+  "time_limit_min": 45,
+  "hints": [
+    "expand_includes is a depth-first search. Write an inner visit(name) function that appends to an outer `order` list, then recurses over manifests[name].get(\"included_manifests\") or [].",
+    "You need two different sets: `done` (already fully visited: return early, this is how a diamond is handled) and the current recursion `path` (a list or set: if the name is already on it, that is a cycle). Push before recursing, pop after.",
+    "The cycle message: path[path.index(current):] + [current] joined with \" -> \". Check the cycle before the done check, or a self-include is silently accepted.",
+    "resolve_manifest: get order, collect, conflicts = sorted(set(installs) & set(uninstalls)), then filter both lists with a comprehension against set(conflicts). missing is sorted({i for i in installs + uninstalls if i not in set(catalog)}) only when catalog is not None."
+  ]
+}

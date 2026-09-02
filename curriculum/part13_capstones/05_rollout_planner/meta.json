@@ -1,0 +1,12 @@
+{
+  "title": "Rollout planner",
+  "kyu": 3,
+  "tags": ["scheduling", "integer-math", "sorting", "rollouts"],
+  "time_limit_min": 45,
+  "hints": [
+    "Normalise every field as you read it: serial .strip().upper(), ring .strip().lower(), os_version .strip(). Use (device.get(k) or \"\") so a missing key and None behave like an empty string.",
+    "Integer ceiling division is (n * pct + 99) // 100. Validate pcts with any(a > b for a, b in zip(pcts, pcts[1:])) and pcts[-1] == 100 before computing anything.",
+    "partition_devices: pre-create {name: [] for name in ring_names}, keep a seen set for duplicates (check it before skip_reason), and sort each ring's list plus the skipped list at the end.",
+    "plan_rollout: keep a running day counter across rings; for each ring walk cumulative_targets(len(serials), pcts) and take serials[previous:target], then set previous = target. The date is start + timedelta(days=day - 1)."
+  ]
+}

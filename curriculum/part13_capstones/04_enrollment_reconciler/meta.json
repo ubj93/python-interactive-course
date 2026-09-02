@@ -1,0 +1,12 @@
+{
+  "title": "Enrollment reconciler",
+  "kyu": 3,
+  "tags": ["dicts", "sets", "rules", "reconciliation"],
+  "time_limit_min": 45,
+  "hints": [
+    "Write two tiny normalisers first, _serial(v) -> (v or \"\").strip().upper() and _user(v) -> (v or \"\").strip().lower(), and use them everywhere a serial or user is read. That single habit removes half of the messy-data bugs.",
+    "index_by_serial is one loop: skip empty serials, add to the duplicates set when the serial is already in the dict, otherwise store the row. Do not overwrite: the spec says the first row wins.",
+    "Write decide as a ladder of guard clauses in exactly the numbered order of the spec, each returning a tuple. Rules 3 and 4 return None when the device is not in mdm, so compute `mdm_row is not None` and reuse it.",
+    "In reconcile iterate over set(mdm_by) | set(inv_by), look each serial up in both dicts with .get, work out duplicate_in from the two duplicate sets (mdm first), and sort the final list with key=lambda a: (a[\"action\"], a[\"serial\"])."
+  ]
+}
