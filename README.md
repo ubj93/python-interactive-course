@@ -40,6 +40,20 @@ python3 course.py interview  # timed mock interview: 3 random problems, 45 minut
 Tip: `alias course='python3 /path/to/course.py'`. Progress is stored in
 `.course_progress.json` (gitignored; set `COURSE_PROGRESS` to put it elsewhere).
 
+Your progress and your solutions never leave your machine, and nothing about them is
+committed. To keep them safe across clones and machines:
+
+```bash
+python3 course.py backup                 # zip progress + every edited exercise to ~/course-backups/
+python3 course.py backup --to ~/Dropbox/ # or anywhere you like
+python3 course.py restore ~/course-backups/course-backup-20260902-101500.zip
+python3 course.py restore backup.zip --list        # peek without restoring
+python3 course.py restore backup.zip --force       # overwrite an existing progress file (kept as .bak)
+```
+
+A backup only contains files that differ from the committed stubs, so restoring never
+touches exercises you have not started.
+
 ### Browser
 
 Live at **https://ubj93.github.io/python-interactive-course/** (deployed from `docs/`

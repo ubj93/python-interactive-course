@@ -14,6 +14,7 @@ from typing import List, Optional
 from . import __version__, ui
 from .catalog import ROOT, Exercise, Part, all_exercises, find_exercise, find_part, load_catalog, total_xp
 from .progress import BADGES, RANKS, Progress
+from . import backup as backup_mod
 from .runner import RunResult, run_tests
 
 
@@ -112,7 +113,7 @@ class App:
             print(f"  Up next: {ui.bold(nxt.id)} {nxt.title}   →  {ui.cyan('course next')}")
         else:
             print("  " + ui.green("All exercises solved. 🎓"))
-        print(ui.dim("  Commands: list · show · run · hint · solution · lesson · daily · interview · watch · badges"))
+        print(ui.dim("  Commands: list · show · run · hint · solution · lesson · daily · interview · watch · badges · backup"))
         return 0
 
     def cmd_list(self, args) -> int:
@@ -426,6 +427,47 @@ class App:
         print(ui.dim(f"Interactive Python with {self.rel(ex.exercise_file)} loaded. exit() to leave."))
         return subprocess.call([sys.executable, "-i", str(ex.exercise_file)], cwd=str(ex.dir))
 
+    def cmd_backup(self, args) -> int:
+        dest = Path(args.to).expanduser() if args.to else None
+        path, n, has_progress = backup_mod.backup(self.catalog, self.progress.path, dest)
+        print(ui.green(f"  Backed up to {path}"))
+        print(f"  progress file: {'included' if has_progress else 'none yet'}   edited exercises: {n}")
+        if not has_progress and n == 0:
+            print(ui.dim("  (nothing to back up yet: no progress and no edited exercises)"))
+        return 0
+
+    def cmd_restore(self, args) -> int:
+        archive = Path(args.archive).expanduser()
+        if not archive.exists():
+            self.die(f"No such file: {archive}")
+        try:
+            manifest = backup_mod.inspect(archive)
+        except (KeyError, ValueError, OSError) as e:
+            self.die(f"Not a course backup: {e}")
+        print(ui.heading(f"Restore · {archive.name}"))
+        print(f"  made {manifest.get('created')} with course v{manifest.get('course_version')}")
+        print(f"  progress: {'yes' if manifest.get('progress') else 'no'}   edited exercises: {len(manifest.get('exercises', []))}")
+        if args.list:
+            for rel in manifest.get("exercises", []):
+                print("    " + rel)
+            return 0
+        try:
+            result = backup_mod.restore(
+                archive, self.progress.path, force=args.force,
+                exercises_only=args.exercises_only, progress_only=args.progress_only,
+            )
+        except FileExistsError as e:
+            self.die(str(e))
+        if result["progress"]:
+            print(ui.green(f"  Restored progress → {result['progress']}"))
+        for rel in result["exercises"]:
+            print(ui.green(f"  Restored {rel}"))
+        for rel in result["skipped"]:
+            print(ui.yellow(f"  Skipped {rel} (not in this course version)"))
+        if result["progress"] or result["exercises"]:
+            print(ui.dim("  Overwritten files were kept as .bak copies."))
+        return 0
+
     def cmd_path(self, args) -> int:
         ex = self.resolve(args.exercise)
         print(ex.exercise_file)
@@ -494,6 +536,8 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("reset", help="restore an exercise to its original stub"); s.add_argument("exercise")
     s = sub.add_parser("repl", help="open an interactive Python with the exercise loaded"); s.add_argument("exercise", nargs="?")
     s = sub.add_parser("path", help="print the path to exercise.py"); s.add_argument("exercise", nargs="?")
+    s = sub.add_parser("backup", help="zip your progress and edited exercises (default: ~/course-backups/)"); s.add_argument("--to", help="file or directory to write the zip to")
+    s = sub.add_parser("restore", help="restore a backup zip"); s.add_argument("archive"); s.add_argument("--force", action="store_true", help="overwrite an existing progress file"); s.add_argument("--list", action="store_true", help="show contents without restoring"); s.add_argument("--exercises-only", action="store_true"); s.add_argument("--progress-only", action="store_true")
     return ap
 
 

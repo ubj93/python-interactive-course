@@ -13,6 +13,15 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-02
+
+### Added
+- `course backup` and `course restore`: zip the progress file and every edited
+  `exercise.py` (only files that differ from the committed stub) to `~/course-backups/`
+  or a chosen path, and restore them with `.bak` copies of anything overwritten.
+  Restore refuses to overwrite an existing progress file without `--force` and ignores
+  paths outside `curriculum/`.
+
 ## [0.1.1] - 2026-09-02
 
 ### Added
