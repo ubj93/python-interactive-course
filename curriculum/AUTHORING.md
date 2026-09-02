@@ -139,6 +139,109 @@ def normalize_hostname_partition(raw: str) -> str:
 | 4 | algorithmic thinking or state: graphs, sorting with keys, invariants | topo sort, LRU cache |
 | 3 | capstone: 20–40 minutes, combines several parts | reconcile two inventories |
 
+## lessons/ — guided lesson cards (the primary way people learn)
+
+Every exercise is reached through a guided lesson: a sequence of bite-sized cards that
+teach one idea at a time, check it immediately, and end with the exercise as the
+"put it together" step. This is the Mimo model: read a little, answer a little, build.
+The long `LESSON.md` chapter stays as the reference to read afterwards or to look
+things up; the cards are what a learner meets first.
+
+```
+curriculum/partNN_slug/lessons/NN_slug.md      # one file per lesson; lesson NN ends in exercise NN
+```
+
+One lesson per exercise, numbered the same (`lessons/03_decisions.md` ends in
+exercise `P.3`). A lesson file is a title line, then cards separated by `--- <type>`:
+
+```markdown
+# Making decisions
+
+--- teach
+### if, elif, else
+Two to five short sentences in plain words. One idea only. Then a snippet.
+```python
+if pct >= 0.95:
+    status = "CRIT"
+```
+
+--- predict
+What does this print?
+```python
+print(7 // 2)
+```
+answer: 3
+> `//` is floor division: it throws away the remainder.
+
+--- quiz
+Which expression is true only when `x` is between 0 and 1?
+- [ ] `0 <= x or x <= 1`
+- [x] `0 <= x <= 1`
+- [ ] `x in (0, 1)`
+> Chained comparison reads like maths.
+
+--- fill
+Complete the guard so it catches a missing value.
+```python
+if used ___ None:
+    return "UNKNOWN"
+```
+answer: is
+> `is None` is the idiom.
+
+--- code
+Print the status for a disk that is 85% full, using the function above.
+```python
+def disk_status(pct):
+    return "CRIT" if pct >= 0.95 else "WARN" if pct >= 0.80 else "OK"
+```
+expect: WARN
+solution: print(disk_status(0.85))
+> Call the function and print what it returns.
+
+--- exercise 3.3
+
+--- recap
+- one line per idea, four lines at most
+```
+
+Card types and rules:
+
+| type | what it is | rules |
+|---|---|---|
+| `teach` | one idea, in simple words, with a snippet | under 170 words; a `###` headline; show, then explain |
+| `predict` | "What does this print?" | `answer:` line; the exact printed text; alternatives separated by `\|` |
+| `fill` | complete a line of code | code contains `___`; `answer:` is what goes in the blank |
+| `quiz` | multiple choice | 2 to 4 options, exactly one `[x]`; wrong options are plausible mistakes |
+| `code` | **learn by doing**: the learner writes one or two real lines under a starter and it runs | starter fence (1–3 lines that set things up, or one `# your code here` comment); `expect:` exact stdout and/or `check:` expressions true afterwards; `solution:` the model line(s), one `solution:` per line; deterministic (no input, files, randomness) |
+| `exercise` | the put-it-together step | `--- exercise P.N`; the last card, a `recap` may follow |
+| `recap` | bullets | 3 to 5 bullets; the lesson in one screen |
+
+- 6 to 12 cards per lesson; at least two checks; start with a `teach` card.
+- **One to three `code` cards per lesson.** Place each right after the teach card whose
+  idea it practises, so the learner types the thing they just read about. The final
+  exercise then combines what the code cards practised. This is what makes a lesson
+  "learn by doing" instead of reading with quizzes.
+- The learner's lines are appended after the starter and the whole snippet runs.
+  `expect:` compares the stripped stdout (use `\n` inside it for several lines);
+  `check:` is evaluated in the snippet's namespace, so `check: n == 12` works for
+  "set `n` to ...". Prefer `check:` when the task is to compute a value and `expect:`
+  when it is to print.
+- Every check has a `>` explanation line: what the right answer is *and why*, shown
+  after answering. Explanations are where the teaching lands.
+- Teach only what the exercise needs, in the order the exercise needs it. If the
+  exercise needs three ideas, the lesson has three teach cards, each followed by a
+  check on that idea.
+- Simple words. Explain the term the first time you use it ("a `str`, that is, text").
+  No forward references to things taught later.
+- Answers are compared after trimming whitespace and collapsing inner spaces, and
+  surrounding quotes are ignored, so `'mbp'` and `mbp` both match. Keep predict
+  outputs to one short line.
+- Mine `LESSON.md` for the content; the cards are the chapter cut into steps, not a
+  new syllabus. The cards may reference the chapter for depth ("more in the lesson").
+- Verify: `python tools/verify.py N` checks card structure, that every exercise in the
+  part is reached by exactly one lesson, and that lessons are numbered without gaps.
+
 ## LESSON.md
 
 Match the tone and structure of `part01_foundations/LESSON.md`:

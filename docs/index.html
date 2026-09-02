@@ -86,6 +86,23 @@ pre.sol{background:var(--bg);border:1px solid var(--line);border-radius:8px;padd
 .stat{padding:10px;border:1px solid var(--line);border-radius:10px}
 .stat b{display:block;font-size:20px}
 .stat small{color:var(--muted)}
+.dots{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.dot{width:14px;height:6px;border-radius:3px;background:var(--line)}
+.dot.done{background:var(--ok)}.dot.cur{background:var(--accent)}.dot.miss{background:var(--warn)}
+.cardbody h3{margin:0 0 8px;font-size:18px}
+.cardbody p{margin:8px 0}
+.cardbody pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-family:var(--mono);font-size:13px}
+.cardbody code{font-family:var(--mono);font-size:13px;background:var(--bg);padding:1px 4px;border-radius:4px}
+.cardbody pre code{background:none;padding:0}
+.cardbody ul{margin:6px 0 6px 20px;padding:0}
+.opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:inherit;cursor:pointer}
+.opt:hover{border-color:var(--accent)}
+.opt.right{border-color:var(--ok);background:rgba(26,158,92,.10)}
+.opt.wrong{border-color:var(--bad);background:rgba(214,69,69,.10)}
+.opt code{font-family:var(--mono);font-size:13px}
+.answer{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:inherit;font-family:var(--mono);font-size:14px}
+.expl{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(47,111,237,.08);border-left:3px solid var(--accent)}
+.kind{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
 .tabs{display:flex;gap:6px;margin-bottom:10px}
 .tab{padding:6px 12px;border-radius:8px;border:1px solid var(--line);cursor:pointer;font-size:14px}
 .tab.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
@@ -207,6 +224,37 @@ function dailyExercise() {
   P.daily[t] = { id: ex.id, done: false }; saveProgress();
   return ex;
 }
+function lessonsOf(p) { return p.lessons || []; }
+const LESSONS = [];
+for (const p of DATA.parts) for (const l of lessonsOf(p)) { l.part = p; LESSONS.push(l); }
+const LESSON_BY_ID = {};
+for (const l of LESSONS) LESSON_BY_ID[l.id] = l;
+function cardState(lessonId, i) { return (P.cards || {})[lessonId + ":" + i] || { done: false, correct: null, tries: 0 }; }
+function recordCard(lessonId, i, checkable, correct) {
+  P.cards = P.cards || {};
+  const key = lessonId + ":" + i; const st = Object.assign({ done: false, correct: null, tries: 0 }, P.cards[key]);
+  let xp = 0; const t = today(); if (!P.days.includes(t)) P.days.push(t);
+  if (checkable) {
+    st.tries += 1;
+    if (correct && !st.done) { if (st.tries === 1) { xp = DATA.card_xp || 1; P.xp += xp; } st.done = true; st.correct = true; }
+    else if (correct === false && !st.done) { st.correct = false; if (st.tries >= 2) st.done = true; }
+  } else st.done = true;
+  P.cards[key] = st; P.last_lesson = lessonId; saveProgress(); return xp;
+}
+function lessonProgress(l) {
+  let done = 0; l.cards.forEach((c, i) => { if (cardState(l.id, i).done) done++; });
+  const exOk = l.cards.filter((c) => c.kind === "exercise").every((c) => P.solved[c.exercise_id]);
+  return { done, total: l.cards.length, complete: done === l.cards.length && exOk };
+}
+function nextLesson(after) {
+  let start = 0; if (after) { const i = LESSONS.findIndex((l) => l.id === after.id); start = i + 1; }
+  return LESSONS.slice(start).find((l) => !lessonProgress(l).complete) || null;
+}
+function normAns(s) { s = String(s).trim().split(/\s+/).join(" "); if (s.length >= 2 && s[0] === s[s.length - 1] && (s[0] === "'" || s[0] === '"')) s = s.slice(1, -1); return s; }
+function checkCard(c, given) {
+  if (c.kind === "quiz") return given === c.correct;
+  return c.answers.some((a) => normAns(a) === normAns(given));
+}
 function nextUnsolved(after) {
   let start = 0;
   if (after) { const i = ALL.findIndex((e) => e.id === after.id); start = i + 1; }
@@ -272,6 +320,22 @@ function descToHtml(text) {
   flushP(); flushC(); flushL();
   return html;
 }
+function cardToHtml(text) {
+  // Fallback when marked is unavailable: fences, ### headings, bullets, paragraphs, inline code.
+  const lines = text.split("\n"); let html = "", para = [], code = null, list = [];
+  const flushP = () => { if (para.length) { html += "<p>" + inline(para.join(" ")) + "</p>"; para = []; } };
+  const flushL = () => { if (list.length) { html += "<ul>" + list.map((l) => "<li>" + inline(l) + "</li>").join("") + "</ul>"; list = []; } };
+  for (const line of lines) {
+    if (line.startsWith("```")) { if (code === null) { flushP(); flushL(); code = []; } else { html += "<pre>" + esc(code.join("\n")) + "</pre>"; code = null; } continue; }
+    if (code !== null) { code.push(line); continue; }
+    if (!line.trim()) { flushP(); flushL(); continue; }
+    if (line.startsWith("### ")) { flushP(); flushL(); html += "<h3>" + inline(line.slice(4)) + "</h3>"; continue; }
+    if (/^[-*] /.test(line)) { flushP(); list.push(line.slice(2)); continue; }
+    flushL(); para.push(line.trim());
+  }
+  if (code !== null) html += "<pre>" + esc(code.join("\n")) + "</pre>";
+  flushP(); flushL(); return html;
+}
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2200); }
 function setStatus(msg) { const el = $("#status"); if (el) el.textContent = msg; }
 function kyuTag(k) { return `<span class="kyu k${k}">${k} kyu</span>`; }
@@ -297,7 +361,8 @@ function viewHome() {
       <div class="stat"><b>${streak()} 🔥</b><small>day streak · ${solvedToday()} today</small></div>
     </div>
     <div class="row" style="margin-top:12px">
-      ${nxt ? `<a class="btn" href="#/ex/${nxt.id}">Continue: ${nxt.id} ${esc(nxt.title)}</a>` : `<span class="ok">All exercises solved 🎓</span>`}
+      ${(() => { const l = nextLesson(null); if (!l) return `<span class="ok">Every lesson complete 🎓</span>`; const lp = lessonProgress(l); return `<a class="btn" href="#/learn/${l.id}">Continue learning: ${l.id} ${esc(l.title)}${lp.done ? " (card " + (lp.done + 1) + "/" + lp.total + ")" : ""}</a>`; })()}
+      ${nxt ? `<a class="btn secondary" href="#/ex/${nxt.id}">Practice: ${nxt.id} ${esc(nxt.title)}</a>` : ""}
       <a class="btn secondary" href="#/ex/${daily.id}">Daily kata ${d && d.done ? "✔" : "· +5 xp"}</a>
       <a class="btn secondary" href="#/interview">Mock interview</a>
     </div>
@@ -305,13 +370,16 @@ function viewHome() {
   html += `<div class="card"><h2>Parts</h2><div class="list">`;
   for (const p of DATA.parts) {
     const s = p.exercises.filter((e) => P.solved[e.id]).length;
-    html += `<a class="item" href="#/part/${p.num}"><span class="mark muted">${p.num}</span><span class="t"><b>${esc(p.title)}</b><small>${s}/${p.exercises.length} solved · ${p.exercises.reduce((a, e) => a + e.xp, 0)} xp</small><div class="pbar"><i style="width:${(100 * s / p.exercises.length).toFixed(0)}%"></i></div></span></a>`;
+    const ls = lessonsOf(p); const ld = ls.filter((l) => lessonProgress(l).complete).length;
+    const frac = ls.length ? ld / ls.length : s / p.exercises.length;
+    html += `<a class="item" href="#/part/${p.num}"><span class="mark muted">${p.num}</span><span class="t"><b>${esc(p.title)}</b><small>${ld}/${ls.length} lessons · ${s}/${p.exercises.length} exercises</small><div class="pbar"><i style="width:${(100 * frac).toFixed(0)}%"></i></div></span></a>`;
   }
   html += `</div></div>
   <div class="card"><h2>How to use this</h2>
   <ol>
-    <li>Read the lesson for a part (10–20 minutes), then work its exercises in order.</li>
-    <li>Each exercise: read the description, write the function, press <b>Run tests</b> (<kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>Enter</kbd>). Red tests are the spec; make them green.</li>
+    <li><b>Learn</b>: each lesson is a handful of short cards. Read one idea, answer a quick check, repeat. Correct first answers earn xp.</li>
+    <li><b>Put it together</b>: every lesson ends in a real exercise. Write the function, press <b>Run tests</b> (<kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>Enter</kbd>). Red tests are the spec; make them green.</li>
+    <li><b>Go deeper</b>: each part has a full reference chapter for when you want the whole picture.</li>
     <li>After a pass, compare with the reference solutions. That is where most of the learning happens.</li>
     <li>Come back daily for the kata to keep the streak, and run a timed mock interview once a week from Part 9 onward.</li>
   </ol>
@@ -320,11 +388,136 @@ function viewHome() {
 }
 function viewPart(num) {
   const p = DATA.parts.find((x) => x.num === num); if (!p) return viewHome();
+  const ls = lessonsOf(p); const ld = ls.filter((l) => lessonProgress(l).complete).length;
   const s = p.exercises.filter((e) => P.solved[e.id]).length;
+  let items = "";
+  if (ls.length) {
+    for (const l of ls) {
+      const lp = lessonProgress(l);
+      const mark = lp.complete ? '<span class="mark ok">✔</span>' : (lp.done ? '<span class="mark warn">…</span>' : '<span class="mark muted">○</span>');
+      const exs = l.cards.filter((c) => c.kind === "exercise").map((c) => BY_ID[c.exercise_id]).filter(Boolean);
+      items += `<a class="item" href="#/learn/${l.id}">${mark}<span class="t"><b>Lesson ${l.id} · ${esc(l.title)}</b><small>${l.cards.length} cards · ends in ${exs.map((e) => e.id + " " + esc(e.title)).join(", ")}${lp.done && !lp.complete ? " · card " + Math.min(lp.done + 1, lp.total) + "/" + lp.total : ""}</small></span>${exs.map((e) => kyuTag(e.kyu)).join("")}</a>`;
+    }
+  } else {
+    items = p.exercises.map(itemHtml).join("");
+  }
   app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › Part ${p.num}</div>
-  <div class="card"><h1>Part ${p.num} · ${esc(p.title)}</h1><p class="muted">${s}/${p.exercises.length} solved</p>
-  <div class="row"><a class="btn" href="#/lesson/${p.num}">Read the lesson</a>${p.num > 1 ? `<a class="btn secondary" href="#/part/${p.num - 1}">‹ Part ${p.num - 1}</a>` : ""}${p.num < DATA.parts.length ? `<a class="btn secondary" href="#/part/${p.num + 1}">Part ${p.num + 1} ›</a>` : ""}</div></div>
-  <div class="list">${p.exercises.map(itemHtml).join("")}</div>`;
+  <div class="card"><h1>Part ${p.num} · ${esc(p.title)}</h1><p class="muted">${ls.length ? ld + "/" + ls.length + " lessons · " : ""}${s}/${p.exercises.length} exercises solved</p>
+  <div class="row"><a class="btn secondary" href="#/lesson/${p.num}">Reference chapter</a>${p.num > 1 ? `<a class="btn secondary" href="#/part/${p.num - 1}">‹ Part ${p.num - 1}</a>` : ""}${p.num < DATA.parts.length ? `<a class="btn secondary" href="#/part/${p.num + 1}">Part ${p.num + 1} ›</a>` : ""}</div></div>
+  <div class="list">${items}</div>
+  ${ls.length ? `<div class="card" style="margin-top:14px"><h2>Practice list</h2><p class="muted">Jump straight to an exercise (Codewars mode).</p><div class="list">${p.exercises.map(itemHtml).join("")}</div></div>` : ""}`;
+}
+function viewLearn(id) {
+  const l = LESSON_BY_ID[id]; if (!l) return viewHome();
+  const p = l.part;
+  let i = 0; while (i < l.cards.length && cardState(l.id, i).done) i++;
+  if (i >= l.cards.length) i = l.cards.length - 1;
+  const state = { i, sessionXp: 0, tries: 0 };
+  const render = () => {
+    const c = l.cards[state.i];
+    const dots = l.cards.map((cc, j) => { const st = cardState(l.id, j); const cls = j === state.i ? "cur" : st.done ? (st.correct === false ? "miss" : "done") : ""; return `<span class="dot ${cls}"></span>`; }).join("");
+    let body = "", controls = "";
+    const md = (t) => (window.marked ? marked.parse(t) : cardToHtml(t));
+    if (c.kind === "teach" || c.kind === "recap") {
+      body = md(c.body); controls = `<button class="btn" id="nextbtn">Continue ›</button>`;
+    } else if (c.kind === "quiz") {
+      body = md(c.body) + c.options.map((o, j) => `<button class="opt" data-j="${j}">${String.fromCharCode(97 + j)}) ${inline(o)}</button>`).join("");
+    } else if (c.kind === "predict" || c.kind === "fill") {
+      body = md(c.body) + `<input class="answer" id="ans" placeholder="${c.kind === "fill" ? "what goes in the blank" : "the exact output"}" autocomplete="off" autocapitalize="off" spellcheck="false">`;
+      controls = `<button class="btn" id="checkbtn">Check</button>`;
+    } else if (c.kind === "code") {
+      let draft = null; try { draft = localStorage.getItem(DRAFT_KEY + "card:" + l.id + ":" + state.i); } catch (e) {}
+      body = md(c.prompt || "") + `<div class="editor" style="margin-top:8px"><textarea class="fallback" id="cardcode" style="min-height:120px" spellcheck="false">${esc(draft != null ? draft : (c.starter || "") + "\n")}</textarea></div><div class="status" id="status"></div>`;
+      controls = `<button class="btn" id="runcard">▶ Run</button> <button class="btn small secondary" id="showsol">Show solution</button>`;
+    } else if (c.kind === "exercise") {
+      const ex = BY_ID[c.exercise_id];
+      const solved = ex && P.solved[ex.id];
+      body = `<h3>Put it together: ${ex ? ex.id + " · " + esc(ex.title) : c.exercise_id}</h3>` + (ex ? `<div class="desc">${descToHtml(ex.description.split("\n\n").slice(0, 2).join("\n\n"))}</div><p class="muted">${kyuTag(ex.kyu)} ${ex.xp} xp${ex.time_limit_min ? " · ⏱ " + ex.time_limit_min + " min" : ""}</p>` : "");
+      controls = solved ? `<span class="ok">✔ solved</span> <button class="btn" id="nextbtn">Continue ›</button>` : `<a class="btn" href="#/ex/${c.exercise_id}?from=${l.id}">Open the exercise ›</a> <button class="btn secondary" id="skipbtn">Skip for now</button>`;
+    }
+    const kindLabel = { teach: "Learn", quiz: "Quick check", predict: "What does this print?", fill: "Fill in the blank", code: "Try it: write the code", exercise: "Exercise", recap: "Recap" }[c.kind];
+    app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › <a href="#/part/${p.num}">Part ${p.num}</a> › Lesson ${l.id}</div>
+      <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Lesson ${l.id} · ${esc(l.title)}</h2><span class="muted">${state.i + 1}/${l.cards.length}</span></div><div class="dots" style="margin-top:8px">${dots}</div>
+      <div class="kind">${kindLabel}</div><div class="cardbody">${body}</div><div id="feedback"></div>
+      <div class="row" style="margin-top:14px">${controls}<span class="spacer"></span>${state.i > 0 ? `<button class="btn small secondary" id="backbtn">‹ Back</button>` : ""}</div></div>`;
+    const advance = () => { if (state.i + 1 < l.cards.length) { state.i++; state.tries = 0; render(); } else finish(); };
+    const nb = $("#nextbtn"); if (nb) nb.onclick = () => { recordCard(l.id, state.i, false); advance(); };
+    const bb = $("#backbtn"); if (bb) bb.onclick = () => { state.i--; state.tries = 0; render(); };
+    const sb = $("#skipbtn"); if (sb) sb.onclick = () => advance();
+    const answered = (ok, rightText) => {
+      const xp = recordCard(l.id, state.i, true, ok);
+      renderHeader();
+      const fb = $("#feedback");
+      if (ok) {
+        state.sessionXp += xp;
+        fb.innerHTML = `<div class="banner pass">✔ Correct${xp ? " · +" + xp + " xp" : ""}</div>` + (c.explanation ? `<div class="expl">${inline(c.explanation)}</div>` : "") + `<div class="row" style="margin-top:10px"><button class="btn" id="go">Continue ›</button></div>`;
+        $("#go").onclick = advance;
+      } else if (state.tries < 2) {
+        fb.innerHTML = `<div class="banner fail">✘ Not quite. Try once more.</div>`;
+      } else {
+        fb.innerHTML = `<div class="banner fail">✘ The answer is: <code>${esc(rightText)}</code></div>` + (c.explanation ? `<div class="expl">${inline(c.explanation)}</div>` : "") + `<div class="row" style="margin-top:10px"><button class="btn" id="go">Continue ›</button></div>`;
+        $("#go").onclick = advance;
+      }
+      document.querySelectorAll(".opt").forEach((b) => { b.disabled = ok || state.tries >= 2; });
+    };
+    document.querySelectorAll(".opt").forEach((b) => { b.onclick = () => { const j = parseInt(b.dataset.j, 10); state.tries++; const ok = checkCard(c, j); b.classList.add(ok ? "right" : "wrong"); if (!ok && state.tries >= 2) document.querySelectorAll(".opt")[c.correct].classList.add("right"); answered(ok, c.options[c.correct]); }; });
+    const rc = $("#runcard");
+    if (rc) {
+      let cardEditor = null;
+      if (window.CodeMirror) {
+        cardEditor = CodeMirror.fromTextArea($("#cardcode"), { mode: "python", lineNumbers: false, indentUnit: 4, tabSize: 4, indentWithTabs: false, theme: isDark ? "material-darker" : "default", viewportMargin: Infinity, extraKeys: { Tab: (cm) => cm.replaceSelection("    ", "end"), "Cmd-Enter": () => rc.click(), "Ctrl-Enter": () => rc.click() } });
+      } else {
+        $("#cardcode").addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") rc.click(); });
+      }
+      const getCode = () => (cardEditor ? cardEditor.getValue() : $("#cardcode").value);
+      const remember = () => { try { localStorage.setItem(DRAFT_KEY + "card:" + l.id + ":" + state.i, getCode()); } catch (e) {} };
+      const fakeEx = { part: l.part, dir: "card_" + l.id.replace(".", "_") + "_" + state.i, tests: c.test_source, fixtures: {}, timeout_s: 10 };
+      const showSolution = (label) => {
+        $("#feedback").insertAdjacentHTML("beforeend", `<div class="expl"><b>${label}</b><pre style="margin:6px 0 0">${esc(c.solution || "")}</pre>${c.explanation ? "<div style='margin-top:6px'>" + inline(c.explanation) + "</div>" : ""}</div><div class="row" style="margin-top:10px"><button class="btn" id="go">Continue ›</button></div>`);
+        $("#go").onclick = advance;
+      };
+      $("#showsol").onclick = () => { if (!cardState(l.id, state.i).done) { recordCard(l.id, state.i, true, false); recordCard(l.id, state.i, true, false); } $("#feedback").innerHTML = ""; showSolution("One way to do it"); };
+      rc.onclick = async () => {
+        remember(); rc.disabled = true; setStatus("Running…"); $("#feedback").innerHTML = "";
+        try {
+          const res = await runInPython(fakeEx, getCode());
+          const tests = res.tests || []; const ok = !res.timed_out && !res.import_error && tests.length > 0 && tests.every((t) => t.status === "pass");
+          state.tries++;
+          const xp = recordCard(l.id, state.i, true, ok); renderHeader();
+          let html = "";
+          if (res.timed_out) html += `<div class="banner fail">⏱ Timed out. Infinite loop?</div>`;
+          else if (res.import_error) html += `<div class="banner fail">Python could not run that</div><pre class="sol">${esc(shortTb(res.import_error))}</pre>`;
+          else {
+            for (const t of tests) html += `<div class="tc">${t.status === "pass" ? '<span class="ok">✔</span>' : '<span class="bad">✘</span>'} ${esc(t.doc || t.name)}${t.status !== "pass" ? `<pre>${esc(shortTb(t.traceback || t.message))}</pre>` : ""}</div>`;
+            if (res.stdout && res.stdout.trim()) html += `<div class="tc muted">your output<pre>${esc(res.stdout.trim())}</pre></div>`;
+          }
+          if (ok) {
+            state.sessionXp += xp;
+            html += `<div class="banner pass">✔ It runs and does the job${xp ? " · +" + xp + " xp" : ""}</div>` + (c.explanation ? `<div class="expl">${inline(c.explanation)}</div>` : "") + `<div class="row" style="margin-top:10px"><button class="btn" id="go">Continue ›</button></div>`;
+            $("#feedback").innerHTML = html; $("#go").onclick = advance;
+          } else {
+            html += `<div class="banner fail">✘ Not yet${state.tries < 2 ? " · fix it and run again" : ""}</div>`;
+            $("#feedback").innerHTML = html;
+            if (state.tries >= 2) showSolution("Here is one way to do it");
+          }
+        } catch (e) {
+          $("#feedback").innerHTML = `<div class="banner fail">Could not run: ${esc(e.message || e)}</div>`;
+        } finally { rc.disabled = false; setStatus(""); }
+      };
+      bootWorker().catch(() => {});
+    }
+    const cb = $("#checkbtn");
+    if (cb) { const go = () => { const v = $("#ans").value; if (!v.trim()) return; state.tries++; answered(checkCard(c, v), c.answers[0]); }; cb.onclick = go; $("#ans").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); }); $("#ans").focus(); }
+  };
+  const finish = () => {
+    const lp = lessonProgress(l); const nxt = nextLesson(l);
+    const missing = l.cards.filter((c) => c.kind === "exercise" && !P.solved[c.exercise_id]).map((c) => c.exercise_id);
+    app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › <a href="#/part/${p.num}">Part ${p.num}</a> › Lesson ${l.id}</div>
+      <div class="card">${lp.complete ? `<h1>✔ Lesson ${l.id} complete</h1>` : `<h1>Cards done</h1><p>Finish exercise ${missing.join(", ")} to complete the lesson.</p>`}<p class="muted">+${state.sessionXp} xp from cards this session</p>
+      <div class="row">${missing.length ? `<a class="btn" href="#/ex/${missing[0]}?from=${l.id}">Do exercise ${missing[0]} ›</a>` : ""}${nxt ? `<a class="btn ${missing.length ? "secondary" : ""}" href="#/learn/${nxt.id}">Next: Lesson ${nxt.id} ${esc(nxt.title)} ›</a>` : ""}<a class="btn secondary" href="#/part/${p.num}">Part ${p.num}</a></div></div>`;
+    renderHeader();
+  };
+  render();
 }
 function viewLesson(num) {
   const p = DATA.parts.find((x) => x.num === num); if (!p) return viewHome();
@@ -333,13 +526,14 @@ function viewLesson(num) {
   <div class="card lesson">${body}<hr><div class="row"><a class="btn" href="#/part/${p.num}">Go to the exercises</a></div></div>`;
 }
 let editor = null;
-function viewExercise(id) {
+function viewExercise(id, fromLesson) {
   const ex = BY_ID[id]; if (!ex) return viewHome();
+  const lessonOf = fromLesson ? LESSON_BY_ID[fromLesson] : LESSONS.find((l) => l.cards.some((c) => c.kind === "exercise" && c.exercise_id === ex.id));
   P.opened[ex.id] = P.opened[ex.id] || nowIso(); P.last = ex.id; saveProgress();
   const solved = !!P.solved[ex.id], hintsUsed = P.hints[ex.id] || 0, d = P.daily[today()];
   let draft = null; try { draft = localStorage.getItem(DRAFT_KEY + ex.id); } catch (e) {}
   const code = draft != null ? draft : ex.stub;
-  app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › <a href="#/part/${ex.part.num}">Part ${ex.part.num}</a> › ${ex.id}</div>
+  app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › <a href="#/part/${ex.part.num}">Part ${ex.part.num}</a> › ${lessonOf ? `<a href="#/learn/${lessonOf.id}">Lesson ${lessonOf.id}</a> › ` : ""}${ex.id}</div>
   <div class="card">
     <div class="row"><h1 style="margin:0">${ex.id} · ${esc(ex.title)}</h1>${kyuTag(ex.kyu)}<span class="muted">${ex.xp} xp${ex.time_limit_min ? " · ⏱ " + ex.time_limit_min + " min" : ""}${d && d.id === ex.id ? " · 📅 today's kata" : ""}</span>${solved ? '<span class="ok">✔ solved</span>' : ""}</div>
     <div class="desc">${descToHtml(ex.description)}</div>
@@ -430,11 +624,16 @@ function renderResults(ex, res) {
     html += `<div class="banner fail">✘ ${passed}/${total} tests passed · attempt ${P.attempts[ex.id]}</div>`;
   }
   box.innerHTML = html; renderHeader();
-  if (ok) showAfterPass(ex, nextUnsolved(ex));
+  if (ok) {
+    for (const l of LESSONS) l.cards.forEach((c, i) => { if (c.kind === "exercise" && c.exercise_id === ex.id) recordCard(l.id, i, false); });
+    showAfterPass(ex, nextUnsolved(ex));
+  }
 }
 function showAfterPass(ex, nxt) {
   const n = nxt || nextUnsolved(ex);
-  $("#after").innerHTML = `<div class="row" style="margin-top:12px"><button class="btn secondary" id="solbtn">Show reference solutions</button>${n ? `<a class="btn" href="#/ex/${n.id}">Next: ${n.id} ${esc(n.title)} ›</a>` : ""}</div><pre class="sol" id="solview" hidden>${esc(ex.solution)}</pre>`;
+  const lessonOf = LESSONS.find((l) => l.cards.some((c) => c.kind === "exercise" && c.exercise_id === ex.id));
+  const cont = lessonOf ? (() => { const nl = nextLesson(lessonOf); return nl ? `<a class="btn" href="#/learn/${nl.id}">Continue: Lesson ${nl.id} ${esc(nl.title)} ›</a>` : ""; })() : (n ? `<a class="btn" href="#/ex/${n.id}">Next: ${n.id} ${esc(n.title)} ›</a>` : "");
+  $("#after").innerHTML = `<div class="row" style="margin-top:12px"><button class="btn secondary" id="solbtn">Show reference solutions</button>${cont}${lessonOf && n ? `<a class="btn secondary" href="#/ex/${n.id}">Practice next: ${n.id} ›</a>` : ""}</div><pre class="sol" id="solview" hidden>${esc(ex.solution)}</pre>`;
   $("#solbtn").onclick = () => { const v = $("#solview"); v.hidden = !v.hidden; };
 }
 function viewProfile() {
@@ -477,7 +676,8 @@ function route() {
   const h = location.hash || "#/";
   window.scrollTo(0, 0);
   let m;
-  if ((m = h.match(/^#\/ex\/([\d.]+)/))) return viewExercise(m[1]);
+  if ((m = h.match(/^#\/ex\/([\d.]+)(?:\?from=([\d.]+))?/))) return viewExercise(m[1], m[2]);
+  if ((m = h.match(/^#\/learn\/([\d.]+)/))) return viewLearn(m[1]);
   if ((m = h.match(/^#\/part\/(\d+)/))) return viewPart(parseInt(m[1], 10));
   if ((m = h.match(/^#\/lesson\/(\d+)/))) return viewLesson(parseInt(m[1], 10));
   if (h.startsWith("#/profile")) return viewProfile();

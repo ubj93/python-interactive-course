@@ -15,14 +15,16 @@ from . import __version__, ui
 from .catalog import ROOT, Exercise, Part, all_exercises, find_exercise, find_part, load_catalog, total_xp
 from .progress import BADGES, RANKS, Progress
 from . import backup as backup_mod
-from .runner import RunResult, run_tests
+from .lessons import CARD_XP, Card, Lesson, find_lesson, load_all_lessons
+from .runner import RunResult, run_code_card, run_tests
 
 
 class App:
     def __init__(self) -> None:
         self.catalog = load_catalog()
         self.progress = Progress()
-        self.total_xp = total_xp(self.catalog)
+        self.lessons = load_all_lessons(self.catalog)
+        self.total_xp = total_xp(self.catalog) + sum(l.xp for ls in self.lessons.values() for l in ls)
 
     # ------------------------------------------------------------ helpers
     def resolve(self, ref: Optional[str]) -> Exercise:
@@ -106,14 +108,22 @@ class App:
         print(ui.heading("Parts"))
         for part in self.catalog:
             s, t, exp, txp = p.part_stats(part)
-            print(f"  {part.num:>2}. {part.title:<42} {ui.bar(s / t if t else 0, 16)} {s:>2}/{t:<2} {ui.dim(f'{exp}/{txp} xp')}")
-        nxt = self.next_unsolved()
+            ls = self.lessons.get(part.num, [])
+            ldone = sum(1 for l in ls if p.lesson_progress(l)[2])
+            lbl = f"{ldone}/{len(ls)} lessons · {s}/{t} exercises"
+            print(f"  {part.num:>2}. {part.title:<38} {ui.bar(ldone / len(ls) if ls else (s / t if t else 0), 14)} {lbl:<28} {ui.dim(f'{exp}/{txp} xp')}")
         print()
+        lesson = self.next_lesson()
+        if lesson:
+            done, total, _ = self.progress.lesson_progress(lesson)
+            where = f" (card {done + 1}/{total})" if done else ""
+            print(f"  Continue learning: {ui.bold(f'Lesson {lesson.id}')} {lesson.title}{where}   →  {ui.cyan('course learn')}")
+        nxt = self.next_unsolved()
         if nxt:
-            print(f"  Up next: {ui.bold(nxt.id)} {nxt.title}   →  {ui.cyan('course next')}")
-        else:
-            print("  " + ui.green("All exercises solved. 🎓"))
-        print(ui.dim("  Commands: list · show · run · hint · solution · lesson · daily · interview · watch · badges · backup"))
+            print(f"  Next exercise:     {ui.bold(nxt.id)} {nxt.title}   →  {ui.cyan('course next')}")
+        elif not lesson:
+            print("  " + ui.green("Everything complete. 🎓"))
+        print(ui.dim("  Commands: learn · list · show · run · hint · solution · lesson · daily · interview · watch · badges · backup"))
         return 0
 
     def cmd_list(self, args) -> int:
@@ -427,6 +437,312 @@ class App:
         print(ui.dim(f"Interactive Python with {self.rel(ex.exercise_file)} loaded. exit() to leave."))
         return subprocess.call([sys.executable, "-i", str(ex.exercise_file)], cwd=str(ex.dir))
 
+    # ------------------------------------------------------------ guided lessons
+    def all_lessons(self) -> List[Lesson]:
+        return [l for p in self.catalog for l in self.lessons.get(p.num, [])]
+
+    def next_lesson(self, after: Optional[Lesson] = None) -> Optional[Lesson]:
+        ls = self.all_lessons()
+        start = 0
+        if after is not None:
+            for i, l in enumerate(ls):
+                if l.id == after.id:
+                    start = i + 1
+                    break
+        for l in ls[start:]:
+            if not self.progress.lesson_progress(l)[2]:
+                return l
+        return None
+
+    def resolve_lesson(self, ref: Optional[str]) -> Lesson:
+        if ref in (None, "", "next"):
+            last = self.progress.data.get("last_lesson")
+            if last:
+                l = find_lesson(self.lessons, last)
+                if l and not self.progress.lesson_progress(l)[2]:
+                    return l
+            l = self.next_lesson()
+            if l is None:
+                self.die("Every lesson is complete. Try `course interview` or `course daily`.")
+            return l
+        l = find_lesson(self.lessons, ref)
+        if l is None:
+            part = find_part(self.catalog, ref)
+            if part and self.lessons.get(part.num):
+                for cand in self.lessons[part.num]:
+                    if not self.progress.lesson_progress(cand)[2]:
+                        return cand
+                return self.lessons[part.num][0]
+            self.die(f"No lesson matches '{ref}'. Try `course learn --list`.")
+        return l
+
+    def cmd_learn(self, args) -> int:
+        if args.list:
+            return self.list_lessons()
+        lesson = self.resolve_lesson(args.lesson)
+        part = next(p for p in self.catalog if p.num == lesson.part_num)
+        if args.show:
+            self.print_lesson_static(lesson)
+            return 0
+        if not sys.stdin.isatty():
+            self.print_lesson_static(lesson)
+            return 0
+        return self.run_lesson(lesson, part, restart=args.restart)
+
+    def list_lessons(self) -> int:
+        for part in self.catalog:
+            ls = self.lessons.get(part.num, [])
+            if not ls:
+                continue
+            print(ui.heading(f"Part {part.num} · {part.title}"))
+            for l in ls:
+                done, total, complete = self.progress.lesson_progress(l)
+                mark = ui.green("✔") if complete else (ui.yellow("…") if done else ui.dim("○"))
+                ex = ", ".join(l.exercise_ids)
+                print(f"  {mark} {l.id:<5} {l.title:<40} {ui.dim(f'{total} cards · ends in exercise {ex}')}")
+        print()
+        return 0
+
+    def render_card_body(self, body: str) -> str:
+        """Markdown-lite for the terminal: headlines bold, code fences indented, inline code plain."""
+        out = []
+        in_fence = False
+        for line in body.splitlines():
+            if line.startswith("```"):
+                in_fence = not in_fence
+                out.append("")
+                continue
+            if in_fence:
+                out.append("      " + line)
+                continue
+            if line.startswith("### "):
+                out.append("  " + ui.bold(line[4:]))
+                continue
+            if line.startswith("- "):
+                out.append("   • " + line[2:].replace("`", ""))
+                continue
+            out.append(ui.wrap(line.replace("`", "")) if line.strip() else "")
+        return "\n".join(out)
+
+    def print_lesson_static(self, lesson: Lesson) -> None:
+        print(ui.heading(f"Lesson {lesson.id} · {lesson.title}"))
+        for i, c in enumerate(lesson.cards, 1):
+            print(ui.dim(f"  ── {i}/{len(lesson.cards)} {c.kind} ──"))
+            if c.kind == "exercise":
+                ex = find_exercise(self.catalog, c.exercise_id or "")
+                print(f"  Exercise {c.exercise_id}: {ex.title if ex else '?'}   →  course show {c.exercise_id}")
+            else:
+                print(self.render_card_body(c.body))
+                if c.kind == "quiz":
+                    for j, o in enumerate(c.options):
+                        print(f"     {chr(97 + j)}) {o}")
+            print()
+
+    def run_lesson(self, lesson: Lesson, part: Part, restart: bool = False) -> int:
+        p = self.progress
+        if restart:
+            for i in range(len(lesson.cards)):
+                p.data.setdefault("cards", {}).pop(f"{lesson.id}:{i}", None)
+            p.save()
+        print(ui.heading(f"Lesson {lesson.id} · {lesson.title}   {ui.dim(f'Part {part.num}: {part.title}')}"))
+        print(ui.dim("  Enter continues · answers are a letter or text · q quits (progress is saved)\n"))
+        earned = 0
+        start = 0
+        for i in range(len(lesson.cards)):
+            if not p.card_state(lesson.id, i)["done"]:
+                start = i
+                break
+        else:
+            start = len(lesson.cards)
+        if start and start < len(lesson.cards):
+            print(ui.dim(f"  Resuming at card {start + 1} of {len(lesson.cards)}.\n"))
+        i = start
+        while i < len(lesson.cards):
+            card = lesson.cards[i]
+            print(ui.dim(f"  ── {i + 1}/{len(lesson.cards)} ──"))
+            try:
+                result = self.play_card(lesson, i, card)
+            except (KeyboardInterrupt, EOFError):
+                print("\n" + ui.dim("  Saved. Come back with `course learn`."))
+                return 0
+            if result == "quit":
+                print(ui.dim("  Saved. Come back with `course learn`."))
+                return 0
+            if isinstance(result, int):
+                earned += result
+            i += 1
+        done, total, complete = p.lesson_progress(lesson)
+        if complete:
+            print(ui.green(ui.bold(f"\n  ✔ Lesson {lesson.id} complete")) + ui.dim(f"  (+{earned} xp from cards this session)"))
+        else:
+            missing = [e for e in lesson.exercise_ids if not p.is_solved(e)]
+            print(ui.yellow(f"\n  Cards done. Finish exercise {', '.join(missing)} to complete the lesson: course run {missing[0]}"))
+        nxt = self.next_lesson(after=lesson)
+        if nxt:
+            print(f"  Next: {ui.bold(f'Lesson {nxt.id}')} {nxt.title}   →  {ui.cyan('course learn')}")
+        return 0
+
+    def play_card(self, lesson: Lesson, i: int, card: Card):
+        p = self.progress
+        if card.kind in ("teach", "recap"):
+            print(self.render_card_body(card.body))
+            ans = input(ui.dim("\n  [Enter] continue  [q] quit › ")).strip().lower()
+            if ans == "q":
+                return "quit"
+            p.record_card(lesson.id, i, checkable=False)
+            print()
+            return 0
+        if card.kind == "exercise":
+            ex = find_exercise(self.catalog, card.exercise_id or "")
+            if ex is None:
+                return 0
+            p.touch(ex)
+            p.save()
+            print(ui.bold(f"  Put it together: exercise {ex.id} · {ex.title}") + ui.dim(f"  ({ex.kyu} kyu, {ex.xp} xp)"))
+            print(ui.wrap(ex.description().split("\n\n")[1] if "\n\n" in ex.description() else ex.description()))
+            print(f"\n  Edit  {ui.bold(self.rel(ex.exercise_file))}")
+            while True:
+                if p.is_solved(ex.id):
+                    print(ui.green(f"  ✔ {ex.id} solved"))
+                    p.record_card(lesson.id, i, checkable=False)
+                    return 0
+                ans = input(ui.dim("  [r] run tests  [d] full description  [h] hint  [s] skip for now  [q] quit › ")).strip().lower()
+                if ans == "r":
+                    self.run_once(ex)
+                elif ans == "d":
+                    self.print_exercise(ex)
+                elif ans == "h":
+                    hint = p.reveal_hint(ex)
+                    print(ui.yellow(f"  Hint: {hint}") if hint else ui.dim("  No more hints."))
+                elif ans == "s":
+                    print(ui.dim(f"  Skipped. Come back with `course run {ex.id}`."))
+                    return 0
+                elif ans == "q":
+                    return "quit"
+        if card.kind == "code":
+            return self.play_code_card(lesson, i, card)
+        # checkable cards
+        print(self.render_card_body(card.body))
+        if card.kind == "quiz":
+            for j, o in enumerate(card.options):
+                print(f"     {ui.bold(chr(97 + j) + ')')} {o}")
+            prompt = "  your answer (letter) › "
+        else:
+            prompt = "  your answer › "
+        tries = 0
+        while True:
+            ans = input(ui.dim("\n" + prompt)).strip()
+            if ans.lower() == "q":
+                return "quit"
+            if not ans:
+                continue
+            tries += 1
+            ok = card.check(ans)
+            xp = p.record_card(lesson.id, i, checkable=True, correct=ok)
+            if ok:
+                print(ui.green("  ✔ Correct") + (ui.yellow(f"  +{xp} xp") if xp else ""))
+                if card.explanation:
+                    print(ui.wrap(card.explanation.replace("`", "")))
+                print()
+                return xp
+            if tries == 1:
+                print(ui.red("  ✘ Not quite. Try once more."))
+                continue
+            right = card.options[card.correct] if card.kind == "quiz" and card.correct is not None else card.answers[0]
+            print(ui.red("  ✘ Not this time.") + f"  The answer is: {ui.bold(right)}")
+            if card.explanation:
+                print(ui.wrap(card.explanation.replace("`", "")))
+            print()
+            return 0
+
+    def play_code_card(self, lesson: Lesson, i: int, card: Card):
+        p = self.progress
+        print(ui.wrap(card.prompt.replace("`", "")))
+        starter = card.starter
+        if starter.strip():
+            print(ui.dim("\n  Starter (already there, do not retype it):"))
+            for line in starter.rstrip("\n").splitlines():
+                print("      " + line)
+        print(ui.dim("\n  Type your Python below. Empty line runs it. `q` quits, `s` shows the solution."))
+        fails = 0
+        while True:
+            lines: List[str] = []
+            while True:
+                try:
+                    raw = input(ui.dim("  » " if not lines else "  … "))
+                except EOFError:
+                    return "quit"
+                if not lines and raw.strip().lower() == "q":
+                    return "quit"
+                if not lines and raw.strip().lower() == "s":
+                    print(ui.yellow("  Solution:"))
+                    for sl in card.solution.splitlines():
+                        print("      " + sl)
+                    if card.explanation:
+                        print(ui.wrap(card.explanation.replace("`", "")))
+                    p.record_card(lesson.id, i, checkable=True, correct=False)
+                    p.record_card(lesson.id, i, checkable=True, correct=False)
+                    print()
+                    return 0
+                if raw.strip() == "" and lines:
+                    break
+                if raw.strip() == "" and not lines:
+                    continue
+                lines.append(raw)
+            code = starter + "\n".join(lines) + "\n"
+            res = run_code_card(card, code)
+            if res.ok:
+                xp = p.record_card(lesson.id, i, checkable=True, correct=True)
+                if res.stdout.strip():
+                    print(ui.dim("  output: ") + res.stdout.strip().replace("\n", "\n          "))
+                print(ui.green("  ✔ It runs and does the job") + (ui.yellow(f"  +{xp} xp") if xp else ""))
+                if card.explanation:
+                    print(ui.wrap(card.explanation.replace("`", "")))
+                print()
+                return xp
+            fails += 1
+            p.record_card(lesson.id, i, checkable=True, correct=False)
+            if res.import_error:
+                print(ui.red("  ✘ Python could not run that:"))
+                print(_indent(_short_tb(res.import_error), "      "))
+            elif res.timed_out:
+                print(ui.red("  ✘ Timed out (infinite loop?)"))
+            else:
+                for t in res.tests:
+                    if t.status != "pass":
+                        print(ui.red(f"  ✘ {t.doc or t.name}"))
+                        print(_indent(_short_tb(t.traceback or t.message, keep_frames=0), "      "))
+                if res.stdout.strip():
+                    print(ui.dim("  your output: ") + res.stdout.strip().replace("\n", "\n               "))
+            if fails >= 2:
+                print(ui.yellow("  Here is one way to do it:"))
+                for sl in card.solution.splitlines():
+                    print("      " + sl)
+                if card.explanation:
+                    print(ui.wrap(card.explanation.replace("`", "")))
+                print(ui.dim("  Type it yourself to run it, or press Enter twice to move on."))
+                fails = 0
+                p.data["cards"][f"{lesson.id}:{i}"]["done"] = True
+                p.save()
+                # one more round: if they just press Enter, move on
+                try:
+                    raw = input(ui.dim("  » "))
+                except EOFError:
+                    return 0
+                if raw.strip() == "":
+                    print()
+                    return 0
+                lines = [raw]
+                while True:
+                    raw = input(ui.dim("  … "))
+                    if raw.strip() == "":
+                        break
+                    lines.append(raw)
+                res = run_code_card(card, starter + "\n".join(lines) + "\n")
+                print((ui.green("  ✔ It runs and does the job") if res.ok else ui.red("  ✘ Still not quite; moving on.")) + "\n")
+                return 0
+            print(ui.dim("  Try again."))
+
     def cmd_backup(self, args) -> int:
         dest = Path(args.to).expanduser() if args.to else None
         path, n, has_progress = backup_mod.backup(self.catalog, self.progress.path, dest)
@@ -522,6 +838,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = ap.add_subparsers(dest="cmd")
 
     sub.add_parser("status", help="dashboard: rank, xp, streak, progress per part")
+    s = sub.add_parser("learn", help="guided lesson: bite-sized cards with checks, ending in an exercise"); s.add_argument("lesson", nargs="?", help="lesson id like 1.2, a part number, or 'next'"); s.add_argument("--list", action="store_true", help="list lessons and progress"); s.add_argument("--show", action="store_true", help="print all cards without the interactive checks"); s.add_argument("--restart", action="store_true", help="forget answers for this lesson and start over")
     s = sub.add_parser("list", help="list exercises"); s.add_argument("part", nargs="?"); s.add_argument("-u", "--unsolved", action="store_true")
     s = sub.add_parser("show", help="show an exercise's problem statement"); s.add_argument("exercise", nargs="?")
     sub.add_parser("next", help="show the next unsolved exercise")

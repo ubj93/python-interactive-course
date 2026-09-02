@@ -230,3 +230,175 @@ class TestBackupRestore(unittest.TestCase):
         result = b.restore(evil, self.tmp / "p.json")
         self.assertEqual(result["exercises"], [])
         self.assertEqual(len(result["skipped"]), 2)
+
+
+class TestLessons(unittest.TestCase):
+    SAMPLE = """# Sample
+
+--- teach
+### One idea
+Text.
+```python
+x = 1
+```
+
+--- quiz
+Pick one
+- [ ] no
+- [x] yes
+> because
+
+--- predict
+What prints?
+```python
+print(7 // 2)
+```
+answer: 3 | 3.0
+> floor
+
+--- fill
+Blank
+```python
+name = raw.___()
+```
+answer: strip
+> strip
+
+--- exercise 1.1
+
+--- recap
+- done
+"""
+
+    def setUp(self):
+        from course.lessons import parse_lesson
+
+        self.tmp = Path(tempfile.mkdtemp())
+        f = self.tmp / "01_sample.md"
+        f.write_text(self.SAMPLE)
+        self.lesson = parse_lesson(f, 1, 1, "sample")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def test_parse(self):
+        l = self.lesson
+        self.assertEqual(l.title, "Sample")
+        self.assertEqual([c.kind for c in l.cards], ["teach", "quiz", "predict", "fill", "exercise", "recap"])
+        self.assertIn("x = 1", l.cards[0].body)
+        self.assertEqual(l.cards[1].options, ["no", "yes"])
+        self.assertEqual(l.cards[1].correct, 1)
+        self.assertEqual(l.cards[2].answers, ["3", "3.0"])
+        self.assertEqual(l.cards[3].explanation, "strip")
+        self.assertEqual(l.exercise_ids, ["1.1"])
+        self.assertEqual(l.xp, 3)
+
+    def test_check_answers(self):
+        quiz, predict, fill = self.lesson.cards[1], self.lesson.cards[2], self.lesson.cards[3]
+        self.assertTrue(quiz.check("b"))
+        self.assertTrue(quiz.check("2"))
+        self.assertTrue(quiz.check("yes"))
+        self.assertFalse(quiz.check("a"))
+        self.assertTrue(predict.check(" 3 "))
+        self.assertTrue(predict.check("'3'"))
+        self.assertFalse(predict.check("4"))
+        self.assertTrue(fill.check("strip"))
+        self.assertFalse(fill.check("lower"))
+
+    def test_validate_real_part1(self):
+        from course.lessons import load_lessons, validate_lesson
+
+        cat = load_catalog()
+        lessons = load_lessons(cat[0])
+        self.assertEqual(len(lessons), len(cat[0].exercises))
+        for l in lessons:
+            self.assertEqual(validate_lesson(l, cat[0]), [], l.id)
+
+    def test_card_progress_xp(self):
+        p = Progress(self.tmp / "p.json")
+        self.assertEqual(p.record_card("1.1", 1, checkable=True, correct=True), 1)
+        self.assertEqual(p.record_card("1.1", 1, checkable=True, correct=True), 0)   # no double xp
+        self.assertEqual(p.record_card("1.1", 2, checkable=True, correct=False), 0)
+        self.assertFalse(p.card_state("1.1", 2)["done"])
+        self.assertEqual(p.record_card("1.1", 2, checkable=True, correct=True), 0)   # second try: done, no xp
+        self.assertTrue(p.card_state("1.1", 2)["done"])
+        self.assertEqual(p.record_card("1.1", 3, checkable=True, correct=False), 0)
+        self.assertEqual(p.record_card("1.1", 3, checkable=True, correct=False), 0)
+        self.assertTrue(p.card_state("1.1", 3)["done"])   # two misses: move on
+        self.assertEqual(p.xp, 1)
+        done, total, complete = p.lesson_progress(self.lesson)
+        self.assertEqual((done, total, complete), (3, 6, False))
+
+
+class TestCodeCards(unittest.TestCase):
+    SRC = """# Code
+
+--- teach
+### Idea
+Text.
+
+--- code
+Print the hostname in lowercase.
+```python
+hostname = "MBP-J-DOE"
+```
+expect: mbp-j-doe
+check: hostname == "MBP-J-DOE"
+solution: print(hostname.lower())
+> lower() returns a lowercase copy.
+
+--- code
+Set `n` to the number of characters in `serial`.
+```python
+serial = "C02XG1234ABC"
+```
+check: n == 12
+solution: n = len(serial)
+> len counts characters.
+
+--- quiz
+Q
+- [x] a
+- [ ] b
+> e
+
+--- exercise 1.1
+"""
+
+    def setUp(self):
+        from course.lessons import parse_lesson
+
+        self.tmp = Path(tempfile.mkdtemp())
+        f = self.tmp / "01_code.md"
+        f.write_text(self.SRC)
+        self.lesson = parse_lesson(f, 1, 1, "code")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def test_parse_and_validate(self):
+        from course.lessons import validate_lesson
+
+        c = self.lesson.cards[1]
+        self.assertEqual(c.kind, "code")
+        self.assertEqual(c.expect, "mbp-j-doe")
+        self.assertEqual(c.checks, ['hostname == "MBP-J-DOE"'])
+        self.assertEqual(c.solution, "print(hostname.lower())")
+        self.assertEqual(c.starter, 'hostname = "MBP-J-DOE"\n')
+        self.assertEqual(c.prompt, "Print the hostname in lowercase.")
+        self.assertTrue(c.checkable)
+        self.assertEqual(self.lesson.xp, 3)
+        self.assertEqual(validate_lesson(self.lesson, load_catalog()[0]), [])
+
+    def test_grading(self):
+        from course.runner import run_code_card
+
+        c = self.lesson.cards[1]
+        self.assertTrue(run_code_card(c, c.starter + c.solution + "\n").ok)
+        bad = run_code_card(c, c.starter + "print(hostname)\n")
+        self.assertFalse(bad.ok)
+        self.assertEqual([t.status for t in bad.tests], ["fail", "pass"])
+        c2 = self.lesson.cards[2]
+        self.assertTrue(run_code_card(c2, c2.starter + "n = len(serial)\n").ok)
+        self.assertFalse(run_code_card(c2, c2.starter + "n = 11\n").ok)
+        self.assertFalse(run_code_card(c2, c2.starter + "print(\n").ok)

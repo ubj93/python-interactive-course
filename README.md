@@ -18,6 +18,28 @@ pagination and rate limits. The subject is Python; the setting is the job.
 Runs anywhere Python 3.9+ runs. Zero dependencies. Also runs entirely in the browser,
 including on a phone.
 
+## How a lesson works
+
+Each exercise is reached through a **guided lesson**: a handful of short cards in the
+style of Mimo. A card teaches one idea in plain words with a snippet, the next card
+checks it (multiple choice, "what does this print?", or fill in the blank), and the
+lesson ends with a real exercise that puts the ideas together. Correct first answers
+earn XP; a wrong answer gets a second try, then the explanation. Every part also has a
+full reference chapter for when you want the whole picture.
+
+```
+Lesson 1.3 · Making decisions          9 cards · ends in exercise 1.3
+  1 learn     if, elif, else
+  2 predict   What does this print?  →  WARN
+  3 learn     Order matters
+  4 learn     Comparisons, and the special value None
+  5 quiz      Which expression is true only between 0 and 1?
+  6 fill      if used ___ None:
+  7 learn     Return early
+  8 exercise  1.3 Classify disk usage
+  9 recap
+```
+
 ## Two ways to use it
 
 ### Terminal (the main experience)
@@ -26,8 +48,10 @@ including on a phone.
 git clone https://github.com/ubj93/python-interactive-course
 cd python-interactive-course
 python3 course.py            # dashboard: rank, xp, streak, progress per part
-python3 course.py lesson 1   # read the lesson for Part 1
-python3 course.py next       # show the next unsolved exercise
+python3 course.py learn      # guided lesson: cards, checks, then the exercise (resumes where you left off)
+python3 course.py learn --list   # all lessons and progress
+python3 course.py lesson 1   # the reference chapter for Part 1
+python3 course.py next       # show the next unsolved exercise (practice mode)
 # edit the file it names, then:
 python3 course.py run        # auto-grade the last exercise you opened
 python3 course.py watch 1.2  # re-run on every save
@@ -70,8 +94,8 @@ python3 -m http.server -d docs 8000  # then open http://localhost:8000
 
 ## What is in the course
 
-Thirteen parts, 88 exercises, graded from 8 kyu (warm-up) to 3 kyu (40-minute
-capstones). Full plan in [`curriculum/SYLLABUS.md`](curriculum/SYLLABUS.md).
+Thirteen parts, 88 guided lessons, 88 exercises graded from 8 kyu (warm-up) to 3 kyu
+(40-minute capstones). Full plan in [`curriculum/SYLLABUS.md`](curriculum/SYLLABUS.md).
 
 | Part | Topic | What it drills |
 |---|---|---|
@@ -99,7 +123,8 @@ Each exercise folder has a stub (`exercise.py`), a `unittest` suite, reference
 solutions, and metadata. The runner executes the tests in a subprocess with a timeout,
 shows each test's one-line description, and trims tracebacks down to your code.
 
-- **XP** comes from difficulty (8 kyu = 2 xp … 3 kyu = 149 xp, Codewars' curve).
+- **XP** comes from difficulty (8 kyu = 2 xp … 3 kyu = 149 xp, Codewars' curve), plus
+  1 xp for every lesson card answered correctly on the first try.
 - **Bonuses**: first-try pass ×1.25, inside the time limit ×1.1. **Penalties**: each
   hint −25%, peeking at the solution before passing ×0.1.
 - **Rank** is your share of the total XP: 8 kyu Help Desk → 1 kyu Principal CPE.
@@ -148,8 +173,8 @@ to "In review" when the PR opens and "Done" when the release tag exists.
 
 ```
 course.py            entry point
-course/              engine: catalog, runner, harness, progress, cli, ui
-curriculum/          parts → exercises (stub, tests, solution, meta) + LESSON.md
+course/              engine: catalog, lessons, runner, harness, progress, backup, cli, ui
+curriculum/          parts → lessons/ (guided cards) + exercises (stub, tests, solution, meta) + LESSON.md
 docs/                browser version (index.html, worker.js, generated exercises.js)
 tools/               verify.py, build_web.py
 tests/               engine unit tests
