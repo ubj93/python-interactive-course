@@ -42,9 +42,10 @@ Tip: `alias course='python3 /path/to/course.py'`. Progress is stored in
 
 ### Browser
 
-Open `docs/index.html` through any static server, or enable GitHub Pages on the
-`docs/` folder of this repository. Python runs in the browser via Pyodide, so it works
-in mobile Safari for the daily kata on the train. Progress lives in `localStorage` and
+Live at **https://ubj93.github.io/python-interactive-course/** (deployed from `docs/`
+by the `pages` workflow on every merge to `main`). Python runs in the browser via
+Pyodide, so it works in mobile Safari for the daily kata on the train. To run it
+locally, serve the `docs/` folder with any static server. Progress lives in `localStorage` and
 can be exported and imported to move between devices or merged with the terminal file
 (same JSON format).
 
