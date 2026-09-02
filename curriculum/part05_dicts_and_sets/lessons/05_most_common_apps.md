@@ -19,6 +19,18 @@ print(sorted(set(["Slack", "Chrome", "Slack"])))
 answer: ['Chrome', 'Slack']
 > The set keeps one `Slack`. `sorted` puts the names in alphabetical order; the list you started from is unchanged.
 
+--- code
+Count into `counts` how many devices in `installs` have each app, counting an app once per device.
+```python
+installs = {"C02A": ["Slack", "Slack", "Chrome"], "C02B": ["Chrome"]}
+```
+check: counts == {"Slack": 1, "Chrome": 2}
+solution: counts = {}
+solution: for apps in installs.values():
+solution:     for app in set(apps):
+solution:         counts[app] = counts.get(app, 0) + 1
+> `set(apps)` turns the first device's list into `{"Slack", "Chrome"}`, so `Slack` is counted once. `Chrome` appears on both devices and reaches 2.
+
 --- teach
 ### Sort pairs with a two-part key
 `counts.items()` gives `(app, count)` tuples. Sort them with a key function that returns a tuple: Python compares the first element, and only on a tie the second. Negating the count sorts it descending while the name still sorts ascending, all in one `sorted` call.
@@ -35,6 +47,15 @@ print(sorted(pairs, key=lambda t: (-t[1], t[0])))
 ```
 answer: [('Chrome', 2), ('Zoom', 2), ('Slack', 1)]
 > Both `Zoom` and `Chrome` have `-2` as the first key, so the tie goes to the name, and `Chrome` comes first. `Slack` has `-1`, which is larger, so it sorts last.
+
+--- code
+Set `ranked` to the `(app, count)` pairs of `counts`, sorted by count descending and then by name ascending.
+```python
+counts = {"Zoom": 2, "Chrome": 2, "Slack": 1}
+```
+check: ranked == [("Chrome", 2), ("Zoom", 2), ("Slack", 1)]
+solution: ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+> `items()` gives the pairs, and the key tuple `(-count, name)` orders them: the highest count first, and among equal counts the alphabetically first name.
 
 --- quiz
 Why not `sorted(counts.items(), key=lambda t: (t[1], t[0]), reverse=True)`?

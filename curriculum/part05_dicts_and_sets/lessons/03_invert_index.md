@@ -21,6 +21,19 @@ for user, serials in d.items():
 answer: jdoe 2 asmith 0
 > `items()` yields `('jdoe', ['A', 'B'])` then `('asmith', [])`. Each print shows the user and the list length, on two lines.
 
+--- code
+Build `device_to_user`, mapping each serial in `user_to_devices` to its user. No conflict check yet.
+```python
+user_to_devices = {"jdoe": ["A", "B"], "asmith": ["C"]}
+```
+check: device_to_user == {"A": "jdoe", "B": "jdoe", "C": "asmith"}
+check: list(device_to_user) == ["A", "B", "C"]
+solution: device_to_user = {}
+solution: for user, serials in user_to_devices.items():
+solution:     for serial in serials:
+solution:         device_to_user[serial] = user
+> The outer loop gives one user and their list; the inner loop assigns each serial. Keys land in the order they were met: `A`, `B` from `jdoe`, then `C`.
+
 --- teach
 ### Assignment overwrites silently
 Assigning to a key that already exists replaces the value with no warning. For an index that must be one-to-one, that is a bug waiting to happen: a serial under two users would quietly keep the last one.
@@ -62,6 +75,19 @@ raise ValueError(f"serial ___ is assigned to both {owner} and {user}")
 ```
 answer: {serial}
 > Inside an f-string, `{serial}` is replaced by the value. A message that names the serial is what lets the person reading the log fix the directory.
+
+--- code
+If `serial` is already in `d` under a different user, raise `ValueError` naming the serial; otherwise store `user` under `serial`.
+```python
+d = {"A": "jdoe"}
+serial, user = "B", "asmith"
+```
+check: d == {"A": "jdoe", "B": "asmith"}
+solution: owner = d.get(serial)
+solution: if owner is not None and owner != user:
+solution:     raise ValueError(f"serial {serial} is assigned to both {owner} and {user}")
+solution: d[serial] = user
+> `B` is new, so `get` returns `None`, the guard is skipped and the pair is stored. Change `serial` to `"A"` and the same code raises with `A` in the message.
 
 --- teach
 ### Leave the input alone

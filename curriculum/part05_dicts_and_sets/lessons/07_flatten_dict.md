@@ -8,14 +8,16 @@ path = f"{prefix}{sep}{key}" if prefix else key
 ```
 With `prefix = "payload.wifi"` and `key = "ssid"` that is `"payload.wifi.ssid"`; with an empty prefix it is just `"ssid"`.
 
---- predict
-What does this print?
+--- code
+Write `join_path(prefix, key)` that returns the key joined onto the prefix with `sep`, or just the key when the prefix is empty.
 ```python
-prefix, sep, key = "", ".", "name"
-print(f"{prefix}{sep}{key}" if prefix else key)
+sep = "."
+def join_path(prefix, key):
 ```
-answer: name
-> An empty prefix is falsy, so the `else` branch returns the bare key. Without that branch you would get `.name`.
+check: join_path("", "name") == "name"
+check: join_path("payload.wifi", "ssid") == "payload.wifi.ssid"
+solution:     return f"{prefix}{sep}{key}" if prefix else key
+> An empty prefix is falsy, so the `else` branch returns the bare key. Without that branch the top-level keys would come out as `.name`.
 
 --- teach
 ### Decide what is a leaf
@@ -74,14 +76,19 @@ for key, value in flat.items():
     node[last] = value
 ```
 
---- predict
-What does this print?
+--- code
+Split `key` on `.`, walk down `result` creating dicts as needed, and store `value` under the last part.
 ```python
-*parents, last = "a.b.c".split(".")
-print(parents, last)
+result = {}
+key, value = "a.b.c", 1
 ```
-answer: ['a', 'b'] c
-> The starred name collects all but the last piece into a list; `last` gets `'c'`. With a key that has no separator, `parents` is an empty list.
+check: result == {"a": {"b": {"c": 1}}}
+solution: *parents, last = key.split(".")
+solution: node = result
+solution: for part in parents:
+solution:     node = node.setdefault(part, {})
+solution: node[last] = value
+> `parents` is `['a', 'b']` and `last` is `'c'`. Each `setdefault` creates the next level and moves `node` into it; the final assignment lands at the bottom.
 
 --- teach
 ### Detect conflicts in both orders

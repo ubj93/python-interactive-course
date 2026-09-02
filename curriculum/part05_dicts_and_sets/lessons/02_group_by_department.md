@@ -30,6 +30,18 @@ print(g)
 answer: {'IT': ['a', 'b']}
 > The first call inserts `[]` and appends `a`. The second finds the key, returns the same list, and appends `b`. The default `[]` on the second call is created but never used.
 
+--- code
+Group the hostnames in `pairs` by department into a dict called `groups`.
+```python
+pairs = [("IT", "a"), ("Finance", "b"), ("IT", "c")]
+```
+check: groups == {"IT": ["a", "c"], "Finance": ["b"]}
+check: list(groups) == ["IT", "Finance"]
+solution: groups = {}
+solution: for dept, host in pairs:
+solution:     groups.setdefault(dept, []).append(host)
+> Unpack each pair in the loop header. `setdefault` creates `IT` and `Finance` the first time each is seen, and the second `IT` reuses the existing list.
+
 --- quiz
 How does `d.setdefault(k, [])` differ from `d.get(k, [])`?
 - [x] `setdefault` inserts the default into the dict when the key is missing; `get` never changes the dict
@@ -52,6 +64,15 @@ print(("   " or "").strip() or "unassigned")
 ```
 answer: unassigned
 > `"   "` is truthy (it has characters), so the first `or` keeps it. `strip()` makes it `""`, which is falsy, so the second `or` gives `"unassigned"`.
+
+--- code
+Set `dept` to the department of `device`: stripped of surrounding spaces, or `"unassigned"` when missing, `None` or blank.
+```python
+device = {"hostname": "mbp-1", "department": " Finance "}
+```
+check: dept == "Finance"
+solution: dept = (device.get("department") or "").strip() or "unassigned"
+> `get` returns `" Finance "`, the `or ""` leaves it alone, `strip()` trims it, and the final `or` is not needed because the result is truthy. Swap in `"   "` or drop the key and the same line gives `"unassigned"`.
 
 --- teach
 ### Skip what the spec says to skip

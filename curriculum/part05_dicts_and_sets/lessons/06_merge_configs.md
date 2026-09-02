@@ -29,16 +29,18 @@ for key, value in override.items():
 ```
 This alone is a flat merge: later values win and new keys are appended.
 
---- predict
-What does this print?
+--- code
+Set `result` to a flat merge: a copy of `base` with every pair of `over` written over it. `base` must stay unchanged.
 ```python
-base = {"a": 1}
-r = dict(base)
-r["b"] = 2
-print(base)
+base = {"a": 1, "b": 2}
+over = {"b": 3, "c": 4}
 ```
-answer: {'a': 1}
-> `dict(base)` is a separate dict. Adding `b` to the copy does not touch the original.
+check: result == {"a": 1, "b": 3, "c": 4}
+check: base == {"a": 1, "b": 2}
+solution: result = dict(base)
+solution: for key, value in over.items():
+solution:     result[key] = value
+> `dict(base)` is a separate dict, so writing `b` and `c` into it leaves `base` alone. `b` is overwritten in place and keeps its position; `c` is appended.
 
 --- teach
 ### Recursion: merge two, and call yourself for nested dicts
@@ -81,6 +83,17 @@ Now the caller can append to a list in the result and the inputs stay exactly as
 - [ ] `['a']`
 - [ ] It raises an error
 > Both dicts point at the same list, so appending through `r` is visible through `base`. That is the sharing `deepcopy` removes.
+
+--- code
+Set `r` to a copy of `base` that shares nothing with it, so that changing `r["tags"]` cannot affect `base`.
+```python
+import copy
+base = {"tags": ["a"]}
+```
+check: r == {"tags": ["a"]}
+check: r["tags"] is not base["tags"]
+solution: r = copy.deepcopy(base)
+> `deepcopy` copies the dict and the list inside it, so the two `tags` lists are different objects. `dict(base)` would have passed the first check and failed the second.
 
 --- teach
 ### Any number of configs

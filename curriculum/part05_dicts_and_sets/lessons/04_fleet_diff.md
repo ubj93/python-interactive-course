@@ -42,6 +42,18 @@ print(sorted({"A", "B", "C"} - {"B"}))
 answer: ['A', 'C']
 > `-` removes every member of the right set from the left. `sorted` turns the result into an ordered list.
 
+--- code
+Set `only_mdm` to the serials in `mdm` but not `inv`, and `both` to the serials in both.
+```python
+mdm = {"A", "B", "C"}
+inv = {"B", "C", "D"}
+```
+check: only_mdm == {"A"}
+check: both == {"B", "C"}
+solution: only_mdm = mdm - inv
+solution: both = mdm & inv
+> `-` is difference and `&` is intersection. Both return new sets and leave `mdm` and `inv` as they were.
+
 --- quiz
 `p` is the purchased set, `m` the MDM and `i` the inventory. Which expression is "purchased but seen by neither"?
 - [x] `p - (m | i)`
@@ -65,6 +77,15 @@ return {s.strip().upper() for s in source ___ s.strip()}
 ```
 answer: if
 > The `if` at the end filters: an empty string after stripping is falsy, so it is skipped. The `upper()` on the kept ones makes the comparison case-insensitive.
+
+--- code
+Set `clean` to the set of serials in `raw`, stripped and uppercased, with blank entries dropped.
+```python
+raw = [" c02a ", "C02A", "c02b", " "]
+```
+check: clean == {"C02A", "C02B"}
+solution: clean = {s.strip().upper() for s in raw if s.strip()}
+> The two spellings of `C02A` become the same member and the blank entry fails the `if`. Two members remain, whatever order the list had.
 
 --- teach
 ### Sort before returning

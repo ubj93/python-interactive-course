@@ -38,6 +38,15 @@ print({"os": ""}.get("os") or "unknown")
 answer: unknown
 > The key exists, so `get` returns `""`. An empty string is falsy, so `or` moves on to `"unknown"`.
 
+--- code
+Set `os_name` to the OS of `device`, or `"unknown"` when it is missing, `None` or empty.
+```python
+device = {"hostname": "mbp-1", "os": ""}
+```
+check: os_name == "unknown"
+solution: os_name = device.get("os") or "unknown"
+> `get` returns the empty string, which is falsy, so `or` supplies the fallback. The same line gives `"unknown"` for a missing key and for `None`, and keeps a real value untouched.
+
 --- teach
 ### The counting idiom
 To count, look up the current count with a default of 0, add one, and store it back. The first time a key is seen `get` returns 0 and the entry is created with 1; every later time the existing count grows.
@@ -56,6 +65,17 @@ counts[os_name] = counts.___(os_name, 0) + 1
 ```
 answer: get
 > `get(os_name, 0)` gives 0 for a new key and the current count for a known one. Adding 1 and assigning covers both cases without an `if`.
+
+--- code
+Count how often each name appears in `names`, into a dict called `counts`.
+```python
+names = ["macOS", "Windows", "macOS"]
+```
+check: counts == {"macOS": 2, "Windows": 1}
+solution: counts = {}
+solution: for name in names:
+solution:     counts[name] = counts.get(name, 0) + 1
+> Start empty. The first `macOS` becomes 1, `Windows` becomes 1, and the second `macOS` reads the existing 1 and stores 2. The keys come out in first-seen order.
 
 --- teach
 ### Dicts remember insertion order
