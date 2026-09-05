@@ -573,13 +573,15 @@ class App:
             return self.list_lessons()
         lesson = self.resolve_lesson(args.lesson)
         part = next(p for p in self.catalog if p.num == lesson.part_num)
+        if getattr(args, "card", None) is not None and args.card not in {card.id for card in lesson.cards}:
+            raise ValueError("Choose a stable card ID belonging to this lesson.")
         if args.show:
             self.print_lesson_static(lesson)
             return 0
         if not sys.stdin.isatty():
             self.print_lesson_static(lesson)
             return 0
-        return self.run_lesson(lesson, part, restart=args.restart)
+        return self.run_lesson(lesson, part, restart=args.restart, start_card=getattr(args, "card", None))
 
     def list_lessons(self) -> int:
         for part in self.catalog:
@@ -630,8 +632,10 @@ class App:
                         print(f"     {chr(97 + j)}) {o}")
             print()
 
-    def run_lesson(self, lesson: Lesson, part: Part, restart: bool = False) -> int:
+    def run_lesson(self, lesson: Lesson, part: Part, restart: bool = False, start_card: str = None) -> int:
         p = self.progress
+        if start_card is not None and start_card not in {card.id for card in lesson.cards}:
+            raise ValueError("Choose a stable card ID belonging to this lesson.")
         if restart:
             p.restart_lesson(lesson)
         print(ui.heading(f"Lesson {lesson.id} · {lesson.title}   {ui.dim(f'Part {part.num}: {part.title}')}"))
@@ -644,7 +648,10 @@ class App:
                 break
         else:
             start = len(lesson.cards)
-        if start and start < len(lesson.cards):
+        if start_card is not None:
+            start = next(index for index, card in enumerate(lesson.cards) if card.id == start_card)
+            print(ui.dim("  Reviewing from a chosen card; saved answers and rewards are kept.\n"))
+        elif start and start < len(lesson.cards):
             print(ui.dim(f"  Resuming at card {start + 1} of {len(lesson.cards)}.\n"))
         i = start
         while i < len(lesson.cards):
@@ -750,7 +757,7 @@ class App:
         print(ui.wrap(card.prompt.replace("`", "")))
         starter = card.starter
         if starter.strip():
-            print(ui.dim("\n  Starter (already there, do not retype it):"))
+            print(ui.dim("\n  Starter (already there):"))
             for line in starter.rstrip("\n").splitlines():
                 print("      " + line)
         print(ui.dim("\n  Type your Python below. Empty line runs it. `q` quits, `s` shows the solution."))
@@ -953,7 +960,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--note", default=""); s.add_argument("--interval", type=int, choices=(1, 3, 7, 30))
     s.add_argument("-v", "--verbose", action="store_true")
     s = sub.add_parser("refresher", help="saved two-week Interview refresher path"); s.add_argument("action", nargs="?", default="status", choices=["status", "list", "open", "done", "skip", "revisit", "note", "mock"]); s.add_argument("activity", nargs="?", help="activity ID from `course refresher list`; defaults to saved next activity"); s.add_argument("--text", help="personal takeaway for the note action")
-    s = sub.add_parser("learn", help="guided lesson: bite-sized cards with checks, ending in an exercise"); s.add_argument("lesson", nargs="?", help="lesson id like 1.2, a part number, or 'next'"); s.add_argument("--list", action="store_true", help="list lessons and progress"); s.add_argument("--show", action="store_true", help="print all cards without the interactive checks"); s.add_argument("--restart", action="store_true", help="forget answers for this lesson and start over")
+    s = sub.add_parser("learn", help="guided lesson: bite-sized cards with checks, ending in an exercise"); s.add_argument("lesson", nargs="?", help="lesson id like 1.2, a part number, or 'next'"); s.add_argument("--list", action="store_true", help="list lessons and progress"); s.add_argument("--show", action="store_true", help="print all cards without the interactive checks"); review_start = s.add_mutually_exclusive_group(); review_start.add_argument("--restart", action="store_true", help="forget answers for this lesson and start over"); review_start.add_argument("--card", help="review from this stable card ID while keeping saved answers and rewards")
     s = sub.add_parser("list", help="list exercises"); s.add_argument("part", nargs="?"); s.add_argument("-u", "--unsolved", action="store_true")
     s = sub.add_parser("show", help="show an exercise's problem statement"); s.add_argument("exercise", nargs="?")
     sub.add_parser("next", help="show the next unsolved exercise")

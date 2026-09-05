@@ -616,13 +616,18 @@ function viewPart(num) {
   <div class="list">${items}</div>
   ${ls.length ? `<div class="card" style="margin-top:14px"><h2>Practice list</h2><p class="muted">Jump straight to an exercise (Codewars mode).</p><div class="list">${p.exercises.map(itemHtml).join("")}</div></div>` : ""}`;
 }
-function viewLearn(id) {
+function viewLearn(id, startCard = null) {
   const l = LESSON_BY_ID[id]; if (!l) return viewHome();
   const p = l.part;
   let i = 0; while (i < l.cards.length && cardState(l.id, l.cards[i].id).done) i++;
+  if (startCard !== null) {
+    i = l.cards.findIndex(card => card.id === startCard);
+    if (i < 0) { toast("That card does not belong to this lesson."); return viewPart(p.num); }
+  }
   const state = { i, sessionXp: 0, tries: 0 };
   const render = () => {
     const c = l.cards[state.i];
+    if (startCard !== null) history.replaceState(null, "", "#/learn/" + l.id + "?card=" + encodeURIComponent(c.id));
     const dots = l.cards.map((cc, j) => { const st = cardState(l.id, cc.id); const cls = j === state.i ? "cur" : st.done ? (st.correct === false ? "miss" : "done") : ""; return `<span class="dot ${cls}"></span>`; }).join("");
     let body = "", controls = "";
     const md = (t) => (window.marked ? marked.parse(t) : cardToHtml(t));
@@ -643,9 +648,11 @@ function viewLearn(id) {
       body = `<h3>Put it together: ${ex ? ex.id + " · " + esc(ex.title) : c.exercise_id}</h3>` + (ex ? `<div class="desc">${descToHtml(ex.description.split("\n\n").slice(0, 2).join("\n\n"))}</div><p class="muted">${kyuTag(ex.kyu)} ${ex.xp} xp${ex.time_limit_min ? " · ⏱ " + ex.time_limit_min + " min" : ""}</p>` : "");
       controls = solved ? `<span class="ok">✔ solved</span> <button class="btn" id="nextbtn">Continue ›</button>` : `<a class="btn" href="#/ex/${c.exercise_id}?from=${l.id}">Open the exercise ›</a> <button class="btn secondary" id="skipbtn">Skip for now</button>`;
     }
+    const bridge = (DATA.bash_bridges || []).find(item => item.lesson === l.id && c.id.startsWith("bash-" + item.id + "-"));
     const kindLabel = { teach: "Learn", quiz: "Quick check", predict: "What does this print?", fill: "Fill in the blank", code: "Try it: write the code", exercise: "Exercise", recap: "Recap" }[c.kind];
     app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › <a href="#/part/${p.num}">Part ${p.num}</a> › Lesson ${l.id}</div>
       <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Lesson ${l.id} · ${esc(l.title)}</h2><span class="muted">${state.i + 1}/${l.cards.length}</span></div><div class="dots" style="margin-top:8px">${dots}</div>
+      ${bridge ? `<p class="muted">Bash-to-Python bridge · ${esc(bridge.title)} · <a href="#/diagnostic">Return to diagnostic</a></p>` : ""}
       <div class="kind">${kindLabel}</div><div class="cardbody">${body}</div><div id="feedback"></div>
       <div class="row" style="margin-top:14px">${controls}<span class="spacer"></span>${state.i > 0 ? `<button class="btn small secondary" id="backbtn">‹ Back</button>` : ""}</div></div>`;
     const advance = () => { if (state.i + 1 < l.cards.length) { state.i++; state.tries = 0; render(); } else finish(); };
@@ -720,6 +727,7 @@ function viewLearn(id) {
     if (cb) { const go = () => { const v = $("#ans").value; if (!v.trim()) return; state.tries++; answered(checkCard(c, v), c.answers[0]); }; cb.onclick = go; $("#ans").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); }); $("#ans").focus(); }
   };
   const finish = () => {
+    if (startCard !== null) history.replaceState(null, "", "#/learn/" + l.id);
     const lp = lessonProgress(l); const nxt = nextLesson(l);
     const missing = l.cards.filter((c) => c.kind === "exercise" && !P.solved[c.exercise_id]).map((c) => c.exercise_id);
     app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › <a href="#/part/${p.num}">Part ${p.num}</a> › Lesson ${l.id}</div>
@@ -950,7 +958,7 @@ function route() {
   window.scrollTo(0, 0);
   let m;
   if ((m = h.match(/^#\/ex\/([\d.]+)(?:\?from=([\d.]+))?/))) return viewExercise(m[1], m[2]);
-  if ((m = h.match(/^#\/learn\/([\d.]+)/))) return viewLearn(m[1]);
+  if ((m = h.match(/^#\/learn\/([\d.]+)(?:\?([^#]*))?$/))) return viewLearn(m[1], new URLSearchParams(m[2] || "").get("card"));
   if ((m = h.match(/^#\/part\/(\d+)/))) return viewPart(parseInt(m[1], 10));
   if ((m = h.match(/^#\/lesson\/(\d+)/))) return viewLesson(parseInt(m[1], 10));
   if ((m = h.match(/^#\/diagnostic(?:\/([\d.]+))?$/))) return viewDiagnostic(m[1]);

@@ -1,5 +1,72 @@
 # Keyword overrides
 
+--- teach #bash-defaults-worked
+### Bash bridge: defaults and scope are explicit
+Python creates a default once when `def` runs. Use `None` for an optional collection, then create a fresh one inside the function. A parameter is a local name: rebinding it does not rebind a caller's variable.
+```python
+prefix = "lab"
+def label(host, prefix="node"):
+    prefix = prefix.upper()
+    return prefix + "-" + host
+
+print(label("a"))       # NODE-a
+print(prefix)           # lab
+```
+Pass caller values explicitly rather than relying on a shell variable to be visible in another function. This bridge uses functions, lists and `append`. Copy an explicitly supplied list too when your function promises to leave it unchanged.
+
+--- code #bash-defaults-modify
+Repair `add_tag`: omitted tags must start fresh on every call, and a supplied list must stay unchanged. Keep the local `tag` uppercase; do not change any caller variable.
+
+Browser: edit the function. Terminal: type the complete corrected function below the starter.
+```python
+def add_tag(tag, tags=[]):
+    tag = tag.upper()
+    tags.append(tag)
+    return tags
+
+saved_tags = ["OLD"]
+
+# Check helper: keep both outputs alive to catch shared storage.
+def separate_tag_results():
+    first = add_tag("qa")
+    second = add_tag("ops")
+    return first == ["QA"] and second == ["OPS"] and first is not second
+```
+check: separate_tag_results()
+check: add_tag("new", saved_tags) == ["OLD", "NEW"] and saved_tags == ["OLD"]
+solution: def add_tag(tag, tags=None):
+solution:     tags = [] if tags is None else list(tags)
+solution:     tag = tag.upper()
+solution:     tags.append(tag)
+solution:     return tags
+> `None` avoids a shared default; `list(tags)` protects an explicitly supplied list. Rebinding local `tag` does not replace the caller's string.
+
+--- code #bash-defaults-check
+Independent check: write `with_retry(delays=None, extra=2)`. Return a fresh list containing the supplied delays followed by `extra`. With no delays, return `[extra]`. Leave the input list and module-level `extra` unchanged.
+
+Browser: edit the function. Terminal: type the complete corrected function below the starter.
+```python
+extra = 99
+saved_delays = [1, 3]
+
+def with_retry(delays=None, extra=2):
+    pass
+
+# Check helper: later calls must leave the earlier result intact.
+def separate_retry_results():
+    first = with_retry()
+    second = with_retry(extra=4)
+    return first == [2] and second == [4] and first is not second
+```
+check: separate_retry_results()
+check: with_retry(extra=0) == [0] and extra == 99
+check: with_retry(saved_delays, extra=5) == [1, 3, 5] and saved_delays == [1, 3]
+solution: def with_retry(delays=None, extra=2):
+solution:     result = [] if delays is None else list(delays)
+solution:     result.append(extra)
+solution:     return result
+> The parameter `extra` belongs to the call, while the module variable stays 99. Every result has its own list. The bridge is complete; continue this lesson or return to the diagnostic.
+
 --- teach #card-624f75f602945aca
 ### `**kwargs` collects extra keyword arguments
 Two stars before a parameter name mean "gather every keyword argument the caller passed into a dict". The names are the keys, the values the values. `kwargs` is a convention; a descriptive name like `overrides` reads better.

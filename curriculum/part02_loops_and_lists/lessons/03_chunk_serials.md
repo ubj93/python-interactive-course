@@ -1,5 +1,70 @@
 # Slicing into batches
 
+--- teach #bash-aliasing-worked
+### A second name can share the same list
+You already know lists, functions and `append`. In Bash, expanding a scalar value into another variable copies its text. In Python, assigning an existing list or dict to another name points both names at the same object. Assignment does not copy the collection.
+
+```python
+labels = ["draft"]
+alias = labels
+alias.append("checked")
+print(labels)                 # ['draft', 'checked']
+
+separate = labels.copy()
+separate.append("sent")
+print(labels)                 # ['draft', 'checked']
+print(separate)               # ['draft', 'checked', 'sent']
+```
+
+Appending through `alias` changes the shared list. `.copy()` creates a different outer list, so appending through `separate` leaves `labels` alone. A dict also has `.copy()`.
+
+These are **shallow** copies: nested lists or dicts would still be shared. The next tasks use only flat lists of strings, so copying the outer list is enough for their changes.
+
+--- code #bash-aliasing-modify
+`add_label(labels, extra)` must return a new list containing all the original strings followed by `extra`, leaving its input list unchanged. Fix the assignment that currently shares the input. Empty input is allowed.
+
+Browser: edit the function. Terminal: type the complete corrected function below the starter.
+```python
+def add_label(labels, extra):
+    updated = labels
+    updated.append(extra)
+    return updated
+
+queued = ["queued"]
+empty = []
+reviewed = ["reviewed", "signed"]
+```
+check: add_label(queued, "packed") == ["queued", "packed"] and queued == ["queued"]
+check: add_label(empty, "ready") == ["ready"] and empty == []
+check: add_label(reviewed, "filed") == ["reviewed", "signed", "filed"] and reviewed == ["reviewed", "signed"]
+solution: def add_label(labels, extra):
+solution:     updated = labels.copy()
+solution:     updated.append(extra)
+solution:     return updated
+> Copy the list before appending. Each check examines both the returned list and the original input after the call.
+
+--- code #bash-aliasing-check
+Write `upper_first(labels)`. Return a new list of strings with only its first string changed to uppercase, leaving the input unchanged. Preserve the other strings and their order. For an empty input, return a new empty list. You can replace an item with `items[0] = value`; use `.upper()` for uppercase text.
+
+Browser: replace the function body. Terminal: type the complete function below the starter.
+```python
+def upper_first(labels):
+    raise NotImplementedError("write upper_first")
+
+river = ["river map", "hill path"]
+moon = ["moon chart", "star guide", "sky notes"]
+empty = []
+```
+check: upper_first(river) == ["RIVER MAP", "hill path"] and river == ["river map", "hill path"]
+check: upper_first(moon) == ["MOON CHART", "star guide", "sky notes"] and moon == ["moon chart", "star guide", "sky notes"]
+check: upper_first(empty) == [] and upper_first(empty) is not empty
+solution: def upper_first(labels):
+solution:     updated = labels.copy()
+solution:     if updated:
+solution:         updated[0] = updated[0].upper()
+solution:     return updated
+> Make the copy first, then replace its first item only when an item exists. The original list keeps every original string. The bridge is complete; continue this lesson or return to the diagnostic.
+
 --- teach #card-f1372a4458d153ad
 ### A slice is a piece of a list
 `xs[a:b]` gives the items from index `a` up to but not including `b`. Leave out `a` to start at the beginning, `b` to go to the end. The result is always a new list; the original is untouched.

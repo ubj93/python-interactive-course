@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from . import ui
 from .catalog import find_exercise
+from .bridges import bridges_for, has_review_signal
 from .practice import DIAGNOSTIC_IDS, diagnostic_summary
 from .progress import Progress
 from .runner import run_learner
@@ -10,6 +11,12 @@ from .runner import run_learner
 
 def _lesson(app, ex_id):
     return next((lesson for lessons in app.lessons.values() for lesson in lessons if ex_id in lesson.exercise_ids), None)
+
+
+def _bridge_links(ex_id):
+    for bridge in bridges_for(ex_id):
+        print(f"    Optional Bash bridge: {bridge['title']} · course learn {bridge['lesson']} --card {bridge['card']}")
+        print(f"      First three cards; then the existing lesson continues. Needs: {bridge['prerequisites']}.")
 
 
 def _summary(app, state):
@@ -31,6 +38,8 @@ def _summary(app, state):
         lesson = _lesson(app, row["id"])
         if lesson:
             print(f"    Revisit if useful: course learn {lesson.id}  ({lesson.title})")
+        if has_review_signal(row):
+            _bridge_links(row["id"])
     attempted = sum(row["attempts"] > 0 for row in rows)
     reflected = sum(row["confidence"] is not None for row in rows)
     print(f"\n  {attempted}/6 attempted · {reflected}/6 reflections recorded")
@@ -76,6 +85,7 @@ def command(app, args):
         lesson = _lesson(app, ex_id)
         if lesson:
             print(f"\n  Optional lesson: course learn {lesson.id} --show  ({lesson.title})")
+        _bridge_links(ex_id)
         print(f"  Return to your diagnostic work: course diagnostic show {ex_id}")
         return 0
     answer = app.workspace.ensure_practice(ex, sid, state["drafts"].get(ex_id))

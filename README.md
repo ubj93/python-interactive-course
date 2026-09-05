@@ -248,6 +248,42 @@ files from those drafts; an existing CLI file always wins. Save a CLI file and r
 it before exporting progress to carry its latest code to the browser; a workspace
 backup also preserves files that have not been run yet.
 
+### Targeted Bash-to-Python pilot
+
+Five short bridges sit at the start of existing guided lessons. Each has a worked
+example, a small code repair, and an independent check with different data. They
+are optional refreshers for someone who already scripts in Bash; they do not
+replace the course or change your saved exercise results.
+
+| Bridge | Open in the terminal | Prerequisites |
+| --- | --- | --- |
+| Return versus print | `course learn 3.1 --card bash-return-worked` | Function calls and arithmetic |
+| Structured collections | `course learn 5.1 --card bash-collections-worked` | Lists, loops and dictionary lookup |
+| Mutability and aliasing | `course learn 2.3 --card bash-aliasing-worked` | Lists and function calls |
+| Defaults and local scope | `course learn 3.2 --card bash-defaults-worked` | Functions, optional arguments and lists |
+| Exceptions versus exit status | `course learn 10.4 --card bash-process-worked` | Functions and `try`/`except`/`raise` (7.1–7.2) |
+
+The diagnostic offers related bridge links when a latest run did not pass, you
+mark needs review, use help, or leave a mistake note. Help panels also expose the
+links. They are choices for reflection, not an inferred diagnosis: the diagnostic
+does not directly test process failures. In the browser, **Return to diagnostic**
+is available on each bridge card. In the terminal, `q` saves and exits at the next
+prompt; `course diagnostic` reopens the summary. After the first three cards, the
+existing lesson continues, with its normal exercise and recap.
+
+For repair cards, edit the function in the browser. Terminal code input appends
+to the starter, so enter the complete corrected function definition below it.
+All process examples call injected fakes; they start no real processes. Existing
+card IDs and reward records remain intact; only new cards have new IDs and their
+normal first-assessment reward opportunities. Saved lessons resume at an
+unfinished card, including a new bridge in an otherwise completed lesson. The
+diagnostic bridge links and the explicit `--card` commands above revisit the
+worked example even after completion, without resetting answers. Browser reloads
+keep the selected review card; ordinary lesson links retain normal resume behavior.
+
+This is a five-topic pilot. A learner walkthrough must be reviewed before the
+pilot is accepted or expanded.
+
 ### Browser
 
 Live at **https://ubj93.github.io/python-interactive-course/** (deployed from `docs/`

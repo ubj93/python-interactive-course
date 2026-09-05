@@ -1,5 +1,65 @@
 # Defaults and keyword arguments
 
+--- teach #bash-return-worked
+### Bash bridge: return a value, print a message
+In Bash, `$(command)` captures stdout as text. A Python caller receives the object after `return`; `print` writes text to stdout and returns `None`. Keep calculation separate from display.
+```python
+def free_slots(capacity, used):
+    return capacity - used
+
+remaining = free_slots(12, 5)  # the integer 7
+print(f"Free: {remaining}")    # display is the caller's choice
+```
+If the function only did `print(capacity - used)`, `remaining` would be `None`, even though you saw `7`. This short bridge needs function calls and subtraction; its next two cards practise that boundary.
+
+--- code #bash-return-modify
+Repair one line in `free_slots`: return the available count to the caller instead of printing it. Do not hard-code the example's answer. No printing is needed.
+
+Browser: edit the function. Terminal: type the complete corrected function below the starter. The provided `quiet_call` helper reports `(value, printed_text)`; an empty string means nothing was printed.
+```python
+def free_slots(capacity, used):
+    print(capacity - used)
+
+# Check helper: keep this; edit only the function above.
+from contextlib import redirect_stdout
+from io import StringIO
+
+def quiet_call(function, *args):
+    with redirect_stdout(StringIO()) as output:
+        value = function(*args)
+    return value, output.getvalue()
+```
+check: quiet_call(free_slots, 9, 2) == (7, "")
+check: quiet_call(free_slots, 4, 4) == (0, "")
+solution: def free_slots(capacity, used):
+solution:     return capacity - used
+> `return` hands the integer back to the caller. A zero result is still a useful value; `print` would hand back `None`.
+
+--- code #bash-return-check
+Independent check: define `transfer_minutes(files, minutes_each)` to return the total minutes. A caller should be able to add a five-minute setup time to your result. Use the arguments, with no printing.
+
+Browser: edit the function. Terminal: type the complete corrected function below the starter. The provided `quiet_call` helper reports `(value, printed_text)`; an empty string means nothing was printed.
+```python
+def transfer_minutes(files, minutes_each):
+    pass
+
+# Check helper: keep this; edit only the function above.
+from contextlib import redirect_stdout
+from io import StringIO
+
+def quiet_call(function, *args):
+    with redirect_stdout(StringIO()) as output:
+        value = function(*args)
+    return value, output.getvalue()
+```
+check: quiet_call(transfer_minutes, 3, 4) == (12, "")
+check: transfer_minutes(3, 4) + 5 == 17
+check: quiet_call(transfer_minutes, 0, 9) == (0, "")
+check: quiet_call(transfer_minutes, 7, 2) == (14, "")
+solution: def transfer_minutes(files, minutes_each):
+solution:     return files * minutes_each
+> Returning a number lets another expression use it. The checks use different inputs so a displayed or fixed answer cannot stand in for the calculation. The bridge is complete; continue this lesson or return to the diagnostic.
+
 --- teach #card-88f548ed2b39592e
 ### Defaults make arguments optional
 A parameter with `= value` in the `def` gets that value when the caller leaves it out. Parameters with defaults must come after those without.
