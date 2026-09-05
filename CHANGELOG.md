@@ -13,6 +13,15 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-05
+
+### Added
+- Practise return values, structured collections, aliasing, defaults/scope and
+  process failures through five short Bash-to-Python refreshers, each with a worked
+  example, a repair and an independent check.
+- Link related diagnostic reflections to these optional refreshers and revisit
+  a specific card in the browser or CLI while preserving saved progress and rewards.
+
 ## [0.9.2] - 2026-09-05
 
 ### Added

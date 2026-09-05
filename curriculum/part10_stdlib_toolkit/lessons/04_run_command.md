@@ -1,5 +1,95 @@
 # Shelling out, testably
 
+--- teach #bash-process-worked
+### Bash bridge: exit status and exceptions are different signals
+Bash exposes a command's exit status through `$?`. With Python's `subprocess.run(check=False)`, a nonzero status is a result value, not an exception. `check=True` converts it to `CalledProcessError`. Launch failures and timeouts can raise exceptions independently.
+```python
+from subprocess import CompletedProcess
+
+def fake_runner(argv, **options):
+    return CompletedProcess(argv, 3, stdout="", stderr="busy")
+
+result = fake_runner(["fake-check"])
+print(result.returncode)  # 3; no exception was raised
+```
+Only the injected fake is called here; no process starts. This bridge needs functions, `try`/`except` and `raise` (lessons 3.1 and 7.1–7.2). Choose whether your wrapper returns a status or raises a documented error, then make callers use that contract.
+
+--- code #bash-process-modify
+Repair `read_status(runner)`: call the injected runner with `["fake-status"]`, return stripped stdout when its status is zero, and raise `RuntimeError` otherwise. The supplied runner is always a fake; do not import or call a real process runner.
+
+Browser: edit the function. Terminal: type the complete corrected function below the starter.
+```python
+from subprocess import CompletedProcess
+
+def read_status(runner):
+    result = runner(["fake-status"])
+    return result.stdout.strip()
+
+seen = []
+
+def fake_ready(argv):
+    seen.append(argv)
+    return CompletedProcess(argv, 0, stdout=" ready\n", stderr="")
+
+def fake_busy(argv):
+    return CompletedProcess(argv, 4, stdout="partial", stderr="busy")
+
+def raises_runtime(function, runner):
+    try:
+        function(runner)
+    except RuntimeError:
+        return True
+    return False
+```
+check: read_status(fake_ready) == "ready" and seen == [["fake-status"]]
+check: raises_runtime(read_status, fake_busy)
+check: read_status(lambda argv: CompletedProcess(argv, 0, stdout="idle\n")) == "idle"
+solution: def read_status(runner):
+solution:     result = runner(["fake-status"])
+solution:     if result.returncode != 0:
+solution:         raise RuntimeError("status command failed")
+solution:     return result.stdout.strip()
+> The fake's nonzero return code did not raise by itself; your wrapper deliberately translates it into a Python exception. No command was executed.
+
+--- code #bash-process-check
+Independent check: write `probe_ok(runner)`. Call the injected runner with `["fake-probe"]` and return `True` only for status zero. Return `False` for another status or an `OSError` from the fake runner. Do not catch unrelated programming errors or start a process.
+
+Browser: edit the function. Terminal: type the complete corrected function below the starter.
+```python
+from subprocess import CompletedProcess
+
+def probe_ok(runner):
+    pass
+
+def fake_ok(argv):
+    assert argv == ["fake-probe"]
+    return CompletedProcess(argv, 0)
+
+def fake_missing(argv):
+    raise OSError("fake tool unavailable")
+
+def fake_bug(argv):
+    raise ValueError("fake programmer mistake")
+
+def leaves_bug_visible(function):
+    try:
+        function(fake_bug)
+    except ValueError:
+        return True
+    return False
+```
+check: probe_ok(fake_ok) is True
+check: probe_ok(lambda argv: CompletedProcess(argv, 9)) is False
+check: probe_ok(fake_missing) is False
+check: leaves_bug_visible(probe_ok)
+solution: def probe_ok(runner):
+solution:     try:
+solution:         result = runner(["fake-probe"])
+solution:     except OSError:
+solution:         return False
+solution:     return result.returncode == 0
+> A nonzero result and a raised `OSError` take different paths to the same documented `False`. Catching only `OSError` keeps a programming `ValueError` visible. The bridge is complete; continue this lesson or return to the diagnostic.
+
 --- teach #card-2572d58f08c15ed6
 ### `subprocess.run` with a list of arguments
 `subprocess.run(argv, ...)` starts a program and waits for it. Pass the command as a **list**: the program, then each argument. `capture_output=True` collects stdout and stderr instead of showing them; `text=True` gives you `str` instead of bytes; `timeout` stops a hung command. The result has `.returncode`, `.stdout` and `.stderr`.

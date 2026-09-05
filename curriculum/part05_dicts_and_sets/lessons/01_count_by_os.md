@@ -1,5 +1,65 @@
 # Counting with a dict
 
+--- teach #bash-collections-worked
+### Keep records structured between steps
+You already know functions, loops and lists. A dict adds named fields: `row["units"]` reads one field.
+
+Bash has arrays, but a pipeline between commands carries bytes, often text that the next command parses. Python functions can pass lists and dicts directly; you do not need to join fields into text and split them again.
+
+```python
+stock = [
+    {"label": "blue pen", "units": 3},
+    {"label": "red pad", "units": 2},
+]
+total = 0
+for row in stock:
+    total += row["units"]
+print(total)                  # 5
+print(stock[0]["label"])      # blue pen
+```
+
+`stock` remains a list of dicts in memory. Each label stays one string, including its space, and each unit count stays an integer. Printing displays a value; it does not turn the stored records into text.
+
+--- code #bash-collections-modify
+`total_units(rows)` currently counts records. Change one line so it adds their integer `"units"` values instead. Every record has that field; an empty list totals zero.
+
+Browser: edit the function. Terminal: type the complete corrected function below the starter.
+```python
+def total_units(rows):
+    total = 0
+    for row in rows:
+        total += 1
+    return total
+```
+check: total_units([{"label": "amber folder", "units": 4}, {"label": "white eraser", "units": 2}]) == 6
+check: total_units([{"label": "teal marker", "units": 0}, {"label": "black binder", "units": 7}]) == 7
+check: total_units([]) == 0
+solution: def total_units(rows):
+solution:     total = 0
+solution:     for row in rows:
+solution:         total += row["units"]
+solution:     return total
+> Read the integer from each dict and add it. The records remain structured; no text conversion or splitting is needed.
+
+--- code #bash-collections-check
+Write `available_labels(rows)`. Return a list of the `"label"` strings whose integer `"units"` value is greater than zero, in input order. Every record has both fields. Keep spaces within each label; an empty input returns an empty list. Use the loop, `if` and `append` patterns you already know.
+
+Browser: replace the function body. Terminal: type the complete function below the starter.
+```python
+def available_labels(rows):
+    raise NotImplementedError("write available_labels")
+```
+check: available_labels([{"label": "green notebook", "units": 0}, {"label": "silver clip", "units": 4}, {"label": "cream envelope", "units": 2}]) == ["silver clip", "cream envelope"]
+check: available_labels([{"label": "violet ribbon", "units": 3}, {"label": "orange card", "units": 0}, {"label": "gold sticker", "units": 1}]) == ["violet ribbon", "gold sticker"]
+check: available_labels([]) == []
+solution: def available_labels(rows):
+solution:     labels = []
+solution:     for row in rows:
+solution:         if row["units"] > 0:
+solution:             labels.append(row["label"])
+solution:     return labels
+> Selecting fields from dicts preserves complete labels and their order. A record with zero units is left out. The bridge is complete; continue this lesson or return to the diagnostic.
+
 --- teach #card-0989e01b10375ae5
 ### `d[k]` raises, `d.get(k)` does not
 A dict maps keys to values. `d[k]` returns the value and raises `KeyError` when the key is missing. `d.get(k)` returns `None` instead, and `d.get(k, default)` returns your default. Pick the one you mean: raise when a missing key is a bug, `get` when it is normal.
