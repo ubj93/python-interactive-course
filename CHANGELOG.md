@@ -13,6 +13,14 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-05
+
+### Added
+- Follow a saved Interview refresher path through 14 flexible sessions, with
+  prerequisites, diagnostic review suggestions, optional topics and curated mocks.
+- Resume, skip or revisit activities and keep personal notes independently of
+  course completion and XP in both the browser and CLI.
+
 ## [0.6.0] - 2026-09-05
 
 ### Added

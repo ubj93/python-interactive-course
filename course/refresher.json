@@ -1,0 +1,636 @@
+{
+  "version": 1,
+  "id": "interview-refresher",
+  "title": "Two-week Interview refresher",
+  "description": "Fourteen flexible sessions of 75\u201390 minutes. Spread them over any number of days. Done means you chose to finish the activity; it is not a claim of mastery.",
+  "prerequisites": "This is a refresher for someone who has programmed before. Start with lessons 1.1\u20131.2 if names, values or strings are unfamiliar. Each session lists the earlier concepts it uses. All lessons remain accessible.",
+  "optional": [
+    {
+      "title": "Decorators and closures",
+      "lessons": [
+        "3.4",
+        "3.6",
+        "7.6"
+      ]
+    },
+    {
+      "title": "Elaborate class protocols",
+      "lessons": [
+        "8.4",
+        "8.5",
+        "8.6"
+      ]
+    },
+    {
+      "title": "Graphs and LRU caches",
+      "lessons": [
+        "10.6",
+        "12.9",
+        "12.10"
+      ]
+    }
+  ],
+  "diagnostic_lessons": {
+    "1.2": [
+      "1.2"
+    ],
+    "1.3": [
+      "1.3"
+    ],
+    "2.1": [
+      "2.1"
+    ],
+    "2.2": [
+      "2.2"
+    ],
+    "3.1": [
+      "3.1"
+    ],
+    "5.1": [
+      "5.1"
+    ]
+  },
+  "sessions": [
+    {
+      "id": "baseline",
+      "title": "Find your starting point",
+      "prerequisite": "You have programmed before. If Python names, values or strings are new, start with lessons 1.1 and 1.2 first.",
+      "activities": [
+        {
+          "id": "baseline-diagnostic",
+          "title": "Try the fundamentals diagnostic",
+          "minutes": 45,
+          "kind": "diagnostic",
+          "description": "Work through the six untimed diagnostic problems. Record confidence and mistakes; help is available and does not imply mastery.",
+          "lessons": [],
+          "exercises": []
+        },
+        {
+          "id": "baseline-review",
+          "title": "Review the areas you identified",
+          "minutes": 25,
+          "kind": "weak_review",
+          "description": "Use the diagnostic review links below. A passing result can still deserve review when your confidence is low or you needed help.",
+          "lessons": [
+            "1.1",
+            "1.2",
+            "1.3",
+            "2.1",
+            "2.2",
+            "3.1",
+            "5.1"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "baseline-plan",
+          "title": "Choose your emphasis",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Record your target interview and two topics to revisit. Treat the sessions as flexible study blocks; take more than two weeks whenever useful.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "control",
+      "title": "Decisions, loops and lists",
+      "prerequisite": "Basic names, values and strings (1.1\u20131.2).",
+      "activities": [
+        {
+          "id": "control-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Trace conditions, accumulators, running best values and slicing. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "1.3",
+            "2.1",
+            "2.2",
+            "2.3"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "control-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "2.1",
+            "2.3"
+          ]
+        },
+        {
+          "id": "control-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "functions",
+      "title": "Functions and arguments",
+      "prerequisite": "Decisions and loops from session 2.",
+      "activities": [
+        {
+          "id": "functions-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Use defaults, keyword arguments and variable argument lists. Keep function contracts small. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "3.1",
+            "3.2",
+            "3.3"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "functions-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "3.1",
+            "3.3"
+          ]
+        },
+        {
+          "id": "functions-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "collections",
+      "title": "Dicts, grouping and sets",
+      "prerequisite": "Loops and function contracts.",
+      "activities": [
+        {
+          "id": "collections-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Count with dictionaries, group records and compare sets. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "5.1",
+            "5.2",
+            "5.4"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "collections-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "5.1",
+            "5.4"
+          ]
+        },
+        {
+          "id": "collections-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "parsing",
+      "title": "Strings and structured parsing",
+      "prerequisite": "Strings, dictionaries and functions.",
+      "activities": [
+        {
+          "id": "parsing-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Split fields, validate whole strings and use named regex groups; prefer simple parsing when it suffices. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "4.1",
+            "4.5",
+            "4.6"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "parsing-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "4.1",
+            "4.6"
+          ]
+        },
+        {
+          "id": "parsing-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "files",
+      "title": "Files, CSV and JSON",
+      "prerequisite": "Strings, lists and dictionaries.",
+      "activities": [
+        {
+          "id": "files-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Read text safely, use csv for CSV and json for JSON. Check missing and malformed fields. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "6.1",
+            "6.3",
+            "6.4"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "files-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "6.3",
+            "6.4"
+          ]
+        },
+        {
+          "id": "files-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "errors",
+      "title": "Errors and validation",
+      "prerequisite": "Functions and file parsing.",
+      "activities": [
+        {
+          "id": "errors-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Catch specific errors, distinguish missing from empty, and collect useful validation failures. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "7.1",
+            "7.2",
+            "7.4",
+            "7.5"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "errors-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "7.2",
+            "7.5"
+          ]
+        },
+        {
+          "id": "errors-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "objects",
+      "title": "Basic objects and dataclasses",
+      "prerequisite": "Functions, dictionaries and errors.",
+      "activities": [
+        {
+          "id": "objects-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Model a small record with a class or dataclass. Keep elaborate class protocols optional. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "8.1",
+            "8.2"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "objects-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "8.1",
+            "8.2"
+          ]
+        },
+        {
+          "id": "objects-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "iterators",
+      "title": "Comprehensions and generators",
+      "prerequisite": "Loops, functions and files.",
+      "activities": [
+        {
+          "id": "iterators-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Compare eager lists with lazy generators and stream records without holding the whole input. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "9.1",
+            "9.2",
+            "9.3"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "iterators-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "9.1",
+            "9.3"
+          ]
+        },
+        {
+          "id": "iterators-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "stdlib",
+      "title": "Dates, command lines and subprocesses",
+      "prerequisite": "Functions, error handling and basic objects.",
+      "activities": [
+        {
+          "id": "stdlib-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Use aware dates and injected subprocess functions. Review argparse; do not execute untrusted shell text. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "10.1",
+            "10.2",
+            "10.4"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "stdlib-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "10.1",
+            "10.4"
+          ]
+        },
+        {
+          "id": "stdlib-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "apis",
+      "title": "HTTP API building blocks",
+      "prerequisite": "JSON, dictionaries, iteration and errors.",
+      "activities": [
+        {
+          "id": "apis-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Build headers and URLs, read rate limits and walk cursor pagination using the supplied fake clients. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "11.1",
+            "11.2",
+            "11.3"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "apis-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "11.1",
+            "11.3"
+          ]
+        },
+        {
+          "id": "apis-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "patterns",
+      "title": "Selected interview patterns",
+      "prerequisite": "Lists, dictionaries, functions and edge-case tests.",
+      "activities": [
+        {
+          "id": "patterns-review",
+          "title": "Review the essentials",
+          "minutes": 25,
+          "kind": "lessons",
+          "description": "Explain a hash-map lookup, stack invariant and binary-search boundary. Binary search is review material; prioritise the two practice problems. Skim familiar cards and spend the time on uncertain ideas; use the full reference chapter when needed.",
+          "lessons": [
+            "12.1",
+            "12.2",
+            "12.7"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "patterns-practice",
+          "title": "Practise and explain",
+          "minutes": 45,
+          "kind": "practice",
+          "description": "Write a fresh approach for the selected exercises. State assumptions, test edge cases, then compare the reference solution after passing.",
+          "lessons": [],
+          "exercises": [
+            "12.1",
+            "12.2"
+          ]
+        },
+        {
+          "id": "patterns-reflect",
+          "title": "Record what to revisit",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Explain one solution aloud without reading it. Name an edge case and its complexity; record a note or revisit this activity if you need more practice.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "capstone",
+      "title": "A realistic CPE capstone",
+      "prerequisite": "Parsing, aware dates, validation and collections from earlier sessions.",
+      "activities": [
+        {
+          "id": "capstone-plan",
+          "title": "Plan the stale device report",
+          "minutes": 15,
+          "kind": "lessons",
+          "description": "Read the problem and tests. State assumptions and sketch parsing, validation and reporting stages.",
+          "lessons": [
+            "13.1"
+          ],
+          "exercises": []
+        },
+        {
+          "id": "capstone-build",
+          "title": "Build and test the report",
+          "minutes": 50,
+          "kind": "practice",
+          "description": "Implement the stale device report. Timebox the first attempt; use remaining time for edge cases and a clear explanation.",
+          "lessons": [],
+          "exercises": [
+            "13.1"
+          ]
+        },
+        {
+          "id": "capstone-review",
+          "title": "Review the result",
+          "minutes": 15,
+          "kind": "reflection",
+          "description": "Compare the reference solution after passing. Record one correctness issue and one maintainability improvement; revisit when unfinished.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    },
+    {
+      "id": "mocks",
+      "title": "Curated mock rounds and final review",
+      "prerequisite": "Practise 5.4, 10.1, 11.1 and 12.1 in the earlier sessions. The mocks require fresh passes even if already solved.",
+      "activities": [
+        {
+          "id": "mocks-prepare",
+          "title": "Set up your mock interview",
+          "minutes": 10,
+          "kind": "reflection",
+          "description": "Choose a quiet block. State assumptions aloud and explain tradeoffs. Use the two focused 30-minute rounds below; advanced graph and LRU problems are outside this path.",
+          "lessons": [],
+          "exercises": []
+        },
+        {
+          "id": "mocks-a",
+          "title": "Mock A: collections and dates",
+          "minutes": 30,
+          "kind": "mock",
+          "description": "A fresh two-problem round drawn from this path: set reconciliation and aware timestamps. Finish the round before starting Mock B.",
+          "lessons": [],
+          "exercises": [
+            "5.4",
+            "10.1"
+          ]
+        },
+        {
+          "id": "mocks-b",
+          "title": "Mock B: API basics and a hash map",
+          "minutes": 30,
+          "kind": "mock",
+          "description": "A second fresh two-problem round: request construction and two sum. Finish and review your result before marking the activity done.",
+          "lessons": [],
+          "exercises": [
+            "11.1",
+            "12.1"
+          ]
+        },
+        {
+          "id": "mocks-review",
+          "title": "Choose your next practice",
+          "minutes": 15,
+          "kind": "reflection",
+          "description": "Review both rounds while they are current: the interview tool retains only the latest finished result. Keep your takeaways here, revisit weak activities, and choose optional topics relevant to your target interview.",
+          "lessons": [],
+          "exercises": []
+        }
+      ]
+    }
+  ]
+}

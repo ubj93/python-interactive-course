@@ -214,6 +214,49 @@ Suggested pace for someone who has programmed before: Parts 1–5 in the first w
 6–9 in the second, 10–12 in the third, capstones and mock interviews in the fourth.
 Pair it with one Exercism session a week for human feedback.
 
+### Saved two-week Interview refresher
+
+For someone who has programmed before, `course refresher` and **Refresher** in the
+browser offer 14 flexible sessions of 75–90 minutes. Take as many days as you need;
+there are no imposed dates. Start with lessons 1.1–1.2 if Python values and strings
+are unfamiliar. Each session names its prerequisites and reuses existing lessons.
+
+| Sessions | Focus |
+|---|---|
+| 1 | Fundamentals diagnostic, confidence and mistake notes |
+| 2–4 | Decisions and loops; functions; dictionaries and sets |
+| 5–7 | Strings and parsing; CSV/JSON; errors and validation |
+| 8–9 | Basic objects and dataclasses; comprehensions and generators |
+| 10–12 | Dates/subprocesses; API basics; hash maps, stacks and binary search |
+| 13–14 | Stale-device-report capstone; two curated mocks and review |
+
+```bash
+python3 course.py refresher                 # saved next activity and review suggestions
+python3 course.py refresher list            # all sessions and stable activity IDs
+python3 course.py refresher open            # resume; show lesson/practice commands
+python3 course.py refresher done            # explicitly finish the current activity
+python3 course.py refresher skip            # move on, recording the skip
+python3 course.py refresher revisit baseline-diagnostic
+python3 course.py refresher note baseline-plan --text 'Practise dictionary defaults'
+python3 course.py refresher mock mocks-a    # start or resume the same curated round
+```
+
+The browser offers the same done, skip, revisit and note controls. Path progress
+travels in the normal progress backup/export, including the saved next activity.
+Diagnostic failed attempts, low confidence, help use and mistake notes suggest
+specific existing lessons. Suggestions never reorder the path automatically.
+Passing an exercise does not finish a path activity, and marking it done does not
+assert mastery or award XP. The full curriculum stays available throughout.
+
+Timebox the review cards, concentrate on unfamiliar ideas, and extend a session
+when the exercises need more practice. Decorators/closures, elaborate class
+protocols, and graph/LRU problems are linked as optional extensions for interviews
+that need them. The path's two 30-minute mocks select already-practised material
+(5.4/10.1 and 11.1/12.1); they require fresh passing runs and resume the same active
+round. Finish a different active round before starting another. Review and note
+each result before proceeding: the mock tool retains only the latest finished
+round. The ordinary `course interview` command still offers its broader random pool.
+
 ## How grading works
 
 Each exercise folder has a stub (`exercise.py`), a `unittest` suite, reference
