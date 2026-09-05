@@ -10,7 +10,7 @@ const test = base.extend({page: async ({page}, use) => {
   await use(page); expect(errors).toEqual([]);
 }});
 async function progress(page) { return page.evaluate(key => JSON.parse(localStorage.getItem(key)), KEY); }
-function lifetime(saved) { const {diagnostic, diagnostic_history, ...rest} = saved; return rest; }
+function lifetime(saved) { const {diagnostic, diagnostic_history, review_queue, ...rest} = saved; return rest; }
 async function start(page) {
   await page.goto("/#/diagnostic");
   await page.evaluate(key => {

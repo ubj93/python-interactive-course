@@ -96,6 +96,14 @@ class App:
         from .diagnostic import command
         return command(self, args)
 
+    def cmd_review(self, args) -> int:
+        from .review_cli import command
+        return command(self, args)
+
+    def cmd_reflect(self, args) -> int:
+        from .review_cli import reflection
+        return reflection(self, args)
+
     def cmd_status(self, args) -> int:
         p = self.progress
         kyu, title, frac, need = p.rank(self.total_xp)
@@ -213,6 +221,7 @@ class App:
             print(ui.dim("  Scratch practice: saved answers and progress are unchanged."))
             return 0 if res.ok else 1
         summary = self.progress.record_run(ex, res.ok)
+        print(f"  Save a reflection: course reflect {ex.id} --confidence needs-review --note 'what to revisit'")
         if res.ok:
             print(ui.green(ui.bold(f"\n  ✔ All {res.total} tests passed")) + ui.dim(f"  ({elapsed:.2f}s)"))
             if summary["already_solved"]:
@@ -935,6 +944,14 @@ def build_parser() -> argparse.ArgumentParser:
     sub = ap.add_subparsers(dest="cmd")
 
     sub.add_parser("status", help="dashboard: rank, xp, streak, progress per part")
+    s = sub.add_parser("reflect", help="save an exercise reflection and its next review date")
+    s.add_argument("exercise"); s.add_argument("--confidence", required=True, choices=("confident", "needs-review"))
+    s.add_argument("--note", default=""); s.add_argument("--interval", type=int, choices=(1, 3, 7, 30))
+    s = sub.add_parser("review", help="one saved queue and independent, untimed review rounds")
+    s.add_argument("action", nargs="?", default="list", choices=("list", "start", "new", "show", "path", "run", "help", "reflect", "finish", "history"))
+    s.add_argument("exercise", nargs="?"); s.add_argument("--confidence", choices=("confident", "needs-review"))
+    s.add_argument("--note", default=""); s.add_argument("--interval", type=int, choices=(1, 3, 7, 30))
+    s.add_argument("-v", "--verbose", action="store_true")
     s = sub.add_parser("refresher", help="saved two-week Interview refresher path"); s.add_argument("action", nargs="?", default="status", choices=["status", "list", "open", "done", "skip", "revisit", "note", "mock"]); s.add_argument("activity", nargs="?", help="activity ID from `course refresher list`; defaults to saved next activity"); s.add_argument("--text", help="personal takeaway for the note action")
     s = sub.add_parser("learn", help="guided lesson: bite-sized cards with checks, ending in an exercise"); s.add_argument("lesson", nargs="?", help="lesson id like 1.2, a part number, or 'next'"); s.add_argument("--list", action="store_true", help="list lessons and progress"); s.add_argument("--show", action="store_true", help="print all cards without the interactive checks"); s.add_argument("--restart", action="store_true", help="forget answers for this lesson and start over")
     s = sub.add_parser("list", help="list exercises"); s.add_argument("part", nargs="?"); s.add_argument("-u", "--unsolved", action="store_true")

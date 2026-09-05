@@ -7,17 +7,18 @@ const storage = {fail: false, getItem: key => memory.get(key) || null, setItem(k
 class Clock extends Date { constructor(...args) { super(...(args.length ? args : [Date.parse("2026-09-05T12:01:00Z")])); } static now() { return new Clock().getTime(); } }
 const sandbox = {assert, imported, Date: Clock, Math, window: {}, localStorage: storage, storage, memory, DATA: {}, ALL: [], BY_ID: Object.fromEntries(["1.2", "1.3", "2.1", "2.2", "3.1", "5.1"].map(id => [id, {id}])), STORE_KEY: "practice", LEGACY_INTERVIEW_KEY: "old", result: null};
 vm.createContext(sandbox);
-vm.runInContext(page.slice(page.indexOf("function localDay("), page.indexOf("function dailyExercise(")) + fs.readFileSync(path.join(__dirname, "../docs/practice.js"), "utf8") + `
+vm.runInContext(page.slice(page.indexOf("function localDay("), page.indexOf("function dailyExercise(")) + fs.readFileSync(path.join(__dirname, "../docs/practice.js"), "utf8") + fs.readFileSync(path.join(__dirname, "../docs/review.js"), "utf8") + `
   assert.equal(JSON.stringify(diagnosticState(imported)), JSON.stringify(imported));
   P.diagnostic = imported; P.xp = 250; P.solved = {"1.2": {xp: 25}};
-  const lifetime = JSON.stringify({...P, diagnostic: null});
+  const lifetime = JSON.stringify({...P, diagnostic: null, review_queue: null});
   const sid = imported.id;
   updateDiagnostic("1.3", "reflect", sid, {confidence: "confident", note: "I understand the thresholds"});
   updateDiagnostic("1.3", "draft", sid, {code: "draft\\n"});
   updateDiagnostic("1.3", "attempt", sid, {passed: false});
   assert.equal(diagnosticSummary()[1].outcome, "not_passed");
   assert.equal(diagnosticSummary()[1].confidence, "confident");
-  assert.equal(JSON.stringify({...P, diagnostic: null}), lifetime);
+  assert.equal(JSON.stringify({...P, diagnostic: null, review_queue: null}), lifetime);
+  assert.equal(P.review_queue.items['1.3'].confidence, 'confident');
   P = loadProgress(); assert.equal(diagnosticState().drafts["1.3"], "draft\\n");
   const before = JSON.stringify(P);
   storage.fail = true;

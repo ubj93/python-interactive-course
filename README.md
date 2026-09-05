@@ -86,6 +86,39 @@ python3 course.py reset 1.1 --scratch   # fresh practice starter; old copy is ke
 keeps the old answer and progress in uniquely named `.bak.*` recovery files. Earned
 XP and solved status remain intact. Scratch reset affects only scratch practice.
 
+#### Saved review queue
+
+After a diagnostic or exercise result, record your own confidence and a short
+mistake note. Both update the same review queue. **Needs review** schedules the
+next local calendar day; **confident** schedules three days later. Choose a 7- or
+30-day interval when useful. These dates are suggestions, and manual practice is
+always available.
+Chosen intervals survive reopening a round. Editing only a diagnostic note keeps
+its existing review date; changing confidence schedules a new date.
+
+```bash
+python3 course.py reflect 1.2 --confidence needs-review --note 'Strip before checking'
+python3 course.py review                 # saved reflections, due work and active round
+python3 course.py review start           # resume, or start the currently due exercises
+python3 course.py review show            # find the scratch file for this round
+python3 course.py review run             # grade it independently
+python3 course.py review help            # guidance without changing lifetime hint usage
+python3 course.py review reflect --confidence confident --note 'Check empty input' --interval 7
+python3 course.py review finish          # keep this round in review history
+python3 course.py review new 1.2         # manual fresh round, including before its due date
+python3 course.py review history
+```
+
+Open **Review queue** on the browser dashboard for the same workflow. Each new
+round starts from course starters; resuming keeps its scratch files and drafts.
+The CLI stores them in `.course-workspace/practice/<round-id>/`, included in
+workspace backups. Browser drafts and queue state travel in progress exports.
+Starting another round preserves the previous round's outcomes and drafts.
+Test outcomes and confidence are recorded separately; reviews never award course
+completion XP or alter saved answers, original passes, or lifetime hint usage.
+Ready weaknesses appear first, followed by other due work and future reviews.
+Finishing a round preserves its results; record a reflection to set its next date.
+
 #### Moving answers from older versions
 
 Earlier versions asked learners to edit `curriculum/**/exercise.py`. Review those

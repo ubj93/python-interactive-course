@@ -122,6 +122,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-r
 
 <script src="exercises.js"></script>
 <script src="practice.js"></script>
+<script src="review.js"></script>
 <script src="refresher.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -570,6 +571,7 @@ function viewHome() {
       <a class="btn secondary" href="#/interview">Mock interview</a>
       <a class="btn secondary" href="#/refresher">Interview refresher</a>
       <a class="btn secondary" href="#/diagnostic">Fundamentals diagnostic</a>
+      <a class="btn secondary" href="#/review">Review queue</a>
     </div>
   </div>`;
   html += `<div class="card"><h2>Parts</h2><div class="list">`;
@@ -763,6 +765,7 @@ function viewExercise(id, fromLesson) {
     </div>
     <div class="results" id="results"></div>
     <div id="after"></div>
+    <div id="exercise-reflection"></div>
   </div>`;
   editor = null;
   if (window.CodeMirror) {
@@ -783,6 +786,7 @@ function viewExercise(id, fromLesson) {
   $("#testsbtn").onclick = () => { const v = $("#testsview"); v.hidden = !v.hidden; $("#testsbtn").textContent = v.hidden ? "Show tests" : "Hide tests"; };
   $("#resetbtn").onclick = () => { if (editor) editor.setValue(ex.stub); else $("#code").value = ex.stub; try { localStorage.removeItem(DRAFT_KEY + ex.id); } catch (e) {} };
   if (solved) showAfterPass(ex, null, lessonOf);
+  if (solved) exerciseReviewReflection(ex);
   bootWorker().catch(() => {});
 
   async function runTests() {
@@ -834,6 +838,7 @@ function recordExerciseResult(ex, res, submittedSessionId) {
   return summary;
 }
 function renderResults(ex, res, lessonOf, summary) {
+  exerciseReviewReflection(ex);
   const box = $("#results"); let html = "";
   if (res.timed_out) { html = `<div class="banner fail">⏱ Timed out. Infinite loop? Each run is limited to ${ex.timeout_s || 10} seconds.</div>`; box.innerHTML = html; return; }
   if (res.import_error) { html = `<div class="banner fail">Your code could not be imported</div><pre class="sol">${esc(shortTb(res.import_error))}</pre>`; box.innerHTML = html; return; }
@@ -946,6 +951,7 @@ function route() {
   if ((m = h.match(/^#\/lesson\/(\d+)/))) return viewLesson(parseInt(m[1], 10));
   if ((m = h.match(/^#\/diagnostic(?:\/([\d.]+))?$/))) return viewDiagnostic(m[1]);
   if (h.startsWith("#/profile")) return viewProfile();
+  if ((m = h.match(/^#\/review(?:\/([\d.]+))?$/))) return viewReview(m[1]);
   if ((m = h.match(/^#\/refresher(?:\/([a-z0-9-]+))?$/))) return viewRefresher(m[1]);
   if (h.startsWith("#/interview")) return viewInterview();
   viewHome();
