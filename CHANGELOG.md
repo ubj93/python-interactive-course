@@ -13,6 +13,14 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-09-05
+
+### Added
+- Test two-sum, balanced brackets and first-bad-build bisection with 394 public,
+  deterministic cases and independent oracles, including exact integer boundaries.
+- Verify reference solutions and nine plausible mistakes in Python and the real
+  browser worker, with concise counterexamples and bounded runtime.
+
 ## [0.9.1] - 2026-09-05
 
 ### Fixed
