@@ -142,7 +142,19 @@ python3 -m unittest discover -s tests   # engine tests
 python3 tools/build_web.py     # refresh the browser bundle
 ```
 
-CI runs all three on Python 3.9 and 3.12.
+CI runs all three on Python 3.9 and 3.12. Browser navigation regressions also run
+in Chromium at desktop and mobile viewport sizes:
+
+```bash
+npm ci --ignore-scripts                 # development tools only; Node 20+
+npx playwright install chromium        # once per machine
+npm run test:browser
+```
+
+These tests use an isolated browser profile and a deterministic worker response;
+the Python checks above verify exercise grading. They never edit learner answers.
+To use an installed Google Chrome locally, run
+`PLAYWRIGHT_CHROMIUM_CHANNEL=chrome npm run test:browser`.
 
 ## Development workflow
 

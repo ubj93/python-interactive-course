@@ -411,7 +411,6 @@ function viewLearn(id) {
   const l = LESSON_BY_ID[id]; if (!l) return viewHome();
   const p = l.part;
   let i = 0; while (i < l.cards.length && cardState(l.id, i).done) i++;
-  if (i >= l.cards.length) i = l.cards.length - 1;
   const state = { i, sessionXp: 0, tries: 0 };
   const render = () => {
     const c = l.cards[state.i];
@@ -517,7 +516,7 @@ function viewLearn(id) {
       <div class="row">${missing.length ? `<a class="btn" href="#/ex/${missing[0]}?from=${l.id}">Do exercise ${missing[0]} ›</a>` : ""}${nxt ? `<a class="btn ${missing.length ? "secondary" : ""}" href="#/learn/${nxt.id}">Next: Lesson ${nxt.id} ${esc(nxt.title)} ›</a>` : ""}<a class="btn secondary" href="#/part/${p.num}">Part ${p.num}</a></div></div>`;
     renderHeader();
   };
-  render();
+  if (state.i < l.cards.length) render(); else finish();
 }
 function viewLesson(num) {
   const p = DATA.parts.find((x) => x.num === num); if (!p) return viewHome();
@@ -526,9 +525,14 @@ function viewLesson(num) {
   <div class="card lesson">${body}<hr><div class="row"><a class="btn" href="#/part/${p.num}">Go to the exercises</a></div></div>`;
 }
 let editor = null;
+function lessonForExercise(ex, fromLesson) {
+  const containsExercise = (l) => l && l.cards.some((c) => c.kind === "exercise" && c.exercise_id === ex.id);
+  const origin = LESSON_BY_ID[fromLesson];
+  return containsExercise(origin) ? origin : LESSONS.find(containsExercise);
+}
 function viewExercise(id, fromLesson) {
   const ex = BY_ID[id]; if (!ex) return viewHome();
-  const lessonOf = fromLesson ? LESSON_BY_ID[fromLesson] : LESSONS.find((l) => l.cards.some((c) => c.kind === "exercise" && c.exercise_id === ex.id));
+  const lessonOf = lessonForExercise(ex, fromLesson);
   P.opened[ex.id] = P.opened[ex.id] || nowIso(); P.last = ex.id; saveProgress();
   const solved = !!P.solved[ex.id], hintsUsed = P.hints[ex.id] || 0, d = P.daily[today()];
   let draft = null; try { draft = localStorage.getItem(DRAFT_KEY + ex.id); } catch (e) {}
@@ -573,14 +577,14 @@ function viewExercise(id, fromLesson) {
   };
   $("#testsbtn").onclick = () => { const v = $("#testsview"); v.hidden = !v.hidden; $("#testsbtn").textContent = v.hidden ? "Show tests" : "Hide tests"; };
   $("#resetbtn").onclick = () => { if (editor) editor.setValue(ex.stub); else $("#code").value = ex.stub; try { localStorage.removeItem(DRAFT_KEY + ex.id); } catch (e) {} };
-  if (solved) showAfterPass(ex, null);
+  if (solved) showAfterPass(ex, null, lessonOf);
   bootWorker().catch(() => {});
 
   async function runTests() {
     const btn = $("#runbtn"); btn.disabled = true; setStatus("Running…"); $("#results").innerHTML = "";
     try {
       const res = await runInPython(ex, getCode());
-      renderResults(ex, res);
+      renderResults(ex, res, lessonOf);
     } catch (e) {
       $("#results").innerHTML = `<div class="banner fail">Could not run tests: ${esc(e.message || e)}</div>`;
     } finally { btn.disabled = false; setStatus(""); }
@@ -601,7 +605,7 @@ function shortTb(tb) {
   for (const f of keep) { out.push(f[0].replace(/^\s*File "(?:.*\/)?([^/"]+)", line (\d+)(?:, in (.+))?$/, (m, a, b, c) => a + ":" + b + (c ? " in " + c : ""))); for (const l of f.slice(1)) if (l.trim()) out.push("    " + l.trim()); }
   out.push(exc); return out.join("\n");
 }
-function renderResults(ex, res) {
+function renderResults(ex, res, lessonOf) {
   const box = $("#results"); let html = "";
   if (res.timed_out) { html = `<div class="banner fail">⏱ Timed out. Infinite loop? Each run is limited to ${ex.timeout_s || 10} seconds.</div>`; box.innerHTML = html; recordRun(ex, false); renderHeader(); return; }
   if (res.import_error) { html = `<div class="banner fail">Your code could not be imported</div><pre class="sol">${esc(shortTb(res.import_error))}</pre>`; box.innerHTML = html; recordRun(ex, false); renderHeader(); return; }
@@ -626,13 +630,14 @@ function renderResults(ex, res) {
   box.innerHTML = html; renderHeader();
   if (ok) {
     for (const l of LESSONS) l.cards.forEach((c, i) => { if (c.kind === "exercise" && c.exercise_id === ex.id) recordCard(l.id, i, false); });
-    showAfterPass(ex, nextUnsolved(ex));
+    showAfterPass(ex, nextUnsolved(ex), lessonOf);
   }
 }
-function showAfterPass(ex, nxt) {
+function showAfterPass(ex, nxt, originLesson) {
   const n = nxt || nextUnsolved(ex);
-  const lessonOf = LESSONS.find((l) => l.cards.some((c) => c.kind === "exercise" && c.exercise_id === ex.id));
-  const cont = lessonOf ? (() => { const nl = nextLesson(lessonOf); return nl ? `<a class="btn" href="#/learn/${nl.id}">Continue: Lesson ${nl.id} ${esc(nl.title)} ›</a>` : ""; })() : (n ? `<a class="btn" href="#/ex/${n.id}">Next: ${n.id} ${esc(n.title)} ›</a>` : "");
+  const lessonOf = lessonForExercise(ex, originLesson && originLesson.id);
+  const continuation = lessonOf && (lessonProgress(lessonOf).complete ? nextLesson(lessonOf) : lessonOf);
+  const cont = lessonOf ? (continuation ? `<a class="btn" href="#/learn/${continuation.id}">Continue: Lesson ${continuation.id} ${esc(continuation.title)} ›</a>` : "") : (n ? `<a class="btn" href="#/ex/${n.id}">Next: ${n.id} ${esc(n.title)} ›</a>` : "");
   $("#after").innerHTML = `<div class="row" style="margin-top:12px"><button class="btn secondary" id="solbtn">Show reference solutions</button>${cont}${lessonOf && n ? `<a class="btn secondary" href="#/ex/${n.id}">Practice next: ${n.id} ›</a>` : ""}</div><pre class="sol" id="solview" hidden>${esc(ex.solution)}</pre>`;
   $("#solbtn").onclick = () => { const v = $("#solview"); v.hidden = !v.hidden; };
 }
