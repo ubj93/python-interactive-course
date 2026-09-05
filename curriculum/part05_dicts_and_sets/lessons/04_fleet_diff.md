@@ -1,6 +1,6 @@
 # Sets and set operations
 
---- teach
+--- teach #card-89533e51ca2b5131
 ### A set holds each value once
 A set is an unordered collection of distinct values. `set(iterable)` builds one, dropping duplicates; `s.add(x)` inserts. `set()` is the empty set; `{}` is an empty dict, not a set.
 ```python
@@ -11,7 +11,7 @@ True
 ```
 Membership is fast no matter how big the set is, which is why a fleet comparison uses sets and not nested loops.
 
---- predict
+--- predict #card-f3d0dc7d899e5d1a
 What does this print?
 ```python
 print(len(set(["A", "A", "B"])))
@@ -19,7 +19,7 @@ print(len(set(["A", "A", "B"])))
 answer: 2
 > The two `A`s collapse into one member. Duplicates in an input source count once, exactly as the exercise requires.
 
---- teach
+--- teach #card-0b370761016f5713
 ### Difference, intersection, union
 Three operators do the reconciling. `a - b` is what is in `a` but not `b`. `a & b` is what is in both. `a | b` is everything in either.
 ```python
@@ -34,7 +34,7 @@ Three operators do the reconciling. `a - b` is what is in `a` but not `b`. `a & 
 ```
 Say the complexity in an interview: set difference is linear in the sizes; the nested-loop version is `n × m`.
 
---- predict
+--- predict #card-5d060ac8436c5263
 What does this print?
 ```python
 print(sorted({"A", "B", "C"} - {"B"}))
@@ -42,7 +42,7 @@ print(sorted({"A", "B", "C"} - {"B"}))
 answer: ['A', 'C']
 > `-` removes every member of the right set from the left. `sorted` turns the result into an ordered list.
 
---- code
+--- code #card-deb38d05618b5bd2
 Set `only_mdm` to the serials in `mdm` but not `inv`, and `both` to the serials in both.
 ```python
 mdm = {"A", "B", "C"}
@@ -54,14 +54,14 @@ solution: only_mdm = mdm - inv
 solution: both = mdm & inv
 > `-` is difference and `&` is intersection. Both return new sets and leave `mdm` and `inv` as they were.
 
---- quiz
+--- quiz #card-10d325a9f8a95652
 `p` is the purchased set, `m` the MDM and `i` the inventory. Which expression is "purchased but seen by neither"?
 - [x] `p - (m | i)`
 - [ ] `p - (m & i)`
 - [ ] `(m | i) - p`
 > Subtract everything either system knows about, which is the union `m | i`. Subtracting only the intersection would keep serials that one system saw; the third is the reverse question.
 
---- teach
+--- teach #card-2ba5ebb0a3745b65
 ### Normalise while you build the set
 A set comprehension is `{expr for x in source if cond}`. Strip and uppercase each serial, and drop the ones that are blank after stripping. It reads any iterable once: a list, a tuple, a set, or a generator that can only be consumed one time.
 ```python
@@ -70,7 +70,7 @@ def serials(source):
 ```
 Doing this once per input means every later operation compares clean values, and `" c02a "` and `"C02A"` are the same member.
 
---- fill
+--- fill #card-78d1d9a5ef51566b
 Complete the comprehension so blank serials are dropped.
 ```python
 return {s.strip().upper() for s in source ___ s.strip()}
@@ -78,7 +78,7 @@ return {s.strip().upper() for s in source ___ s.strip()}
 answer: if
 > The `if` at the end filters: an empty string after stripping is falsy, so it is skipped. The `upper()` on the kept ones makes the comparison case-insensitive.
 
---- code
+--- code #card-7fee5553ed7d50cc
 Set `clean` to the set of serials in `raw`, stripped and uppercased, with blank entries dropped.
 ```python
 raw = [" c02a ", "C02A", "c02b", " "]
@@ -87,7 +87,7 @@ check: clean == {"C02A", "C02B"}
 solution: clean = {s.strip().upper() for s in raw if s.strip()}
 > The two spellings of `C02A` become the same member and the blank entry fails the `if`. Two members remain, whatever order the list had.
 
---- teach
+--- teach #card-acbfd5a4e4ca51f5
 ### Sort before returning
 A set has no order, and the order of a set of strings can change between runs. The spec, and every test, wants sorted lists, so wrap each result in `sorted(...)`. When `purchased` is `None`, use `set()` so the `"neither"` list is empty.
 ```python
@@ -95,9 +95,9 @@ p = serials(purchased) if purchased is not None else set()
 return {"only_mdm": sorted(m - i), ...}
 ```
 
---- exercise 5.4
+--- exercise 5.4 #card-d3dc5864f4715dc8
 
---- recap
+--- recap #card-306b8b6dae715eeb
 - `set(...)` deduplicates; `set()` is empty, `{}` is a dict.
 - `a - b`, `a & b`, `a | b`: difference, intersection, union.
 - `{s.strip().upper() for s in src if s.strip()}` normalises any iterable into a set.

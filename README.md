@@ -209,7 +209,10 @@ shows each test's one-line description, and trims tracebacks down to your code.
 
 ## Adding or editing content
 
-Read [`curriculum/AUTHORING.md`](curriculum/AUTHORING.md). Then:
+Read [`curriculum/AUTHORING.md`](curriculum/AUTHORING.md). Each lesson card has a
+permanent authored ID; preserve it when editing or moving the same card, and assign
+a new ID to a new question. Existing positional progress and browser drafts migrate
+through the frozen shipped layout, retaining old records for recovery. Then:
 
 ```bash
 python3 tools/verify.py        # every solution passes, every stub fails, metadata valid

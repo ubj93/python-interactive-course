@@ -1,6 +1,6 @@
 # Dates that know their time zone
 
---- teach
+--- teach #card-94bef73d166f5849
 ### Naive and aware datetimes
 A `datetime` is a date plus a time. A **naive** one has no time zone; an **aware** one carries `tzinfo`, the zone it belongs to. Python refuses to mix the two, because "10:00" without a zone is not an instant in time.
 ```python
@@ -14,14 +14,14 @@ TypeError: can't subtract offset-naive and offset-aware datetimes
 ```
 Fleet scripts hit this bug all the time: an aware "now" minus a naive "last check-in".
 
---- quiz
+--- quiz #card-ca7b2ecd10a358b6
 `then` is naive and `now` is aware. What does `now - then` do?
 - [ ] Returns a `timedelta`, assuming UTC for `then`
 - [x] Raises `TypeError`
 - [ ] Returns `None`
 > Python never guesses a zone. Make both values aware first, then subtract.
 
---- teach
+--- teach #card-c689d58ab4285c39
 ### Parsing ISO 8601 with `fromisoformat`
 `datetime.fromisoformat` reads the `2024-05-01T10:00:00+02:00` shape and keeps the offset, so the result is aware. A string with no offset gives a naive result. On Python 3.9 the trailing `Z` (which means UTC) is rejected, so swap it for `+00:00` first.
 ```python
@@ -35,7 +35,7 @@ True
 ```
 Anything it cannot read raises `ValueError`, which is exactly what the exercise wants for garbage input.
 
---- fill
+--- fill #card-4684a5efa6985b0a
 Complete the line that turns a trailing `Z` into an offset `fromisoformat` accepts.
 ```python
 if s.endswith("Z"):
@@ -44,7 +44,7 @@ if s.endswith("Z"):
 answer: +00:00
 > `s[:-1]` drops the last character; `+00:00` is the explicit way to write "UTC, no offset".
 
---- teach
+--- teach #card-6f6eaae95115593e
 ### Label a naive value, convert an aware one
 Two methods look alike and do opposite jobs. `replace(tzinfo=timezone.utc)` **labels** a naive datetime as UTC without changing the numbers. `astimezone(timezone.utc)` **converts** an aware datetime to UTC, so 12:00 at +02:00 becomes 10:00.
 ```python
@@ -55,7 +55,7 @@ datetime.datetime(2024, 5, 1, 10, 0, tzinfo=datetime.timezone.utc)
 ```
 So: if `dt.tzinfo is None`, label it; then convert with `astimezone`. Converting something already in UTC changes nothing.
 
---- code
+--- code #card-afdbd21efa3e52e0
 Set `utc` to the timestamp parsed from `raw`, converted to UTC. It should read 10:00 UTC and be aware.
 ```python
 from datetime import datetime, timezone
@@ -66,7 +66,7 @@ check: utc.tzinfo == timezone.utc
 solution: utc = datetime.fromisoformat(raw).astimezone(timezone.utc)
 > `fromisoformat` keeps the `+02:00` offset, so the value is already aware; `astimezone(timezone.utc)` converts 12:00+02:00 to 10:00 UTC.
 
---- predict
+--- predict #card-1593b6a6f423553b
 What does this print?
 ```python
 from datetime import datetime, timezone
@@ -76,7 +76,7 @@ print(dt.astimezone(timezone.utc).hour)
 answer: 10
 > 12:00 at two hours ahead of UTC is 10:00 in UTC. `astimezone` converts; it does not just relabel.
 
---- teach
+--- teach #card-2a0073c4c05e544c
 ### Subtracting gives a `timedelta`
 Two aware datetimes subtract to a `timedelta`. Its `.days` is the whole-day part, rounded down (2 days 23 hours is 2). A future timestamp gives a negative delta, and `.days` rounds toward minus infinity, so minus one hour reads as `-1`. Clamp with `max(0, ...)`.
 ```python
@@ -87,7 +87,7 @@ Two aware datetimes subtract to a `timedelta`. Its `.days` is the whole-day part
 0
 ```
 
---- predict
+--- predict #card-e545bc6350c757a9
 What does this print?
 ```python
 from datetime import datetime
@@ -96,7 +96,7 @@ print((datetime(2024, 5, 4, 9, 0) - datetime(2024, 5, 1, 10, 0)).days)
 answer: 2
 > The gap is 2 days and 23 hours. `.days` keeps the whole days only.
 
---- teach
+--- teach #card-60e6418248c25e38
 ### Inject the clock
 A function that calls `datetime.now()` inside gives a different answer every run, so a test cannot pin it. Instead, take `now` as a parameter and let the caller pass it. Tests pass a fixed aware datetime; production passes `datetime.now(timezone.utc)`.
 ```python
@@ -110,16 +110,16 @@ days_since("2024-05-01T10:00:00Z", now=datetime(2024, 5, 4, 9, 0, tzinfo=timezon
 ```
 You will meet this idea again with `runner`, `sleep` and `client`: whatever touches the outside world comes in as an argument.
 
---- quiz
+--- quiz #card-738497e53e3c512b
 Why does `days_since(raw, now)` take `now` as a parameter instead of calling `datetime.now()`?
 - [ ] `datetime.now()` is slower
 - [x] So a test can pass a fixed instant and get the same answer every run
 - [ ] `datetime.now()` cannot return an aware value
 > A test needs a deterministic result. The caller owns the clock; the function only does maths.
 
---- exercise 10.1
+--- exercise 10.1 #card-ebefc2de75695bbf
 
---- recap
+--- recap #card-40490a4477e151ad
 - Aware datetimes carry `tzinfo`; mixing them with naive ones raises `TypeError`.
 - `fromisoformat` parses ISO 8601; replace a trailing `Z` with `+00:00` first.
 - `replace(tzinfo=...)` labels a naive value; `astimezone(...)` converts an aware one.

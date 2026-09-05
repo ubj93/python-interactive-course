@@ -1,6 +1,6 @@
 # Capstone: manifest resolver
 
---- teach
+--- teach #card-fe4b638586e15df9
 ### The ticket
 Munki-style manifests are a dict of `name -> manifest`. A manifest may list `included_manifests`, `managed_installs` and `managed_uninstalls`; every key is optional. Starting from one manifest, work out which manifests a client would read and in what order, what it would install and remove, and where the manifests contradict each other (the same item installed by one and removed by another). An unknown name raises `KeyError`; an include cycle raises `ValueError` naming the cycle, such as `a -> b -> a`. An optional catalog flags items nobody has packaged.
 
@@ -13,7 +13,7 @@ Rules in your own words:
 - missing: only with a catalog; sorted; items stay in their lists
 ```
 
---- teach
+--- teach #card-49f7f7e3eb9853b5
 ### Four functions
 ```python
 def resolve_manifest(manifests, name, catalog=None):
@@ -36,7 +36,7 @@ def resolve_manifest(manifests, name, catalog=None):
 
 `catalog is not None` matters: an empty catalog is a real catalog in which everything is missing.
 
---- teach
+--- teach #card-dde083c44e445233
 ### Depth-first with two sets
 Write an inner `visit(current)` that appends to an outer `order` list and recurses over the includes. You need two different bookkeeping structures: `done` (fully visited: return early, which is how a diamond is visited once) and `path` (the manifests on the current recursion stack: seeing one again is a cycle). Push before recursing, pop after.
 ```python
@@ -56,14 +56,14 @@ def visit(current):
 ```
 Check the cycle before `done`, or a manifest that includes itself is silently accepted. One shared `visited` set cannot tell a diamond from a cycle.
 
---- quiz
+--- quiz #card-0b9d095b62e05224
 `top` includes `l` and `r`; both `l` and `r` include `base`. What does `expand_includes(manifests, "top")` return?
 - [x] `['top', 'l', 'base', 'r']`
 - [ ] `['top', 'l', 'base', 'r', 'base']`
 - [ ] It raises `ValueError`, because `base` is reached twice
 > Pre-order means a manifest is listed before its includes, and depth-first means `l`'s subtree is finished before `r` starts. When `r` reaches `base`, `base` is in `done` but not on the current `path` (which is `top, r`), so it is skipped, not reported as a cycle.
 
---- predict
+--- predict #card-227e6b78b9875510
 What does this print?
 ```python
 path = ["a", "b", "c"]
@@ -73,7 +73,7 @@ print(" -> ".join(path[path.index(current):] + [current]))
 answer: b -> c -> b
 > `path.index("b")` is 1, so the slice is `["b", "c"]`, and appending `current` closes the loop. The tests check the message with `assertIn`, so the whole cycle must be there, starting and ending at the repeated name.
 
---- code
+--- code #card-cf152b337a065937
 Write the body of `visit`: return if `current` is already in `done`; otherwise add it to `done` and `order`, then visit each name in its `included_manifests` (the key may be missing). Then call `visit("top")`.
 ```python
 manifests = {"top": {"included_manifests": ["l", "r"]}, "l": {"included_manifests": ["base"]}, "r": {"included_manifests": ["base"]}, "base": {}}
@@ -91,7 +91,7 @@ solution:         visit(child)
 solution: visit("top")
 > Appending before recursing is what makes the order pre-order. `base` is added to `done` on the way through `l`, so when `r` reaches it the early `return` fires. Add the `path` check above the `done` check and you have the real `expand_includes`.
 
---- teach
+--- teach #card-52463e6ccbc151e3
 ### First-seen order, then set algebra
 Lists keep order but do not dedupe; sets dedupe but forget order. For the item lists you need both, so walk with a `seen` set and append only new names. `list(dict.fromkeys(items))` does the same in one line.
 ```python
@@ -105,7 +105,7 @@ def _dedupe(items):
 ```
 Clean each manifest's list first: `[(s or "").strip() for s in items or []]`, then drop the empty strings. Conflicts are pure set algebra, sorted so the answer does not depend on set order, and both lists are then filtered against `set(conflicts)` with a comprehension.
 
---- code
+--- code #card-b282d4c1d9365908
 Set `clean` to the item names stripped, with empty names dropped and duplicates removed, keeping first-seen order.
 ```python
 items = ["Zoom ", "Chrome", "", " Zoom", "Slack"]
@@ -119,7 +119,7 @@ solution:         seen.add(name)
 solution:         clean.append(name)
 > Strip first, so `"Zoom "` and `" Zoom"` become the same name and the second one is caught by `seen`. The `name and` part drops the empty string. `list(dict.fromkeys(...))` over the stripped, non-empty names is the one-line version.
 
---- fill
+--- fill #card-2da91faa0c885251
 Complete `find_conflicts` so it returns the items present in both lists, in sorted order.
 ```python
 def find_conflicts(installs, uninstalls):
@@ -128,7 +128,7 @@ def find_conflicts(installs, uninstalls):
 answer: &
 > `&` is set intersection. `sorted` turns the set back into a list with a deterministic order; emitting a set directly would make the output depend on hashing.
 
---- teach
+--- teach #card-2d2e2a225b5b58f6
 ### Budget: 45 minutes
 - 0–6: read twice, write the rules; draw the diamond and the three-node cycle on paper.
 - 6–10: signatures and `resolve_manifest` as above; it is mostly done.
@@ -139,9 +139,9 @@ answer: &
 
 If `expand_includes` is not passing by minute 25, freeze it: `collect_items` and the composer earn credit on their own.
 
---- exercise 13.6
+--- exercise 13.6 #card-b7007cccdfea54b2
 
---- recap
+--- recap #card-fc71db6db252503b
 - DFS with two structures: `done` handles diamonds, `path` detects cycles; check the cycle first.
 - The cycle message is `path[path.index(current):] + [current]` joined by `" -> "`.
 - Dedupe with a `seen` set to keep first-seen order.

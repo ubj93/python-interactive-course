@@ -1,6 +1,6 @@
 # Missing, empty, or broken
 
---- teach
+--- teach #card-c016aea3ef2d5721
 ### Three situations, three answers
 A state file can be missing (normal on a fresh machine), empty (created, never written), or broken (someone edited it by hand). The first two return the default; the third must fail loudly, because starting over would lose data. Good error handling starts by naming the cases.
 ```python
@@ -11,7 +11,7 @@ def read_json_or_default(path, default):
     # anything else the OS refuses -> let it propagate
 ```
 
---- teach
+--- teach #card-ee3fd0b23894546b
 ### Catch `FileNotFoundError`, and only that
 Wrap just the `open` in `try`. `except FileNotFoundError` covers the missing file. Do **not** write `except OSError` or `except Exception`: a permission problem or a directory in place of the file is a real fault that should surface, and the last test checks it does.
 ```python
@@ -22,7 +22,7 @@ except FileNotFoundError:
     return copy.deepcopy(default)
 ```
 
---- fill
+--- fill #card-251e91d80cb45751
 Complete the clause so only a missing file returns the default.
 ```python
 try:
@@ -34,14 +34,14 @@ except ___:
 answer: FileNotFoundError
 > `FileNotFoundError` is the one exception that means "no state yet". Its parent `OSError` would also swallow permission errors, which the spec says to let through.
 
---- quiz
+--- quiz #card-ab426db9d3955184
 The path points at a directory, so `open` raises `IsADirectoryError`. What should `read_json_or_default` do?
 - [ ] Return the default
 - [x] Let the exception propagate
 - [ ] Raise `ValueError` naming the path
 > Only a missing file means "no state". A directory in the way is a real problem; because you caught `FileNotFoundError` and nothing wider, it propagates on its own.
 
---- teach
+--- teach #card-f3f745da44f95c55
 ### Empty means "no state yet"
 After reading, `text.strip()` is `""` for an empty or whitespace-only file. Return the default rather than letting `json.loads("")` fail.
 ```python
@@ -49,7 +49,7 @@ if not text.strip():
     return copy.deepcopy(default)
 ```
 
---- code
+--- code #card-e5f64b59623054c1
 Set `state` to a deep copy of `default` when `text` is blank, otherwise to the parsed JSON.
 ```python
 import copy, json
@@ -64,7 +64,7 @@ solution: else:
 solution:     state = json.loads(text)
 > `text.strip()` is empty, so the default branch runs. `deepcopy` makes `state` a separate object; `state is not default` proves it.
 
---- teach
+--- teach #card-cc623eabb1365fb4
 ### Broken JSON: re-raise with the file name
 `json.loads` on bad text raises `json.JSONDecodeError`, which is a subclass of `ValueError`. Catch it and raise a new `ValueError` whose message contains the path, chained with `from e`, so the reader knows which file to fix and still sees the original position information.
 ```python
@@ -74,7 +74,7 @@ except json.JSONDecodeError as e:
     raise ValueError(f"{path}: invalid JSON ({e})") from e
 ```
 
---- predict
+--- predict #card-aa36a41d8d0351d2
 What does this print?
 ```python
 import json
@@ -86,7 +86,7 @@ except ValueError as e:
 answer: JSONDecodeError
 > `JSONDecodeError` inherits from `ValueError`, so `except ValueError` catches it, and the object's own class name is still `JSONDecodeError`.
 
---- teach
+--- teach #card-f8dba3e13be25c96
 ### Return a deep copy of the default
 If you return `default` itself, the caller who does `state["devices"].append(...)` changes the default for the next caller. `copy.deepcopy(default)` returns a fresh copy, including nested lists and dicts.
 ```python
@@ -98,7 +98,7 @@ If you return `default` itself, the caller who does `state["devices"].append(...
 {'devices': []}
 ```
 
---- predict
+--- predict #card-67e714328ace5992
 What does this print?
 ```python
 import copy
@@ -110,9 +110,9 @@ print(default)
 answer: {'seen': {'count': 0}}
 > `deepcopy` copies the nested dict too, so writing into the copy leaves the original untouched. A plain `dict(default)` would share the inner dict.
 
---- exercise 7.4
+--- exercise 7.4 #card-9bc06a55b8975a90
 
---- recap
+--- recap #card-b655a8e29f7b5078
 - Name the cases first: missing, empty, broken, and "everything else".
 - `except FileNotFoundError:` only; wider clauses hide real faults.
 - Empty text returns the default without calling `json.loads`.

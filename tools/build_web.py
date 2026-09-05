@@ -19,7 +19,9 @@ sys.path.insert(0, str(ROOT))
 from course import __version__  # noqa: E402
 from course.catalog import KYU_XP, load_catalog, total_xp  # noqa: E402
 from course.progress import BADGES, RANKS  # noqa: E402
-from course.lessons import CARD_XP, load_lessons  # noqa: E402
+from course.lessons import CARD_XP, load_lessons, validate_card_ids  # noqa: E402
+
+from course.card_ids import LEGACY_LAYOUT, LEGACY_CARD_IDS
 
 OUT = ROOT / "docs" / "exercises.js"
 HARNESS = ROOT / "course" / "harness.py"
@@ -44,10 +46,14 @@ def read_fixtures(ex_dir: Path) -> dict:
 
 def build() -> str:
     catalog = load_catalog()
+    lesson_map = {part.num: load_lessons(part) for part in catalog}
+    problems = validate_card_ids([lesson for lessons in lesson_map.values() for lesson in lessons])
+    if problems:
+        raise ValueError("; ".join(problems))
     parts = []
     lesson_xp = 0
     for part in catalog:
-        lessons = load_lessons(part)
+        lessons = lesson_map[part.num]
         lesson_xp += sum(l.xp for l in lessons)
         parts.append(
             {
@@ -64,6 +70,7 @@ def build() -> str:
                         "xp": l.xp,
                         "cards": [
                             {
+                                "id": c.id,
                                 "kind": c.kind,
                                 "body": c.body,
                                 "options": c.options,
@@ -108,6 +115,8 @@ def build() -> str:
         "version": __version__,
         "total_xp": total_xp(catalog) + lesson_xp,
         "card_xp": CARD_XP,
+        "legacy_card_layout": LEGACY_LAYOUT["layout"],
+        "legacy_card_ids": LEGACY_CARD_IDS,
         "kyu_xp": KYU_XP,
         "ranks": RANKS,
         "badges": {k: list(v) for k, v in BADGES.items()},

@@ -1,6 +1,6 @@
 # Cleaning up strings
 
---- teach
+--- teach #card-0e9beaaa7cc15588
 ### Strings never change; methods give you new ones
 Text values are immutable. Every string method leaves the original alone and returns a new string. So you almost always write the result back to a name, or feed it straight into the next step.
 ```python
@@ -11,7 +11,7 @@ Text values are immutable. Every string method leaves the original alone and ret
 '  MBP-J-DOE '        # unchanged
 ```
 
---- predict
+--- predict #card-e59e5bb4076e5567
 What does this print?
 ```python
 print("MBP".lower())
@@ -19,7 +19,7 @@ print("MBP".lower())
 answer: mbp
 > `lower()` returns a lowercase copy. The original "MBP" is untouched.
 
---- code
+--- code #card-4dcc3acbff86598d
 Make `clean` hold `raw` without the surrounding spaces and newline, in lowercase.
 ```python
 raw = "  MBP-J-DOE \n"
@@ -28,7 +28,7 @@ check: clean == "mbp-j-doe"
 solution: clean = raw.strip().lower()
 > `strip()` removes the whitespace at both ends, then `lower()` lowercases the result.
 
---- teach
+--- teach #card-7e11b264b65c53a7
 ### The four methods you will use every day
 - `strip()` removes spaces, tabs and newlines from both ends.
 - `lower()` / `upper()` change case.
@@ -41,7 +41,7 @@ solution: clean = raw.strip().lower()
 'win-lab-01'
 ```
 
---- teach
+--- teach #card-f23773db76a9533a
 ### Chain them, left to right
 Because each method returns a new string, you can call the next method on the result. Read chains as a pipeline: strip, then lower, then split.
 ```python
@@ -50,7 +50,7 @@ Because each method returns a new string, you can call the next method on the re
 ```
 Indexing `[0]` on the list takes the first piece.
 
---- fill
+--- fill #card-8600abb342495753
 Complete the chain so `name` is the trimmed, lowercased hostname.
 ```python
 name = raw.___().lower()
@@ -58,7 +58,7 @@ name = raw.___().lower()
 answer: strip
 > `strip()` first, so stray spaces and newlines are gone before anything else looks at the text.
 
---- predict
+--- predict #card-6b32c10fe1c9540b
 What does this print?
 ```python
 print("mbp-j-doe.corp.example.com".split(".")[0])
@@ -66,14 +66,14 @@ print("mbp-j-doe.corp.example.com".split(".")[0])
 answer: mbp-j-doe
 > `split(".")` gives `['mbp-j-doe', 'corp', 'example', 'com']` and `[0]` picks the first item.
 
---- quiz
+--- quiz #card-d0178f666e8f50cd
 What is `"a_b_c".replace("_", "-")`?
 - [x] `'a-b-c'`
 - [ ] `'a-b_c'`
 - [ ] `['a', 'b', 'c']`
 > `replace` swaps every occurrence, not just the first. `split` is the one that returns a list.
 
---- code
+--- code #card-e84749c0b80356e2
 Print only the machine name (the part before the first dot), with underscores turned into hyphens.
 ```python
 fqdn = "win_lab_01.corp.example.com"
@@ -82,9 +82,9 @@ expect: win-lab-01
 solution: print(fqdn.split(".")[0].replace("_", "-"))
 > `split(".")[0]` keeps the first piece, then `replace` fixes the underscores. Order does not matter here, but chaining keeps it on one line.
 
---- exercise 1.2
+--- exercise 1.2 #card-ac5fa18da1db50fa
 
---- recap
+--- recap #card-701c6ac878585662
 - String methods return new strings; the original is unchanged.
 - `strip`, `lower`, `split`, `replace` cover most clean-up jobs.
 - Chain methods left to right; `[0]` takes the first item of a list.

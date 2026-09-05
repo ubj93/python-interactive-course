@@ -1,12 +1,12 @@
 # Capstone: enrollment reconciler
 
---- teach
+--- teach #card-3c7b49bc55da5d89
 ### The ticket
 Three systems describe the fleet and disagree. MDM has `{serial, user}`, the directory has `{user, active}`, inventory has `{serial, owner, status}`. Produce a work list: for every serial in MDM or inventory, an action (`enroll`, `retire`, `reassign`, `investigate`) and a reason, sorted by action then serial. Serials compare uppercased and stripped; users, owners and statuses compare lowercased and stripped. Empty serials are skipped; a serial that appears twice in one source is flagged.
 
 The docstring gives ten numbered rules and says "apply the FIRST matching rule". That sentence is the whole design: the code is the same ladder, in the same order. Write the rules down, then read the tests for `decide`; each test pins one rung.
 
---- teach
+--- teach #card-26e32c111bc55f22
 ### Two normalisers, three helpers, one composer
 ```python
 def _serial(value):
@@ -22,7 +22,7 @@ def _user(value):
 
 Every read of a serial or user goes through a normaliser. `(value or "")` handles a missing key and a `None` in one move. That one habit removes half the messy-data bugs before they exist.
 
---- code
+--- code #card-f747a1730f985835
 Write the two normalisers: `_serial(value)` returns the value stripped and uppercased, `_user(value)` stripped and lowercased, and both return `""` for `None`.
 ```python
 # your code here
@@ -36,7 +36,7 @@ solution: def _user(value):
 solution:     return (value or "").strip().lower()
 > `(value or "")` turns `None` into an empty string before any method is called, so a row with a missing key cannot crash the parse. Two four-line functions, called everywhere, and casing is never a bug again.
 
---- predict
+--- predict #card-4ad4a1fc2c625289
 What does this print?
 ```python
 by_serial, dups = {}, set()
@@ -51,7 +51,7 @@ print(sorted(by_serial), sorted(dups))
 answer: ['A', 'B'] ['A'] | ['A','B'] ['A']
 > `" a "` normalises to `"A"`, which is already a key, so it goes into the duplicate set and the first row stays. `B` is new. Membership on a dict is O(1), which is why a dict is the index.
 
---- teach
+--- teach #card-569581ca614450ab
 ### The ladder: guard clauses in spec order
 Each rule is an `if` that returns as soon as it applies; whatever is below can assume it did not. Rules 3 and 4 have a twist: a retired or in-stock device that is not in MDM needs nothing, so they return `None` instead of falling through.
 ```python
@@ -70,7 +70,7 @@ return None
 ```
 Reasons use the normalised values, and an empty MDM user is written as `none`. Reordering any two rungs changes an answer somewhere in the tests.
 
---- code
+--- code #card-21ef4f9964ab5b6b
 Write the first two rungs of the ladder and nothing else: rule 1 (duplicate) and rule 2 (not in inventory), then `return None`.
 ```python
 def decide(mdm_row, inv_row, active, duplicate_in=None):
@@ -85,14 +85,14 @@ solution:         return "investigate", "not in inventory"
 solution:     return None
 > Each rung is a guard that returns a tuple; `return "investigate", "..."` builds the tuple without brackets. The duplicate rung comes first, so a duplicated serial is investigated even when it is also missing from inventory. The remaining eight rungs slot in above the final `return None`.
 
---- quiz
+--- quiz #card-6ce990444b1452fb
 A serial is in inventory (`in_use`, owner `zed@example.com`) but not in MDM, and `zed` is not an active directory user. What does `decide` return?
 - [ ] `('enroll', 'not enrolled')`
 - [x] `('investigate', 'owner zed@example.com not active in directory')`
 - [ ] `None`
 > Rule 7 (owner not active) sits above rule 8 (not in MDM), so the inactive owner is caught first. Enrolling a laptop for someone who has left is exactly the mistake the ladder order prevents.
 
---- fill
+--- fill #card-aa9c4eeb7ed15316
 Complete the loop in `reconcile` so it visits every serial that appears in either source.
 ```python
 for serial in set(mdm_by).___(set(inv_by)):
@@ -101,7 +101,7 @@ for serial in set(mdm_by).___(set(inv_by)):
 answer: union
 > `set.union` (or the `|` operator) gives serials in MDM, in inventory, or both. `.get` then returns `None` for the side that lacks the serial, which is exactly what `decide` expects. Work out `duplicate_in` from the two duplicate sets first, MDM taking precedence.
 
---- teach
+--- teach #card-8e6da734036c5624
 ### Budget: 45 minutes
 - 0–6: read twice; copy the ten rules into comments inside `decide`, in order.
 - 6–10: `_serial`, `_user`, signatures, `reconcile` skeleton.
@@ -112,9 +112,9 @@ answer: union
 
 If time runs short, ship `decide` complete and `reconcile` rough: the ladder is where the marks are.
 
---- exercise 13.4
+--- exercise 13.4 #card-278f3001510e50c3
 
---- recap
+--- recap #card-71824c30d8ab5cff
 - `_serial` and `_user` normalise at the boundary; call them everywhere.
 - Index with a dict; first row wins, repeats go into a duplicate set.
 - `decide` is guard clauses in spec order; rules 3 and 4 return `None` when the device is not in MDM.

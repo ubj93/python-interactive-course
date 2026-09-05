@@ -152,12 +152,31 @@ curriculum/partNN_slug/lessons/NN_slug.md      # one file per lesson; lesson NN 
 ```
 
 One lesson per exercise, numbered the same (`lessons/03_decisions.md` ends in
-exercise `P.3`). A lesson file is a title line, then cards separated by `--- <type>`:
+exercise `P.3`). A lesson file is a title line, then cards separated by
+`--- <type> #<card-id>` (exercise markers include the exercise ID before `#`).
+
+Every card needs an explicit, globally unique ID using 3–64 lowercase letters,
+digits, underscores or hyphens, starting with a letter. For example:
+`--- teach #hostname-normalization` or `--- exercise 1.2 #hostname-practice`.
+Keep an existing ID when correcting wording, moving or reordering that same card.
+Give a newly inserted card or a substantially different question a new ID; never
+renumber cards or reuse a retired ID. The verifier and browser builder reject
+missing or duplicate identities.
+
+Saved answers, first-answer reward history, and browser code drafts follow these
+IDs. `course/legacy_card_ids.json` is the immutable mapping from the shipped
+v0.3.4 positional layout; do not regenerate it from the current lesson order.
+Migration preserves positional and unknown records for recovery and gives existing
+stable records precedence when both formats are present. New cards receive no
+completion from an old position. Once migrated, restarting a lesson cannot revive
+its old positional completion state.
+
+Example:
 
 ```markdown
 # Making decisions
 
---- teach
+--- teach #example-card-1
 ### if, elif, else
 Two to five short sentences in plain words. One idea only. Then a snippet.
 ```python
@@ -165,7 +184,7 @@ if pct >= 0.95:
     status = "CRIT"
 ```
 
---- predict
+--- predict #example-card-2
 What does this print?
 ```python
 print(7 // 2)
@@ -173,14 +192,14 @@ print(7 // 2)
 answer: 3
 > `//` is floor division: it throws away the remainder.
 
---- quiz
+--- quiz #example-card-3
 Which expression is true only when `x` is between 0 and 1?
 - [ ] `0 <= x or x <= 1`
 - [x] `0 <= x <= 1`
 - [ ] `x in (0, 1)`
 > Chained comparison reads like maths.
 
---- fill
+--- fill #example-card-4
 Complete the guard so it catches a missing value.
 ```python
 if used ___ None:
@@ -189,7 +208,7 @@ if used ___ None:
 answer: is
 > `is None` is the idiom.
 
---- code
+--- code #example-card-5
 Print the status for a disk that is 85% full, using the function above.
 ```python
 def disk_status(pct):
@@ -199,9 +218,9 @@ expect: WARN
 solution: print(disk_status(0.85))
 > Call the function and print what it returns.
 
---- exercise 3.3
+--- exercise 3.3 #example-card-6
 
---- recap
+--- recap #example-card-7
 - one line per idea, four lines at most
 ```
 

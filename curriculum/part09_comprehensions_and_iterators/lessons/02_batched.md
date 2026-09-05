@@ -1,6 +1,6 @@
 # Generator functions
 
---- teach
+--- teach #card-90733608d8705094
 ### `yield` makes a function lazy
 A function that contains `yield` does not run when you call it. It returns a **generator**, and its body runs only when something asks for a value: it runs to the next `yield`, hands the value out, and pauses there until asked again.
 ```python
@@ -17,7 +17,7 @@ def countdown(n):
 ```
 `for` loops, `list()` and `next()` all pull values this way.
 
---- code
+--- code #card-dd92ea554a645e83
 Write a generator function `evens(n)` that yields 0, 2, 4, ... for every even number below `n`. Then print `list(evens(7))`.
 ```python
 # your code here
@@ -30,7 +30,7 @@ solution:         yield i
 solution: print(list(evens(7)))
 > `yield` inside the loop hands out one value per pass and pauses. `list()` keeps asking until the loop ends, which is when the generator is exhausted.
 
---- predict
+--- predict #card-f8de834b8cc45664
 What does this print?
 ```python
 def hosts():
@@ -43,7 +43,7 @@ print(next(gen))
 answer: mbp-j-doe
 > The body runs up to the first `yield` and pauses. A second `next(gen)` would resume and give `win-lab-01`.
 
---- teach
+--- teach #card-51b721a1ac6b56f1
 ### Pull `n` items at a time with `islice`
 `iter(iterable)` gives an iterator you can pull from. `itertools.islice(it, n)` takes up to `n` items from it, lazily, without indexing or knowing the length. Wrap it in `tuple(...)` to actually take them. When the iterator is exhausted, you get an empty tuple.
 ```python
@@ -56,7 +56,7 @@ answer: mbp-j-doe
 ```
 This works on any iterable: a list, a file, an infinite `count()`.
 
---- code
+--- code #card-c851237eb98d58cb
 Set `batch` to a tuple of the first two items pulled from `it`, leaving the rest in place.
 ```python
 from itertools import islice
@@ -67,7 +67,7 @@ check: next(it) == "c"
 solution: batch = tuple(islice(it, 2))
 > `islice(it, 2)` pulls exactly two items from the shared iterator and `tuple()` collects them. The iterator remembers its position, so the next pull starts at `"c"`.
 
---- teach
+--- teach #card-ff34877f6ed85ecb
 ### The batching loop
 Keep taking a tuple of `n`. An empty tuple means the input ran out: `return` ends the generator. Otherwise `yield` the batch and go round again.
 ```python
@@ -80,14 +80,14 @@ def _batches(it, n):
 ```
 Because each round pulls only `n` items, an infinite input is fine: the caller stops asking, so the loop stops pulling.
 
---- quiz
+--- quiz #card-23f083dbdd1a5796
 What does `return` do inside a generator function?
 - [ ] Returns the value to the caller of `next()`
 - [x] Ends the stream; the consumer sees `StopIteration` and a `for` loop simply finishes
 - [ ] Raises a `ValueError`
 > A generator cannot hand a return value to `next()`; reaching `return` (or the end of the body) means "no more items". `list()` and `for` handle that quietly.
 
---- teach
+--- teach #card-37c1100873785d29
 ### Validate in a normal function, then return the generator
 Because a generator body is delayed, an `if n < 1: raise` inside it would not fire until the first `next()`. The exercise wants the error at call time. So the public function is a *normal* function: it checks, then returns the generator built by the inner function.
 ```python
@@ -98,16 +98,16 @@ def batched(iterable, n):
 ```
 `batched` has no `yield`, so its body runs immediately.
 
---- quiz
+--- quiz #card-391ba858ab865310
 The `n < 1` check is inside the generator body. When does `batched([1, 2], 0)` raise?
 - [ ] Immediately, when `batched` is called
 - [x] Only when the first value is requested with `next()` or `list()`
 - [ ] Never
 > Nothing in a generator body runs until the first pull. That is the delayed-validation trap interviewers probe; splitting the function fixes it.
 
---- exercise 9.2
+--- exercise 9.2 #card-dead63ce1f7e5bf3
 
---- recap
+--- recap #card-9c5bd27bbb1e5e92
 - A function with `yield` returns a generator; its body runs only when values are pulled.
 - `tuple(islice(it, n))` takes up to `n` items from an iterator; empty means exhausted.
 - `return` in a generator ends the stream.

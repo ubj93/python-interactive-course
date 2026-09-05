@@ -1,6 +1,6 @@
 # Streaming a log
 
---- teach
+--- teach #card-d2d9864e19eb5773
 ### Iterate the file; never `read()` a log
 A log can be gigabytes. `f.read()` and `f.readlines()` load all of it into memory. `for line in f:` reads one line, handles it, and forgets it, so memory stays flat no matter how big the file is.
 ```python
@@ -10,14 +10,14 @@ with open("agent.log", encoding="utf-8") as f:
 ```
 Saying "I iterate the file so memory is constant" out loud is what the interviewer is waiting for.
 
---- quiz
+--- quiz #card-8c95499c31fc5b50
 Which loop keeps memory flat on a 10 GB log?
 - [ ] `for line in f.readlines():`
 - [ ] `for line in f.read().splitlines():`
 - [x] `for line in f:`
 > `readlines()` and `read()` both build the whole file in memory first. Iterating the file object reads a line at a time.
 
---- teach
+--- teach #card-286e9fdc01c45a6e
 ### Start the counts with every key, in order
 The result must have exactly the keys `ERROR`, `WARN`, `INFO`, in that order, even for an empty file. So build the dict before the loop, with every count at 0, and only add to existing keys inside the loop. Dicts keep the order keys were inserted.
 ```python
@@ -25,7 +25,7 @@ LEVELS = ("ERROR", "WARN", "INFO")
 counts = {level: 0 for level in LEVELS}
 ```
 
---- code
+--- code #card-f4418fcfda6f5c0e
 Build `counts` with every level in `LEVELS` at 0, then add 2 to `ERROR`.
 ```python
 LEVELS = ("ERROR", "WARN", "INFO")
@@ -36,7 +36,7 @@ solution: counts = {level: 0 for level in LEVELS}
 solution: counts["ERROR"] += 2
 > The dict comprehension seeds all three keys in `LEVELS` order. Because the keys already exist, `+= 2` works without a check.
 
---- predict
+--- predict #card-7c1b71ad38285fe0
 What does this print?
 ```python
 counts = {level: 0 for level in ("ERROR", "WARN", "INFO")}
@@ -46,7 +46,7 @@ print(counts)
 answer: {'ERROR': 0, 'WARN': 1, 'INFO': 0}
 > The dict comprehension seeds all three keys at 0 in the given order; `+= 1` bumps one of them.
 
---- teach
+--- teach #card-9feb4da3aa885c25
 ### Find the first bracketed token with `partition`
 `s.partition("[")` splits at the first `[` only and returns three parts: before, the separator, after. If the separator is not there, the middle part is `""`. Partition again on `]` to cut the token out.
 ```python
@@ -57,7 +57,7 @@ token, closed, _ = rest.partition("]")
 ```
 Because `partition` stops at the first match, a later `[ERROR 403]` in the message is never seen.
 
---- predict
+--- predict #card-77d187bbc8bf537d
 What does this print?
 ```python
 line = "t [INFO] saw [WARN] in payload"
@@ -68,7 +68,7 @@ print(token)
 answer: INFO
 > The first `[` is before `INFO`, and the first `]` after it closes that same token. The later `[WARN]` is in the part that gets thrown away.
 
---- teach
+--- teach #card-934a37f1e5035fb5
 ### Aliases and unknown levels
 `WARNING` should count as `WARN`; `DEBUG`, `error` and `Info` should be ignored. A small dict maps aliases; `dict.get(key, key)` returns the key itself when there is no alias. Then `if level in counts` keeps only the three you want.
 ```python
@@ -79,7 +79,7 @@ if level in counts:
     counts[level] += 1
 ```
 
---- code
+--- code #card-3eeace8ddfa25a58
 Count the levels in `lines` into `counts`: take the first bracketed token, map aliases, ignore unknown levels and lines without a bracket.
 ```python
 LEVELS, ALIASES = ("ERROR", "WARN", "INFO"), {"WARNING": "WARN"}
@@ -97,7 +97,7 @@ solution:     if level in counts:
 solution:         counts[level] += 1
 > `partition("[")` skips lines with no bracket, the second `partition` cuts out the first token only, `ALIASES.get` turns `WARNING` into `WARN`, and `if level in counts` drops `DEBUG`.
 
---- fill
+--- fill #card-7c5cbd5c24e6566d
 Complete the line so `WARNING` becomes `WARN` and every other token is unchanged.
 ```python
 level = ALIASES.get(token, ___)
@@ -105,9 +105,9 @@ level = ALIASES.get(token, ___)
 answer: token
 > The second argument of `get` is the default. Using `token` as its own default means "look up an alias, otherwise keep what you have".
 
---- exercise 6.2
+--- exercise 6.2 #card-d9f551bc466a56c5
 
---- recap
+--- recap #card-91f5292e78665bc3
 - `for line in f:` streams a file; `read()` and `readlines()` load it all.
 - Seed the result dict with every key at 0 so order and keys are fixed.
 - `partition("[")` finds the first bracket; a second `partition("]")` cuts the token.

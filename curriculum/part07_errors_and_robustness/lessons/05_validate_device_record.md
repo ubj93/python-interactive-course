@@ -1,6 +1,6 @@
 # Collect every error
 
---- teach
+--- teach #card-0a2423f5a93f5c95
 ### Append, do not return
 A validator for user input should report everything wrong at once. The shape: an `errors` list, one `if` per rule that appends a message, no early `return`, and the list returned at the end. An empty list means valid.
 ```python
@@ -13,7 +13,7 @@ return errors
 ```
 `REQUIRED` is a tuple, so this loop reports missing fields in the fixed order the spec wants.
 
---- predict
+--- predict #card-08ea68a0b50b5c77
 What does this print?
 ```python
 REQUIRED = ("serial", "hostname", "os")
@@ -27,7 +27,7 @@ print(errors)
 answer: ['missing field: serial', 'missing field: os']
 > Every missing name is reported, in `REQUIRED` order, because the loop never stops early.
 
---- teach
+--- teach #card-1d0f80e0e8ee5165
 ### One predicate per field, never raising
 Write a small function per field that returns `True` or `False` for any input, including `None` and wrong types. Check `isinstance(v, str)` before calling string methods, because `None.upper()` would crash. A regex from Part 4 keeps the format rules short.
 ```python
@@ -38,7 +38,7 @@ def _is_serial(v):
 ```
 `and` stops at the first false part, so `SERIAL_RE.match` only runs on strings.
 
---- predict
+--- predict #card-46360dbc34c357f0
 What does this print?
 ```python
 import re
@@ -48,7 +48,7 @@ print(SERIAL_RE.match("c02") is not None, SERIAL_RE.match("7GH2K3Q") is not None
 answer: False True
 > `c02` is lowercase and too short, so no match. `7GH2K3Q` is seven uppercase letters and digits, which fits `{7,12}`.
 
---- teach
+--- teach #card-6a8656e2b18f59c7
 ### `bool` is an `int`; dates need `try`
 `ram_gb` must be a positive `int`, and `True` is an `int`, so exclude bools explicitly. For `last_seen`, `date.fromisoformat` raises `ValueError` on `"2024-13-01"`; a predicate must turn that into `False`. Check the length first: `fromisoformat` accepts other shapes on newer Pythons, but the spec wants `YYYY-MM-DD`.
 ```python
@@ -65,7 +65,7 @@ def _is_iso_date(v):
     return True
 ```
 
---- code
+--- code #card-6bc73c3802ed54a2
 Complete `_is_iso_date`: return `True` only for a 10-character string that `date.fromisoformat` accepts; never raise.
 ```python
 from datetime import date
@@ -83,14 +83,14 @@ solution:         return False
 solution:     return True
 > The type and length guard runs first so `None` never reaches `fromisoformat`. Month 13 makes `fromisoformat` raise `ValueError`, which the predicate turns into `False`.
 
---- quiz
+--- quiz #card-b53357f147315174
 What does `_is_ram(True)` return with the definition above?
 - [ ] `True`, because `True` is an `int` greater than 0
 - [x] `False`, because bools are excluded explicitly
 - [ ] It raises `TypeError`
 > `isinstance(True, int)` is `True`, which is why the `not isinstance(v, bool)` clause is there. Without it, `True` would pass as `1`.
 
---- teach
+--- teach #card-bd6ac2f5bc435b3b
 ### A table of checks, one message format
 Put the field name, its predicate and its message in a list, in the required order. One loop runs them all for fields that are present and appends `"<message>, got <value!r>"`.
 ```python
@@ -104,7 +104,7 @@ for name, ok, message in CHECKS:
 ```
 Adding a rule is one line of data, not a new block of code.
 
---- teach
+--- teach #card-3b23f08ff71658b6
 ### Unknown fields, sorted, last
 Keys that are not required are reported after everything else, in sorted order. Set difference finds them; `sorted` orders them.
 ```python
@@ -112,7 +112,7 @@ for name in sorted(set(record) - set(REQUIRED)):
     errors.append(f"unknown field: {name}")
 ```
 
---- fill
+--- fill #card-25a71d3ea61f57fe
 Complete the loop so unknown fields are reported in alphabetical order.
 ```python
 for name in ___(set(record) - set(REQUIRED)):
@@ -121,9 +121,9 @@ for name in ___(set(record) - set(REQUIRED)):
 answer: sorted
 > `set(record) - set(REQUIRED)` is the keys that are not required. A set has no order, so `sorted` gives the deterministic list the tests expect.
 
---- exercise 7.5
+--- exercise 7.5 #card-df58200453555b71
 
---- recap
+--- recap #card-fac7597e38f7593c
 - Collect: one `errors` list, one `if` per rule, no early return.
 - Predicates return a bool for any input; test `isinstance` before methods.
 - Exclude `bool` from `int` checks; wrap `date.fromisoformat` in `try`.

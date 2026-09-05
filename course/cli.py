@@ -621,7 +621,7 @@ class App:
         earned = 0
         start = 0
         for i in range(len(lesson.cards)):
-            if not p.card_state(lesson.id, i)["done"]:
+            if not p.card_state(lesson.id, lesson.cards[i].id)["done"]:
                 start = i
                 break
         else:
@@ -661,7 +661,7 @@ class App:
             ans = input(ui.dim("\n  [Enter] continue  [q] quit › ")).strip().lower()
             if ans == "q":
                 return "quit"
-            p.record_card(lesson.id, i, checkable=False)
+            p.record_card(lesson.id, lesson.cards[i].id, checkable=False)
             print()
             return 0
         if card.kind == "exercise":
@@ -676,7 +676,7 @@ class App:
             while True:
                 if p.is_solved(ex.id):
                     print(ui.green(f"  ✔ {ex.id} solved"))
-                    p.record_card(lesson.id, i, checkable=False)
+                    p.record_card(lesson.id, lesson.cards[i].id, checkable=False)
                     return 0
                 ans = input(ui.dim("  [r] run tests  [d] full description  [h] hint  [s] skip for now  [q] quit › ")).strip().lower()
                 if ans == "r":
@@ -710,7 +710,7 @@ class App:
                 continue
             tries += 1
             ok = card.check(ans)
-            xp = p.record_card(lesson.id, i, checkable=True, correct=ok)
+            xp = p.record_card(lesson.id, lesson.cards[i].id, checkable=True, correct=ok)
             if ok:
                 print(ui.green("  ✔ Correct") + (ui.yellow(f"  +{xp} xp") if xp else ""))
                 if card.explanation:
@@ -752,8 +752,8 @@ class App:
                         print("      " + sl)
                     if card.explanation:
                         print(ui.wrap(card.explanation.replace("`", "")))
-                    p.record_card(lesson.id, i, checkable=True, correct=False)
-                    p.record_card(lesson.id, i, checkable=True, correct=False)
+                    p.record_card(lesson.id, lesson.cards[i].id, checkable=True, correct=False)
+                    p.record_card(lesson.id, lesson.cards[i].id, checkable=True, correct=False)
                     print()
                     return 0
                 if raw.strip() == "" and lines:
@@ -764,7 +764,7 @@ class App:
             code = starter + "\n".join(lines) + "\n"
             res = run_code_card(card, code)
             if res.ok:
-                xp = p.record_card(lesson.id, i, checkable=True, correct=True)
+                xp = p.record_card(lesson.id, lesson.cards[i].id, checkable=True, correct=True)
                 if res.stdout.strip():
                     print(ui.dim("  output: ") + res.stdout.strip().replace("\n", "\n          "))
                 print(ui.green("  ✔ It runs and does the job") + (ui.yellow(f"  +{xp} xp") if xp else ""))
@@ -773,7 +773,7 @@ class App:
                 print()
                 return xp
             fails += 1
-            p.record_card(lesson.id, i, checkable=True, correct=False)
+            p.record_card(lesson.id, lesson.cards[i].id, checkable=True, correct=False)
             if res.import_error:
                 print(ui.red("  ✘ Python could not run that:"))
                 print(_indent(_short_tb(res.import_error), "      "))
@@ -794,7 +794,7 @@ class App:
                     print(ui.wrap(card.explanation.replace("`", "")))
                 print(ui.dim("  Type it yourself to run it, or press Enter twice to move on."))
                 fails = 0
-                p.data["cards"][f"{lesson.id}:{i}"]["done"] = True
+                p.data["cards"][lesson.cards[i].id]["done"] = True
                 p.save()
                 # one more round: if they just press Enter, move on
                 try:

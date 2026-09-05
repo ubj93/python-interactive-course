@@ -1,6 +1,6 @@
 # Capstone: config drift
 
---- teach
+--- teach #card-08f672b1c1dc5f47
 ### The ticket
 A compliance job compares the expected baseline config with what an endpoint actually has. Both are nested dicts of dicts, lists and scalars. Produce a flat list of drift records, each with a dotted `path` such as `security.firewall.stealth`, a `kind` of `missing`, `extra` or `changed`, and the `expected` and `actual` values. Some paths are noise (`uuid`, `dock.apps`) and are filtered by prefix. Output is sorted by path.
 
@@ -13,7 +13,7 @@ Rules in your own words:
 - sort: by the tuple of dotted segments
 ```
 
---- teach
+--- teach #card-e8b9e70ce8955b93
 ### Three functions
 ```python
 def config_drift(expected, actual, ignore=()):
@@ -27,7 +27,7 @@ def config_drift(expected, actual, ignore=()):
 
 Keeping ignore and sort out of the walk is the point: the walk stays three branches long, and the tests grade it on its own.
 
---- teach
+--- teach #card-d8cd92150c1f5044
 ### Recurse with the path as a parameter
 The path string is built on the way down; records are collected on the way up. A small helper joins segments so the root (`""`) does not produce a leading dot.
 ```python
@@ -46,7 +46,7 @@ def diff_values(expected, actual, path=""):
 ```
 The last branch catches scalars and every mismatched shape (a dict against a list, a list against a string) as one `changed` record. Plain `==` is not enough there: `True == 1` and `1 == 1.0` are true, and the spec calls both drift.
 
---- predict
+--- predict #card-6680bbc318975188
 What does this print?
 ```python
 def _join(path, key):
@@ -57,14 +57,14 @@ print(_join(_join("", "apps"), 1))
 answer: apps.1
 > At the root `path` is `""`, which is falsy, so the first call returns `"apps"` with no leading dot. The second call has a path, so it appends `.1`. List indexes go through `str(key)` and become numeric segments.
 
---- quiz
+--- quiz #card-e212193de516569b
 What does `diff_values(True, 1, "x")` return?
 - [ ] `[]`, because `True == 1`
 - [x] One record: `{"path": "x", "kind": "changed", "expected": True, "actual": 1}`
 - [ ] One record with kind `"extra"`
 > Values are equal only when they have the same type AND compare equal. `bool` and `int` are different types, so `type(expected) is not type(actual)` is true and the record is `changed`. `missing` and `extra` are only for keys or positions that exist on one side.
 
---- code
+--- code #card-8ac81a97cd8a5553
 Write the body of `diff_scalar`, the "everything else" branch: return a one-record list of kind `changed` when the values differ in type or value, otherwise an empty list.
 ```python
 def diff_scalar(expected, actual, path):
@@ -77,7 +77,7 @@ solution:         return [{"path": path, "kind": "changed", "expected": expected
 solution:     return []
 > The type test comes first and short-circuits, so `True` versus `1` never reaches `!=`. A dict against a list lands here too, because the dict/dict and list/list branches did not claim it, and the whole containers become the record's values.
 
---- teach
+--- teach #card-079c944695ff5119
 ### Prefixes and segment order
 An ignore prefix matches its own path and every dotted child, but not a sibling that merely starts with the same letters: `dock.apps` must drop `dock.apps.1.name` and keep `dock.apps_extra`. The `+ "."` is what makes that distinction.
 
@@ -87,7 +87,7 @@ sorted(records, key=lambda r: tuple(r["path"].split(".")))
 ```
 The key documents the rule; a reviewer reads it and knows the ordering without a comment.
 
---- code
+--- code #card-1c24d722cd7b5050
 Set `paths` to the record paths in report order: sorted by the tuple of dotted segments.
 ```python
 records = [{"path": "apps.2"}, {"path": "z"}, {"path": "apps.10"}, {"path": "b.x"}]
@@ -97,7 +97,7 @@ solution: ordered = sorted(records, key=lambda r: tuple(r["path"].split(".")))
 solution: paths = [r["path"] for r in ordered]
 > `split(".")` turns `"apps.10"` into `("apps", "10")`; tuples compare element by element, and `"10"` is less than `"2"` as text. Sort the records, then pull out the paths.
 
---- fill
+--- fill #card-aa0c95efb27d51ea
 Complete `is_ignored` so `dock.apps` matches `dock.apps.1` but not `dock.apps_extra`.
 ```python
 def is_ignored(path, ignore):
@@ -106,7 +106,7 @@ def is_ignored(path, ignore):
 answer: "."
 > Appending the dot turns "starts with these letters" into "is a dotted child of". Without it `dock.apps_extra` would be silently dropped from the report.
 
---- teach
+--- teach #card-915a116949a552d2
 ### Budget: 30 minutes
 - 0–4: read twice, write the rules; say out loud that `1` versus `1.0` is drift.
 - 4–7: `is_ignored` and `_join`; test each with two calls.
@@ -116,9 +116,9 @@ answer: "."
 
 Write the scalar branch first even though it is last in the `if` chain: every recursive call ends there, so it is the branch you can test without any nesting.
 
---- exercise 13.3
+--- exercise 13.3 #card-21efae325aa554f0
 
---- recap
+--- recap #card-4d20e8fb474752e7
 - The walk is one recursive function with three shapes: dict/dict, list/list, everything else.
 - Build the path on the way down with a `_join` helper; the root is `""`.
 - Equal means same type AND `==`; `True` versus `1` is drift.

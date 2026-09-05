@@ -1,6 +1,6 @@
 # Property lists
 
---- teach
+--- teach #card-d60cc755928a5b33
 ### `plistlib` turns a plist into plain Python
 macOS stores profiles and preferences as property lists. `plistlib.loads(data)` takes the raw `bytes` (XML or binary, it does not matter) and gives you `dict`, `list`, `str`, `int` and `bool`. `plistlib.dumps(obj)` goes the other way, which is handy for building test data.
 ```python
@@ -11,7 +11,7 @@ macOS stores profiles and preferences as property lists. `plistlib.loads(data)` 
 ```
 Read plist files with `open(path, "rb")`: the `b` gives bytes, which is what `loads` wants.
 
---- predict
+--- predict #card-2e793c233f95563f
 What does this print?
 ```python
 import plistlib
@@ -21,7 +21,7 @@ print(plistlib.loads(data))
 answer: {'PayloadRemovalDisallowed': True}
 > The round trip preserves the type: the plist `<true/>` comes back as Python `True`, not the string `"true"`.
 
---- teach
+--- teach #card-b1b9ff6c67045ef6
 ### The shape of a configuration profile
 The top level is a dict with `PayloadType` equal to `"Configuration"`, an identifier, a display name, and a `PayloadContent` list. Each entry in that list is a payload dict with its own `PayloadType`, `PayloadIdentifier` and usually a `PayloadDisplayName`. Treat everything except `PayloadType` as optional, because vendors leave keys out.
 ```python
@@ -32,7 +32,7 @@ The top level is a dict with `PayloadType` equal to `"Configuration"`, an identi
       "PayloadIdentifier": "com.corp.wifi.1"}]}
 ```
 
---- teach
+--- teach #card-cb756969dd035f8e
 ### Defaults for missing keys with `.get`
 `d.get(key, default)` returns the default instead of raising `KeyError`. Use it for every optional key: `""` for text, `False` for the removal flag, `[]` for a missing `PayloadContent`. For a payload with no display name, fall back to that payload's type.
 ```python
@@ -41,7 +41,7 @@ name = payload.get("PayloadDisplayName", payload["PayloadType"])
 ```
 `bool(root.get("PayloadRemovalDisallowed", False))` makes sure the flag is a real bool.
 
---- code
+--- code #card-25cc70829b795f95
 Load `data`, then set `identifier` to its `PayloadIdentifier` and `count` to the number of payloads, which is 0 when `PayloadContent` is missing.
 ```python
 import plistlib
@@ -54,7 +54,7 @@ solution: identifier = root["PayloadIdentifier"]
 solution: count = len(root.get("PayloadContent", []))
 > `loads` gives a dict. The identifier is required, so `[]` is fine; `PayloadContent` is optional, so `.get(..., [])` turns "missing" into an empty list.
 
---- fill
+--- fill #card-85f478db46fe5b35
 Complete the line so a missing display name falls back to the payload's type.
 ```python
 name = payload.get("PayloadDisplayName", ___)
@@ -62,7 +62,7 @@ name = payload.get("PayloadDisplayName", ___)
 answer: payload["PayloadType"]
 > The second argument of `get` is used only when the key is missing, so a real display name wins when it exists.
 
---- teach
+--- teach #card-f34231901e3456b8
 ### Distinct, sorted types
 `payload_types` must list each type once, in sorted order. Turn the list into a `set` to drop duplicates, then `sorted()` to get a list back in order.
 ```python
@@ -70,7 +70,7 @@ answer: payload["PayloadType"]
 ['a', 'b']
 ```
 
---- predict
+--- predict #card-2e72d357d7045387
 What does this print?
 ```python
 types = ["com.apple.wifi.managed", "com.apple.MCX.FileVault2", "com.apple.wifi.managed"]
@@ -79,7 +79,7 @@ print(sorted(set(types)))
 answer: ['com.apple.MCX.FileVault2', 'com.apple.wifi.managed']
 > `set` removes the duplicate; `sorted` orders the strings. Uppercase `M` sorts before lowercase `w`.
 
---- teach
+--- teach #card-ad9624a4437859a1
 ### Turning two parse errors into one `ValueError`
 Bad bytes make `plistlib.loads` raise `plistlib.InvalidFileException` or, for broken XML, `ExpatError`. Callers should not need to know either name. Catch both with a tuple, and raise `ValueError` **from** the original so the traceback shows both.
 ```python
@@ -90,16 +90,16 @@ except (plistlib.InvalidFileException, ExpatError) as e:
 ```
 `as e` names the caught error; `from e` records it as the cause. Then check the shape yourself: not a dict, or `PayloadType` not `"Configuration"`, is also a `ValueError`.
 
---- quiz
+--- quiz #card-a1feb78ded6a5d4f
 Why write `raise ValueError("not a valid plist") from e` instead of just `raise ValueError("not a valid plist")`?
 - [ ] `from e` makes the new error a subclass of the old one
 - [x] It records the original error as the cause, so the traceback shows what really went wrong
 - [ ] Without `from e` the code does not run
 > Both forms run. `from e` stores the original in `__cause__`, which the tests check and which on-call engineers rely on when reading the traceback.
 
---- exercise 6.6
+--- exercise 6.6 #card-0c55a6fae947538e
 
---- recap
+--- recap #card-92bc63dc3a9f5bc6
 - `plistlib.loads(bytes)` reads XML or binary plists; `dumps` writes them.
 - A profile is a dict with `PayloadType` `"Configuration"` and a `PayloadContent` list.
 - `.get(key, default)` supplies defaults for optional keys.

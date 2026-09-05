@@ -1,6 +1,6 @@
 # Your own exceptions
 
---- teach
+--- teach #card-7aa9fdc6ef625b67
 ### An exception is a class that inherits from `Exception`
 Write `class ConfigError(Exception): pass` and you have a new exception type. Raise it and catch it like any built-in one. A base class per module lets callers catch "anything wrong with the config" in one `except`.
 ```python
@@ -11,7 +11,7 @@ raise ConfigError("something is off")
 ```
 Name exception classes with an `Error` suffix.
 
---- teach
+--- teach #card-85c1ea989969599a
 ### Subclasses carry facts as attributes
 A subclass can take its own arguments, build the message, and store the useful facts on `self` so callers do not have to parse text. Always pass the message to `super().__init__(...)`, otherwise `str(e)` and the traceback are empty.
 ```python
@@ -22,7 +22,7 @@ class MissingKeyError(ConfigError):
 ```
 `MissingKeyError("port")` then has `.key == "port"` and `str(e) == "missing required key: port"`.
 
---- code
+--- code #card-00c1c8ae22705a2c
 Define `MissingKeyError(ConfigError)` that takes `key`, has the message `missing required key: <key>`, and stores the key as `.key`.
 ```python
 class ConfigError(Exception):
@@ -37,7 +37,7 @@ solution:         super().__init__(f"missing required key: {key}")
 solution:         self.key = key
 > `super().__init__(message)` gives the exception its text; `self.key = key` stores the fact so callers can read it without parsing the message.
 
---- fill
+--- fill #card-52fc04a4fc5e599a
 Complete the constructor so `str(e)` shows the message.
 ```python
 class MissingKeyError(ConfigError):
@@ -48,7 +48,7 @@ class MissingKeyError(ConfigError):
 answer: __init__
 > `super().__init__(message)` runs `Exception`'s own setup, which is what stores the message for `str(e)` and tracebacks.
 
---- predict
+--- predict #card-bdc0b04a674c5abe
 What does this print?
 ```python
 class MissingKeyError(Exception):
@@ -62,7 +62,7 @@ print(str(e), "|", e.key)
 answer: missing required key: mdm_url | mdm_url
 > `str(e)` is the message handed to `super().__init__`; `e.key` is the attribute set afterwards. Both are available without raising.
 
---- teach
+--- teach #card-f29f62737b725c84
 ### `!r` in the message for values
 `InvalidValueError(key, value)` needs the value shown as its `repr`: `'https'` with quotes, `None` and `3.5` without. `{value!r}` does that.
 ```python
@@ -73,7 +73,7 @@ class InvalidValueError(ConfigError):
         self.value = value
 ```
 
---- teach
+--- teach #card-a18bdc5486b852e1
 ### Catching the base catches every subclass
 `except ConfigError` catches `MissingKeyError` and `InvalidValueError` too. Put the specific class first if you want to treat it differently; Python tries `except` clauses top to bottom.
 ```python
@@ -85,14 +85,14 @@ except ConfigError as e:
     print("fix", e)
 ```
 
---- quiz
+--- quiz #card-06ef0fdb52515d51
 `get_int` raises `InvalidValueError`. Which `except` clause catches it?
 - [ ] Only `except InvalidValueError:`
 - [x] `except InvalidValueError:` or `except ConfigError:` or `except Exception:`
 - [ ] Only `except Exception:`
 > Catching a class catches all its subclasses. `InvalidValueError` is a `ConfigError`, which is an `Exception`, so any of the three works.
 
---- teach
+--- teach #card-ca7b46e90fd05ad3
 ### Translate a low-level error with `raise ... from`
 `get_int` calls `int()` on the config value. When that raises `ValueError` or `TypeError`, raise your own `InvalidValueError` **from** it: the original is kept as `e.__cause__` and the traceback shows both. For the missing key, `get_required` is a plain `in` test; only absence is an error, `None` and `""` are returned as they are.
 ```python
@@ -102,7 +102,7 @@ except (ValueError, TypeError) as e:
     raise InvalidValueError(key, value) from e
 ```
 
---- fill
+--- fill #card-2373eab938fb5c4e
 Complete the line so the original conversion error is kept as the cause.
 ```python
 except (ValueError, TypeError) as e:
@@ -111,9 +111,9 @@ except (ValueError, TypeError) as e:
 answer: from
 > `raise X from e` sets `X.__cause__ = e`. The tests check that the cause is the original `ValueError` or `TypeError`.
 
---- exercise 7.3
+--- exercise 7.3 #card-1033bd385e805466
 
---- recap
+--- recap #card-962b96616cc05ade
 - `class ConfigError(Exception)` makes a new exception type.
 - Subclasses call `super().__init__(message)` and store facts on `self`.
 - `{value!r}` shows the value the way Python would.

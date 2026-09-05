@@ -1,6 +1,6 @@
 # Grouping by a canonical key: anagrams
 
---- teach
+--- teach #card-64d0e90960545271
 ### The pattern: group by a key everyone in the group shares
 "Which app names are letter-scrambles of each other?" The brute force compares each new name against the first member of every group so far.
 ```python
@@ -17,14 +17,14 @@ def anagram_groups_slow(names):
 ```
 Each name is compared with every group, and each comparison sorts two strings. Say it: "Compare every name with every group, O(n squared) comparisons. I can do better with a dict."
 
---- quiz
+--- quiz #card-6e78b6640da557c3
 With n names of length k, what does the brute force cost when most names are in their own group?
 - [ ] O(n log n)
 - [x] O(n² · k log k)
 - [ ] O(n · k)
 > Each of n names is compared with up to n groups, and each comparison sorts strings of length k. That is n² comparisons times k log k for the sort.
 
---- teach
+--- teach #card-3ff9ee0f3bf35445
 ### The insight: a canonical key
 Two names are anagrams when their sorted letters are the same. `"".join(sorted(name))` turns any scramble into one fixed spelling: a **canonical key**. Anagrams share it, non-anagrams never do. So the key goes into a dict, and each name is filed under it in O(1).
 ```python
@@ -35,7 +35,7 @@ Two names are anagrams when their sorted letters are the same. `"".join(sorted(n
 ```
 The same trick groups devices by `os_family`, files by checksum, or users by lowercased email. The question is always "what single value do all members share?"
 
---- code
+--- code #card-86e12db217b658c5
 Set `key` to the canonical key of `name`, the sorted letters joined back into a string, and print it.
 ```python
 name = "silent"
@@ -46,7 +46,7 @@ solution: key = "".join(sorted(name))
 solution: print(key)
 > `sorted("silent")` is `['e', 'i', 'l', 'n', 's', 't']` and `"".join` turns the list back into text. Every anagram of `silent` gives the same key.
 
---- predict
+--- predict #card-e3b91c0db8e2518e
 What does this print?
 ```python
 print("".join(sorted("enlist")))
@@ -54,7 +54,7 @@ print("".join(sorted("enlist")))
 answer: eilnst
 > `sorted` puts the characters in order as a list; `"".join` glues them back into a string. `enlist`, `listen` and `silent` all become `eilnst`.
 
---- teach
+--- teach #card-1058b81858b75d35
 ### File names under their key, in order
 `dict.setdefault(key, [])` returns the list for that key, creating an empty one first if the key is new. Then `append` files the name.
 ```python
@@ -66,7 +66,7 @@ return list(groups.values())
 ```
 Two order rules come free: a dict remembers the order keys were first inserted, so groups appear in the order their first member appeared, and `append` keeps names in input order inside each group. A name with no anagram is a group of one.
 
---- code
+--- code #card-d3110b11313b5ab4
 File each name under its canonical key with `setdefault`, then print `list(groups.values())`.
 ```python
 names = ["listen", "google", "silent"]
@@ -79,7 +79,7 @@ solution:     groups.setdefault(key, []).append(name)
 solution: print(list(groups.values()))
 > `listen` creates the `eilnst` list, `google` creates its own, and `silent` finds `eilnst` again and is appended. The dict keeps first-insertion order, so `listen`'s group comes first.
 
---- fill
+--- fill #card-7f97eba54d6359d7
 Complete the line that files `name` under its canonical key.
 ```python
 groups.___(key, []).append(name)
@@ -87,14 +87,14 @@ groups.___(key, []).append(name)
 answer: setdefault
 > `setdefault(key, [])` gives back the existing list, or stores and returns a new empty one. `collections.defaultdict(list)` does the same job; say which you chose.
 
---- quiz
+--- quiz #card-47a43ce4c38b5ea7
 What does `list(groups.values())` return after filing `["abc", "Abc", "cab"]`?
 - [x] `[['abc', 'cab'], ['Abc']]`
 - [ ] `[['abc', 'Abc', 'cab']]`
 - [ ] `[['Abc'], ['abc', 'cab']]`
 > `sorted("Abc")` is `['A', 'b', 'c']`, a different key from `abc`: comparison is case-sensitive. Groups come out in first-appearance order, and `abc` appeared before `Abc`.
 
---- teach
+--- teach #card-f69668d00d5d50bc
 ### The cost, and how to say it
 Each name costs one sort, O(k log k), plus one O(1) dict step. Total O(n · k log k) time and O(n · k) space for the dict.
 
@@ -102,9 +102,9 @@ Say it out loud: "I group by a canonical key: the sorted letters. Anagrams colla
 
 Edge cases to walk through: an empty list gives `[]`, and two identical names are anagrams of each other and stay in one group.
 
---- exercise 12.3
+--- exercise 12.3 #card-0996cdde9cbb52c0
 
---- recap
+--- recap #card-34a2471f729753b3
 - Grouping questions want a dict keyed by a canonical value all members share.
 - `"".join(sorted(name))` is the canonical key for anagrams.
 - `setdefault(key, []).append(name)` files each name; dict order gives first-appearance order.

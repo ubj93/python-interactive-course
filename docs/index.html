@@ -273,10 +273,56 @@ function migrateInterview(data) {
 function blankProgress() {
   return { version: 1, xp: 0, solved: {}, attempts: {}, hints: {}, opened: {}, peeked: [], days: [], badges: {}, daily: {}, last: null, interview: null, last_interview: null };
 }
+function migrateCardProgress(data) {
+  const layout = DATA.legacy_card_layout || "positional-v0.3.4";
+  if (data.card_ids_migrated === layout) return data;
+  for (const field of ["cards", "card_reward_history"]) {
+    const records = data[field];
+    if (records && typeof records === "object" && !Array.isArray(records)) {
+      for (const [oldKey, cardId] of Object.entries(DATA.legacy_card_ids || {})) {
+        if (Object.prototype.hasOwnProperty.call(records, oldKey) && !Object.prototype.hasOwnProperty.call(records, cardId)) {
+          records[cardId] = JSON.parse(JSON.stringify(records[oldKey]));
+        }
+      }
+    }
+  }
+  for (const [oldKey, cardId] of Object.entries(DATA.legacy_card_ids || {})) {
+    const state = data.cards && data.cards[oldKey];
+    if (state && typeof state === "object" && !Array.isArray(state) && (state.tries || state.correct != null)) {
+      const history = data.card_reward_history || (data.card_reward_history = {});
+      if (typeof history === "object" && !Array.isArray(history) && !Object.prototype.hasOwnProperty.call(history, cardId)) history[cardId] = true;
+    }
+  }
+  // Keep positional and unknown records for recovery. The marker prevents a
+  // later restart from resurrecting their old completion state on reload.
+  data.card_ids_migrated = layout;
+  return data;
+}
+function cardKey(cardId) {
+  if (typeof cardId !== "string" || !/^[a-z][a-z0-9_-]{2,63}$/.test(cardId)) throw new Error("A stable authored card ID is required");
+  return cardId;
+}
+function readCardDraft(cardId) {
+  const key = DRAFT_KEY + "card:" + cardKey(cardId);
+  try {
+    const current = localStorage.getItem(key);
+    if (current != null) return current;
+    for (const [oldKey, knownId] of Object.entries(DATA.legacy_card_ids || {})) {
+      if (knownId !== cardId) continue;
+      const old = localStorage.getItem(DRAFT_KEY + "card:" + oldKey);
+      if (old != null) {
+        // Preserve the old draft, including when storage is full or keys conflict.
+        try { localStorage.setItem(key, old); } catch (e) {}
+        return old;
+      }
+    }
+  } catch (e) {}
+  return null;
+}
 function loadProgress() {
   let data = blankProgress();
   try { const raw = localStorage.getItem(STORE_KEY); if (raw) data = Object.assign(data, JSON.parse(raw)); } catch (e) {}
-  return migrateInterview(data);
+  return migrateCardProgress(migrateInterview(data));
 }
 function saveProgress() { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); return true; } catch (e) { return false; } }
 let P = loadProgress();
@@ -372,7 +418,7 @@ const LESSONS = [];
 for (const p of DATA.parts) for (const l of lessonsOf(p)) { l.part = p; LESSONS.push(l); }
 const LESSON_BY_ID = {};
 for (const l of LESSONS) LESSON_BY_ID[l.id] = l;
-function cardState(lessonId, i) { return (P.cards || {})[lessonId + ":" + i] || { done: false, correct: null, tries: 0 }; }
+function cardState(lessonId, cardId) { return (P.cards || {})[cardKey(cardId)] || { done: false, correct: null, tries: 0 }; }
 function cardRewardHistory() {
   const history = P.card_reward_history || (P.card_reward_history = {});
   for (const [key, state] of Object.entries(P.cards || {})) {
@@ -380,9 +426,9 @@ function cardRewardHistory() {
   }
   return history;
 }
-function recordCard(lessonId, i, checkable, correct) {
+function recordCard(lessonId, cardId, checkable, correct) {
   P.cards = P.cards || {};
-  const key = lessonId + ":" + i; const st = Object.assign({ done: false, correct: null, tries: 0 }, P.cards[key]);
+  const key = cardKey(cardId); const st = Object.assign({ done: false, correct: null, tries: 0 }, P.cards[key]);
   let xp = 0; const t = today(); if (!P.days.includes(t)) P.days.push(t);
   if (checkable) {
     const history = cardRewardHistory();
@@ -395,7 +441,7 @@ function recordCard(lessonId, i, checkable, correct) {
   P.cards[key] = st; P.last_lesson = lessonId; checkStreakBadges([]); saveProgress(); return xp;
 }
 function lessonProgress(l) {
-  let done = 0; l.cards.forEach((c, i) => { if (cardState(l.id, i).done) done++; });
+  let done = 0; l.cards.forEach((c) => { if (cardState(l.id, c.id).done) done++; });
   const exOk = l.cards.filter((c) => c.kind === "exercise").every((c) => P.solved[c.exercise_id]);
   return { done, total: l.cards.length, complete: done === l.cards.length && exOk };
 }
@@ -564,11 +610,11 @@ function viewPart(num) {
 function viewLearn(id) {
   const l = LESSON_BY_ID[id]; if (!l) return viewHome();
   const p = l.part;
-  let i = 0; while (i < l.cards.length && cardState(l.id, i).done) i++;
+  let i = 0; while (i < l.cards.length && cardState(l.id, l.cards[i].id).done) i++;
   const state = { i, sessionXp: 0, tries: 0 };
   const render = () => {
     const c = l.cards[state.i];
-    const dots = l.cards.map((cc, j) => { const st = cardState(l.id, j); const cls = j === state.i ? "cur" : st.done ? (st.correct === false ? "miss" : "done") : ""; return `<span class="dot ${cls}"></span>`; }).join("");
+    const dots = l.cards.map((cc, j) => { const st = cardState(l.id, cc.id); const cls = j === state.i ? "cur" : st.done ? (st.correct === false ? "miss" : "done") : ""; return `<span class="dot ${cls}"></span>`; }).join("");
     let body = "", controls = "";
     const md = (t) => (window.marked ? marked.parse(t) : cardToHtml(t));
     if (c.kind === "teach" || c.kind === "recap") {
@@ -579,7 +625,7 @@ function viewLearn(id) {
       body = md(c.body) + `<input class="answer" id="ans" placeholder="${c.kind === "fill" ? "what goes in the blank" : "the exact output"}" autocomplete="off" autocapitalize="off" spellcheck="false">`;
       controls = `<button class="btn" id="checkbtn">Check</button>`;
     } else if (c.kind === "code") {
-      let draft = null; try { draft = localStorage.getItem(DRAFT_KEY + "card:" + l.id + ":" + state.i); } catch (e) {}
+      const draft = readCardDraft(c.id);
       body = md(c.prompt || "") + `<div class="editor" style="margin-top:8px"><textarea class="fallback" id="cardcode" style="min-height:120px" spellcheck="false">${esc(draft != null ? draft : (c.starter || "") + "\n")}</textarea></div><div class="status" id="status"></div>`;
       controls = `<button class="btn" id="runcard">▶ Run</button> <button class="btn small secondary" id="showsol">Show solution</button>`;
     } else if (c.kind === "exercise") {
@@ -594,11 +640,11 @@ function viewLearn(id) {
       <div class="kind">${kindLabel}</div><div class="cardbody">${body}</div><div id="feedback"></div>
       <div class="row" style="margin-top:14px">${controls}<span class="spacer"></span>${state.i > 0 ? `<button class="btn small secondary" id="backbtn">‹ Back</button>` : ""}</div></div>`;
     const advance = () => { if (state.i + 1 < l.cards.length) { state.i++; state.tries = 0; render(); } else finish(); };
-    const nb = $("#nextbtn"); if (nb) nb.onclick = () => { recordCard(l.id, state.i, false); advance(); };
+    const nb = $("#nextbtn"); if (nb) nb.onclick = () => { recordCard(l.id, c.id, false); advance(); };
     const bb = $("#backbtn"); if (bb) bb.onclick = () => { state.i--; state.tries = 0; render(); };
     const sb = $("#skipbtn"); if (sb) sb.onclick = () => advance();
     const answered = (ok, rightText) => {
-      const xp = recordCard(l.id, state.i, true, ok);
+      const xp = recordCard(l.id, c.id, true, ok);
       renderHeader();
       const fb = $("#feedback");
       if (ok) {
@@ -623,20 +669,20 @@ function viewLearn(id) {
         $("#cardcode").addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") rc.click(); });
       }
       const getCode = () => (cardEditor ? cardEditor.getValue() : $("#cardcode").value);
-      const remember = () => { try { localStorage.setItem(DRAFT_KEY + "card:" + l.id + ":" + state.i, getCode()); } catch (e) {} };
+      const remember = () => { try { localStorage.setItem(DRAFT_KEY + "card:" + c.id, getCode()); } catch (e) {} };
       const fakeEx = { part: l.part, dir: "card_" + l.id.replace(".", "_") + "_" + state.i, tests: c.test_source, fixtures: {}, timeout_s: 10 };
       const showSolution = (label) => {
         $("#feedback").insertAdjacentHTML("beforeend", `<div class="expl"><b>${label}</b><pre style="margin:6px 0 0">${esc(c.solution || "")}</pre>${c.explanation ? "<div style='margin-top:6px'>" + inline(c.explanation) + "</div>" : ""}</div><div class="row" style="margin-top:10px"><button class="btn" id="go">Continue ›</button></div>`);
         $("#go").onclick = advance;
       };
-      $("#showsol").onclick = () => { if (!cardState(l.id, state.i).done) { recordCard(l.id, state.i, true, false); recordCard(l.id, state.i, true, false); } $("#feedback").innerHTML = ""; showSolution("One way to do it"); };
+      $("#showsol").onclick = () => { if (!cardState(l.id, c.id).done) { recordCard(l.id, c.id, true, false); recordCard(l.id, c.id, true, false); } $("#feedback").innerHTML = ""; showSolution("One way to do it"); };
       rc.onclick = async () => {
         remember(); rc.disabled = true; setStatus("Running…"); $("#feedback").innerHTML = "";
         try {
           const res = await runInPython(fakeEx, getCode());
           const tests = res.tests || []; const ok = !res.timed_out && !res.import_error && tests.length > 0 && tests.every((t) => t.status === "pass");
           state.tries++;
-          const xp = recordCard(l.id, state.i, true, ok); renderHeader();
+          const xp = recordCard(l.id, c.id, true, ok); renderHeader();
           let html = "";
           if (res.timed_out) html += `<div class="banner fail">⏱ Timed out. Infinite loop?</div>`;
           else if (res.import_error) html += `<div class="banner fail">Python could not run that</div><pre class="sol">${esc(shortTb(res.import_error))}</pre>`;
@@ -776,8 +822,8 @@ function recordExerciseResult(ex, res, submittedSessionId) {
   const passed = !res.timed_out && !res.import_error && !res.crashed && tests.length > 0 && tests.every((test) => test.status === "pass");
   const summary = recordRun(ex, passed, submittedSessionId);
   if (passed) {
-    for (const lesson of LESSONS) lesson.cards.forEach((card, index) => {
-      if (card.kind === "exercise" && card.exercise_id === ex.id) recordCard(lesson.id, index, false);
+    for (const lesson of LESSONS) lesson.cards.forEach((card) => {
+      if (card.kind === "exercise" && card.exercise_id === ex.id) recordCard(lesson.id, card.id, false);
     });
   }
   return summary;
@@ -828,7 +874,7 @@ function viewProfile() {
   <textarea class="fallback" id="io" style="margin-top:10px;min-height:120px;border:1px solid var(--line);border-radius:8px" placeholder="Exported JSON appears here; paste JSON here to import."></textarea></div>`;
   app.innerHTML = html;
   $("#exportbtn").onclick = () => { $("#io").value = JSON.stringify(P, null, 2); $("#io").select(); toast("Copy the JSON from the box"); };
-  $("#importbtn").onclick = () => { try { const d = JSON.parse($("#io").value); if (!d || typeof d.xp !== "number") throw new Error("not a progress file"); P = Object.assign(blankProgress(), d, { legacy_interview_migrated: true }); saveProgress(); renderHeader(); toast("Imported"); viewProfile(); } catch (e) { toast("Import failed: " + e.message); } };
+  $("#importbtn").onclick = () => { try { const d = JSON.parse($("#io").value); if (!d || typeof d.xp !== "number") throw new Error("not a progress file"); P = migrateCardProgress(Object.assign(blankProgress(), d, { legacy_interview_migrated: true })); saveProgress(); renderHeader(); toast("Imported"); viewProfile(); } catch (e) { toast("Import failed: " + e.message); } };
   $("#wipebtn").onclick = () => { if (confirm("Delete all progress in this browser?")) { P = Object.assign(blankProgress(), { legacy_interview_migrated: true }); saveProgress(); renderHeader(); viewProfile(); } };
 }
 let interviewTimer = null;

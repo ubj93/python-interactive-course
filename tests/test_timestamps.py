@@ -117,7 +117,7 @@ class TestProgressTimestamps(unittest.TestCase):
         p.data["solved"] = {"utc": {"passed_at": "2026-09-05T00:20:00Z"}, "offset": {"passed_at": "2026-09-05T02:20:00+02:00"}, "legacy": {"passed_at": "2026-09-04T20:20:00"}, "invalid": {"passed_at": 17}, "tomorrow": {"passed_at": "2026-09-05T05:00:00Z"}}
         self.assertEqual(p.solved_today(), 3)
         p.set_daily(self.ex.id)
-        p.record_card("1.1", 0, checkable=False)
+        p.record_card("1.1", "timestamp-card", checkable=False)
         self.assertEqual(p.data["days"], ["2026-09-04"])
         self.assertEqual(p.data["daily"], {"2026-09-04": {"id": self.ex.id, "done": False}})
         p.record_run(self.ex, True)
