@@ -13,6 +13,14 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-05
+
+### Added
+- Start an untimed six-exercise fundamentals diagnostic with fresh attempts,
+  saved code, optional help, confidence and mistake notes in the browser and CLI.
+- Resume a diagnostic summary with links to relevant lessons, preserving prior
+  diagnostic rounds separately from course completion, hints and XP.
+
 ## [0.5.0] - 2026-09-05
 
 ### Added

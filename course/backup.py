@@ -17,6 +17,7 @@ from typing import List, Optional, Tuple
 from . import __version__
 from .catalog import Part, all_exercises, load_catalog
 from .workspace import Workspace, committed_starter, recovery_copy
+from .practice import SESSION_ID
 
 DEFAULT_DIR = Path.home() / "course-backups"
 _FILE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*\.py(?:\.bak\.[a-f0-9]{32})*")
@@ -36,6 +37,8 @@ def _workspace_file(parts: tuple, known: dict) -> bool:
     """Accept only Python work associated with a known course exercise."""
     if len(parts) == 4 and parts[0] in ("answers", "scratch"):
         pair = parts[1:3]
+    elif len(parts) == 5 and parts[0] == "practice" and SESSION_ID.fullmatch(parts[1]):
+        pair = parts[2:4]
     elif len(parts) == 5 and parts[0] == "recovery" and _MIGRATION.fullmatch(parts[1]):
         pair = parts[2:4]
     else:

@@ -120,6 +120,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-r
 <div class="toast" id="toast"></div>
 
 <script src="exercises.js"></script>
+<script src="practice.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
@@ -565,6 +566,7 @@ function viewHome() {
       ${nxt ? `<a class="btn secondary" href="#/ex/${nxt.id}">Practice: ${nxt.id} ${esc(nxt.title)}</a>` : ""}
       <a class="btn secondary" href="#/ex/${daily.id}">Daily kata ${d && d.done ? "✔" : "· +5 xp"}</a>
       <a class="btn secondary" href="#/interview">Mock interview</a>
+      <a class="btn secondary" href="#/diagnostic">Fundamentals diagnostic</a>
     </div>
   </div>`;
   html += `<div class="card"><h2>Parts</h2><div class="list">`;
@@ -936,6 +938,7 @@ function route() {
   if ((m = h.match(/^#\/learn\/([\d.]+)/))) return viewLearn(m[1]);
   if ((m = h.match(/^#\/part\/(\d+)/))) return viewPart(parseInt(m[1], 10));
   if ((m = h.match(/^#\/lesson\/(\d+)/))) return viewLesson(parseInt(m[1], 10));
+  if ((m = h.match(/^#\/diagnostic(?:\/([\d.]+))?$/))) return viewDiagnostic(m[1]);
   if (h.startsWith("#/profile")) return viewProfile();
   if (h.startsWith("#/interview")) return viewInterview();
   viewHome();

@@ -134,6 +134,41 @@ containing curriculum answer paths are restored into the learner workspace. Rest
 never writes to curriculum files. Explicit backup ZIP filenames must be new; default
 backup filenames are unique.
 
+### Fundamentals diagnostic
+
+Start with six untimed problems (1.2, 1.3, 2.1, 2.2, 3.1, and 5.1) to choose
+which Python topics to revisit. Try each problem before guidance, or use the help
+escape whenever you need it. Each exercise records its latest test outcome,
+your confidence (**confident** or **needs review**), and a short mistake note.
+These are reflections on this round, not a mastery score.
+
+```bash
+course diagnostic                  # start or resume the summary
+course diagnostic show 1.2         # problem and separate file to edit
+course diagnostic path 1.2         # print that file's path
+course diagnostic run 1.2          # grade the diagnostic copy
+course diagnostic help 1.2         # hints and an optional lesson link
+course diagnostic reflect 1.2 --confidence needs-review --note "Strip before splitting"
+course diagnostic                  # outcomes, reflections and lesson links
+course diagnostic new              # fresh round; archive the previous one
+course diagnostic history          # review earlier summaries
+```
+
+In the browser, choose **Fundamentals diagnostic** on the dashboard. Drafts,
+confidence, and notes save as you type; the summary offers lesson links and lets
+you choose what to revisit. Earlier rounds remain reviewable after starting a new
+one. A passing test never chooses your confidence for you.
+
+Diagnostic runs, help, and reflections leave ordinary exercise completion, hints,
+lesson cards, and XP unchanged, including for exercises already solved. CLI work
+lives in `.course-workspace/practice/<round-id>/`; existing answers and earlier
+rounds are preserved. `course backup` includes these files. Browser drafts and CLI
+last-run code live inside the diagnostic progress object, so progress JSON exports
+include them. Importing that progress into the CLI initializes missing diagnostic
+files from those drafts; an existing CLI file always wins. Save a CLI file and run
+it before exporting progress to carry its latest code to the browser; a workspace
+backup also preserves files that have not been run yet.
+
 ### Browser
 
 Live at **https://ubj93.github.io/python-interactive-course/** (deployed from `docs/`
