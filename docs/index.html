@@ -121,6 +121,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-r
 <div class="toast" id="toast"></div>
 
 <script src="exercises.js"></script>
+<script src="browser-backup.js"></script>
 <script src="practice.js"></script>
 <script src="review.js"></script>
 <script src="refresher.js"></script>
@@ -325,10 +326,11 @@ function readCardDraft(cardId) {
 }
 function loadProgress() {
   let data = blankProgress();
+  if (typeof recoverPendingImport === "function") { const recovery = recoverPendingImport(); if (recovery && recovery.blocked) return { ...data, ...(recovery.progress || {}) }; }
   try { const raw = localStorage.getItem(STORE_KEY); if (raw) data = Object.assign(data, JSON.parse(raw)); } catch (e) {}
   return migrateCardProgress(migrateInterview(data));
 }
-function saveProgress() { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); return true; } catch (e) { return false; } }
+function saveProgress() { try { if (typeof backupImportPending === "function" && backupImportPending()) return false; localStorage.setItem(STORE_KEY, JSON.stringify(P)); return true; } catch (e) { return false; } }
 let P = loadProgress();
 
 function rankFor(xp) {
@@ -677,6 +679,8 @@ function viewLearn(id) {
       }
       const getCode = () => (cardEditor ? cardEditor.getValue() : $("#cardcode").value);
       const remember = () => { try { localStorage.setItem(DRAFT_KEY + "card:" + c.id, getCode()); } catch (e) {} };
+      if (cardEditor) cardEditor.on("change", remember);
+      else $("#cardcode").addEventListener("input", remember);
       const fakeEx = { part: l.part, dir: "card_" + l.id.replace(".", "_") + "_" + state.i, tests: c.test_source, fixtures: {}, timeout_s: 10 };
       const showSolution = (label) => {
         $("#feedback").insertAdjacentHTML("beforeend", `<div class="expl"><b>${label}</b><pre style="margin:6px 0 0">${esc(c.solution || "")}</pre>${c.explanation ? "<div style='margin-top:6px'>" + inline(c.explanation) + "</div>" : ""}</div><div class="row" style="margin-top:10px"><button class="btn" id="go">Continue ›</button></div>`);
@@ -879,12 +883,11 @@ function viewProfile() {
   <div class="grid"><div class="stat"><b>${P.xp}</b><small>xp of ${DATA.total_xp}</small></div><div class="stat"><b>${Object.keys(P.solved).length}</b><small>solved of ${ALL.length}</small></div><div class="stat"><b>${streak()}</b><small>day streak</small></div><div class="stat"><b>${P.days.length}</b><small>days practised</small></div></div>
   <h2 style="margin-top:16px">Ranks</h2><div class="list">${DATA.ranks.map((k) => `<div class="item"><span class="kyu k${k[1]}">${k[1]} kyu</span><span class="t"><b>${esc(k[2])}</b><small>${Math.ceil(k[0] * DATA.total_xp)} xp</small></span>${P.xp >= Math.ceil(k[0] * DATA.total_xp) - 1e-9 ? '<span class="ok">✔</span>' : ""}</div>`).join("")}</div>
   <h2 style="margin-top:16px">Badges</h2><div class="badges">${Object.entries(DATA.badges).map(([k, [icon, desc]]) => `<span class="badge ${P.badges[k] ? "" : "locked"}" title="${esc(desc)}">${icon} ${esc(desc)}</span>`).join("")}</div>
-  <h2 style="margin-top:16px">Sync progress</h2><p class="muted">Progress lives in this browser. Export it to move to another device or to merge with the terminal version (<code>.course_progress.json</code> uses the same format).</p>
+  <h2 style="margin-top:16px">Back up progress and code</h2><p class="muted">Export includes progress, saved sessions and every exercise and code-card draft. Import shows a preview before replacing anything. Legacy progress-only files keep current drafts. The terminal can preserve browser backup files and their drafts.</p>
   <div class="row"><button class="btn secondary" id="exportbtn">Export</button><button class="btn secondary" id="importbtn">Import</button><button class="btn secondary" id="wipebtn">Reset all progress</button></div>
-  <textarea class="fallback" id="io" style="margin-top:10px;min-height:120px;border:1px solid var(--line);border-radius:8px" placeholder="Exported JSON appears here; paste JSON here to import."></textarea></div>`;
+  <textarea class="fallback" id="io" style="margin-top:10px;min-height:120px;border:1px solid var(--line);border-radius:8px" placeholder="Exported JSON appears here; paste JSON here to preview an import."></textarea><div id="backup-preview" role="status"></div><div id="backup-recovery-list" style="margin-top:16px"></div></div>`;
   app.innerHTML = html;
-  $("#exportbtn").onclick = () => { $("#io").value = JSON.stringify(P, null, 2); $("#io").select(); toast("Copy the JSON from the box"); };
-  $("#importbtn").onclick = () => { try { const d = JSON.parse($("#io").value); if (!d || typeof d.xp !== "number") throw new Error("not a progress file"); P = migrateCardProgress(Object.assign(blankProgress(), d, { legacy_interview_migrated: true })); saveProgress(); renderHeader(); toast("Imported"); viewProfile(); } catch (e) { toast("Import failed: " + e.message); } };
+  browserBackupControls();
   $("#wipebtn").onclick = () => { if (confirm("Delete all progress in this browser?")) { P = Object.assign(blankProgress(), { legacy_interview_migrated: true }); saveProgress(); renderHeader(); viewProfile(); } };
 }
 let interviewTimer = null;
@@ -941,6 +944,7 @@ function viewInterview() {
 
 // ------------------------------------------------------------------ router
 function route() {
+  if (typeof backupRecoveryView === "function" && backupRecoveryView()) return;
   if (interviewTimer) { clearInterval(interviewTimer); interviewTimer = null; }
   const h = location.hash || "#/";
   window.scrollTo(0, 0);

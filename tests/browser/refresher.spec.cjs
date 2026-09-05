@@ -64,6 +64,7 @@ test("saved next activity, skip, revisit and notes round-trip without changing m
   await page.reload();
   await page.locator("#io").fill(exported);
   await page.getByRole("button", {name:"Import",exact:true}).click();
+  await page.getByRole("button", {name:"Replace progress and drafts",exact:true}).click();
   await page.getByRole("link", {name:"Refresher",exact:true}).click();
   await page.getByRole("link", {name:/Resume activity/}).click();
   await expect(page.getByLabel("Your takeaway or next practice")).toHaveValue("Practise dictionary defaults");

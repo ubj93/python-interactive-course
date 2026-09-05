@@ -6,11 +6,13 @@ import datetime as dt
 import json
 import math
 import os
+import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from .catalog import ROOT, Exercise, Part
 from .card_ids import card_key, migrate_card_progress
+from .browser_backup import pack_progress_document, unpack_progress_document
 from .timestamps import elapsed_seconds, local_day, timestamp, timestamp_day, utc_now
 from .sessions import finish_session, new_session, normalize_session, record_attempt
 from .practice import DIAGNOSTIC_IDS, new_practice, normalize_diagnostic, update_practice
@@ -54,9 +56,10 @@ def _now() -> str:
 
 
 class Progress(ReviewProgress):
-    def __init__(self, path: Optional[Path] = None):
+    def __init__(self, path: Optional[Path] = None, *, load_existing: bool = True):
         env = os.environ.get("COURSE_PROGRESS")
         self.path = Path(path or env or DEFAULT_PATH)
+        self._document_wrapper = None
         self.data = {
             "version": 1,
             "xp": 0,
@@ -74,22 +77,44 @@ class Progress(ReviewProgress):
             "cards": {},       # "authored_card_id" -> {"done": bool, "correct": bool|None, "tries": int}
             "last_lesson": None,
         }
-        self.load()
+        if load_existing:
+            self.load()
 
     # ---- persistence -------------------------------------------------
     def load(self) -> None:
+        candidate = self.data.copy()
+        wrapper = None
         if self.path.exists():
-            try:
-                self.data.update(json.loads(self.path.read_text(encoding="utf-8")))
-            except json.JSONDecodeError:
-                pass
-        session = normalize_session(self.data.get("interview"))
+            # Parse and validate completely before changing the in-memory state.
+            document = json.loads(self.path.read_text(encoding="utf-8"))
+            progress, wrapper = unpack_progress_document(document, allow_partial_legacy=True)
+            candidate.update(progress)
+        session = normalize_session(candidate.get("interview"))
         if session is not None:
-            self.data["interview"] = session
-        migrate_card_progress(self.data)
+            candidate["interview"] = session
+        migrate_card_progress(candidate)
+        self.data = candidate
+        self._document_wrapper = wrapper
 
     def save(self) -> None:
-        self.path.write_text(json.dumps(self.data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        # Serialization and validation finish before any file is opened for writing.
+        document = pack_progress_document(self.data, self._document_wrapper)
+        text = json.dumps(document, indent=2, sort_keys=True, allow_nan=False) + "\n"
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=self.path.parent,
+                                             prefix="." + self.path.name + ".tmp-", delete=False) as stream:
+                temporary = Path(stream.name)
+                stream.write(text)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, self.path)
+        finally:
+            if temporary is not None:
+                try:
+                    temporary.unlink()
+                except FileNotFoundError:
+                    pass
 
     # ---- independent untimed practice -------------------------------
     def diagnostic_state(self):

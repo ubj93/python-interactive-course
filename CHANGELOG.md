@@ -13,6 +13,19 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-05
+
+### Added
+- Export and restore versioned browser backups containing progress and code
+  drafts, with an import preview, explicit replacement and complete recovery copies.
+- Preserve browser drafts and metadata when updating exported progress in the CLI.
+
+### Fixed
+- Recover interrupted browser imports before further changes, and save unrun
+  code-card drafts as they are typed.
+- Write terminal progress atomically, preserving original bytes on failure, and
+  keep backup/restore available when current progress is malformed.
+
 ## [0.8.0] - 2026-09-05
 
 ### Added
