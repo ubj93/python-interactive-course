@@ -88,6 +88,10 @@ class App:
         return f"  {self.status_mark(ex)} {ex.id:<5} {ex.title:<34} {kyu:<8} {xp}  {tags}"
 
     # ------------------------------------------------------------ commands
+    def cmd_diagnostic(self, args) -> int:
+        from .diagnostic import command
+        return command(self, args)
+
     def cmd_status(self, args) -> int:
         p = self.progress
         kyu, title, frac, need = p.rank(self.total_xp)
@@ -129,7 +133,7 @@ class App:
             print(f"  Next exercise:     {ui.bold(nxt.id)} {nxt.title}   →  {ui.cyan('course next')}")
         elif not lesson:
             print("  " + ui.green("Everything complete. 🎓"))
-        print(ui.dim("  Commands: learn · list · show · run · hint · solution · lesson · daily · interview · watch · badges · backup"))
+        print(ui.dim("  Commands: learn · list · show · run · hint · solution · lesson · daily · interview · diagnostic · watch · badges · backup"))
         return 0
 
     def cmd_list(self, args) -> int:
@@ -937,6 +941,12 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("lesson", help="read a part's lesson"); s.add_argument("part", nargs="?")
     sub.add_parser("daily", help="today's kata (+5 xp bonus)")
     s = sub.add_parser("interview", help="timed mock interview"); s.add_argument("--count", type=int, default=3); s.add_argument("--minutes", type=int, default=45); s.add_argument("--min-part", type=int, default=9); s.add_argument("--new", action="store_true"); s.add_argument("--finish", action="store_true"); s.add_argument("--last", action="store_true", help="review the most recently finished round")
+    s = sub.add_parser("diagnostic", help="six untimed exercises with separate work and reflections")
+    s.add_argument("action", nargs="?", default="summary", choices=("summary", "show", "path", "run", "help", "reflect", "new", "history"))
+    s.add_argument("exercise", nargs="?", help="one of 1.2, 1.3, 2.1, 2.2, 3.1, 5.1")
+    s.add_argument("--confidence", choices=("confident", "needs-review"))
+    s.add_argument("--note", default="", help="short reflection, up to 500 characters")
+    s.add_argument("-v", "--verbose", action="store_true")
     sub.add_parser("badges", help="list badges")
     s = sub.add_parser("reset", help="reset a learner answer, keeping recovery copies"); s.add_argument("exercise"); s.add_argument("--scratch", action="store_true", help="reset only the scratch practice copy")
     s = sub.add_parser("migrate-answers", help="preview or copy legacy edits out of curriculum"); s.add_argument("exercise", nargs="?"); s.add_argument("--apply", action="store_true", help="copy legacy edits, preserving conflicting saved answers"); s.add_argument("--restore-starters", action="store_true", help="with --apply, restore committed curriculum starters after saving recovery copies")

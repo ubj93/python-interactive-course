@@ -1,6 +1,7 @@
 """Learner progress: XP, ranks, streaks, badges. Persisted as one JSON file."""
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import json
 import math
@@ -12,6 +13,7 @@ from .catalog import ROOT, Exercise, Part
 from .card_ids import card_key, migrate_card_progress
 from .timestamps import elapsed_seconds, local_day, timestamp, timestamp_day, utc_now
 from .sessions import finish_session, new_session, normalize_session, record_attempt
+from .practice import DIAGNOSTIC_IDS, new_practice, normalize_diagnostic, update_practice
 
 DEFAULT_PATH = ROOT / ".course_progress.json"
 
@@ -87,6 +89,51 @@ class Progress:
 
     def save(self) -> None:
         self.path.write_text(json.dumps(self.data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    # ---- independent untimed practice -------------------------------
+    def diagnostic_state(self):
+        return normalize_diagnostic(self.data.get("diagnostic"))
+
+    def _save_diagnostic(self, state, history=None):
+        previous = self.data
+        self.data = {**previous, "diagnostic": state}
+        if history is not None:
+            self.data["diagnostic_history"] = history
+        try:
+            self.save()
+        except OSError:
+            self.data = previous
+            raise
+        return copy.deepcopy(state)
+
+    def start_diagnostic(self, new=False):
+        state = self.diagnostic_state()
+        raw = self.data.get("diagnostic")
+        if not new and raw is not None:
+            if state is None:
+                raise ValueError("Saved diagnostic data is invalid; export a backup or use `course diagnostic new` to archive it and start fresh")
+            return state
+        history = self.data.get("diagnostic_history", [])
+        # Preserve malformed imported history as an archive entry too.
+        history = copy.deepcopy(history if isinstance(history, list) else [history])
+        if raw is not None:
+            history.append(copy.deepcopy(raw))
+        return self._save_diagnostic(new_practice(DIAGNOSTIC_IDS, "diagnostic"), history)
+
+    def update_diagnostic(self, ex_id, action, session_id, **fields):
+        state = self.diagnostic_state()
+        if state is None or state["id"] != session_id:
+            raise ValueError("The diagnostic round changed; this result was not added to the new round")
+        return self._save_diagnostic(update_practice(state, ex_id, action, **fields))
+
+    def record_diagnostic_attempt(self, ex_id, passed, session_id, code=None):
+        return self.update_diagnostic(ex_id, "attempt", session_id, passed=passed, code=code)
+
+    def reflect_diagnostic(self, ex_id, confidence, note, session_id):
+        return self.update_diagnostic(ex_id, "reflect", session_id, confidence=confidence, note=note)
+
+    def request_diagnostic_help(self, ex_id, session_id):
+        return self.update_diagnostic(ex_id, "help", session_id)
 
     # ---- queries -----------------------------------------------------
     @property

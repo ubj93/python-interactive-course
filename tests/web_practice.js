@@ -1,0 +1,41 @@
+// The shipped browser model reads Python state and returns a portable browser edit.
+const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm"), path = require("node:path");
+const page = fs.readFileSync(path.join(__dirname, "../docs/index.html"), "utf8");
+const imported = JSON.parse(fs.readFileSync(0, "utf8"));
+const memory = new Map();
+const storage = {fail: false, getItem: key => memory.get(key) || null, setItem(key, value) {if (this.fail) throw Error("full"); memory.set(key, value);}, removeItem: key => memory.delete(key)};
+class Clock extends Date { constructor(...args) { super(...(args.length ? args : [Date.parse("2026-09-05T12:01:00Z")])); } static now() { return new Clock().getTime(); } }
+const sandbox = {assert, imported, Date: Clock, Math, window: {}, localStorage: storage, storage, memory, DATA: {}, ALL: [], BY_ID: Object.fromEntries(["1.2", "1.3", "2.1", "2.2", "3.1", "5.1"].map(id => [id, {id}])), STORE_KEY: "practice", LEGACY_INTERVIEW_KEY: "old", result: null};
+vm.createContext(sandbox);
+vm.runInContext(page.slice(page.indexOf("function localDay("), page.indexOf("function dailyExercise(")) + fs.readFileSync(path.join(__dirname, "../docs/practice.js"), "utf8") + `
+  assert.equal(JSON.stringify(diagnosticState(imported)), JSON.stringify(imported));
+  P.diagnostic = imported; P.xp = 250; P.solved = {"1.2": {xp: 25}};
+  const lifetime = JSON.stringify({...P, diagnostic: null});
+  const sid = imported.id;
+  updateDiagnostic("1.3", "reflect", sid, {confidence: "confident", note: "I understand the thresholds"});
+  updateDiagnostic("1.3", "draft", sid, {code: "draft\\n"});
+  updateDiagnostic("1.3", "attempt", sid, {passed: false});
+  assert.equal(diagnosticSummary()[1].outcome, "not_passed");
+  assert.equal(diagnosticSummary()[1].confidence, "confident");
+  assert.equal(JSON.stringify({...P, diagnostic: null}), lifetime);
+  P = loadProgress(); assert.equal(diagnosticState().drafts["1.3"], "draft\\n");
+  const before = JSON.stringify(P);
+  storage.fail = true;
+  assert.throws(() => updateDiagnostic("1.3", "attempt", sid, {passed: true}), /could not be saved/);
+  assert.throws(() => beginDiagnostic(true), /could not be saved/);
+  assert.equal(JSON.stringify(P), before); storage.fail = false;
+  result = diagnosticState();
+  const old = diagnosticState(); beginDiagnostic(true);
+  assert.equal(JSON.stringify(P.diagnostic_history[0]), JSON.stringify(old));
+  assert.equal(diagnosticSummary()[0].outcome, "not_attempted");
+  assert.throws(() => updateDiagnostic("1.2", "attempt", sid, {passed: true}), /round changed/);
+  const valid = diagnosticState(); const missingLast = {...valid}; delete missingLast.last_exercise; assert.equal(diagnosticState(missingLast).last_exercise, null);
+  for (const value of [null, [], true, {}, {...valid, version: true}, {...valid, id: "../escape"}, {...valid, id: "valid\\n"}, {...valid, ids: ["1.2"]}, {...valid, started: "bad"}, {...valid, started: "0001-01-01T00:00:00+23:59"}, {...valid, attempts: [true]}, {...valid, last_exercise: []}, {...valid, drafts: {"1.2": false}}, {...valid, reflections: {"1.2": {confidence: []}}}, {...valid, reflections: {"1.2": {mistake_note: "x".repeat(501)}}}]) assert.equal(diagnosticState(value), null);
+  P.diagnostic = {unknown: "keep raw imported state"}; const raw = JSON.stringify(P);
+  assert.throws(() => beginDiagnostic(), /invalid/); assert.equal(JSON.stringify(P), raw);
+  beginDiagnostic(true); assert.equal(P.diagnostic_history.at(-1).unknown, "keep raw imported state");
+  assert.equal(diagnosticTestOutcome({tests: []}), false);
+  assert.equal(diagnosticTestOutcome({tests: [{status: "skip"}]}), false);
+  assert.equal(diagnosticTestOutcome({tests: [{status: "pass"}], import_error: "bad"}), false);
+`, sandbox);
+process.stdout.write(JSON.stringify(sandbox.result));

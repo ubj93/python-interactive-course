@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Iterator, List, Optional
 
 from .catalog import ROOT, Exercise, Part, all_exercises
+from .practice import SESSION_ID
 
 
 def committed_starter(ex: Exercise, repository_root: Path = ROOT) -> Optional[bytes]:
@@ -73,6 +74,27 @@ class Workspace:
 
     def scratch_path(self, ex: Exercise) -> Path:
         return self._path("scratch", ex.dir.parent.name, ex.dir.name, "exercise.py")
+
+    def practice_path(self, ex: Exercise, session_id: str) -> Path:
+        if not isinstance(session_id, str) or not SESSION_ID.fullmatch(session_id):
+            raise ValueError("Invalid practice round identifier")
+        return self._path("practice", session_id, ex.dir.parent.name, ex.dir.name, "exercise.py")
+
+    def ensure_practice(self, ex: Exercise, session_id: str, draft=None) -> Path:
+        path = self.practice_path(ex, session_id)
+        if path.exists():
+            if not path.is_file():
+                raise ValueError(f"Expected a practice file: {path}")
+            return path
+        source = draft.encode("utf-8") if isinstance(draft, str) else self.starter(ex)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self._path(*path.relative_to(self.root).parts)
+        try:
+            with path.open("xb") as out:
+                out.write(source)
+        except FileExistsError:
+            pass
+        return path
 
     def starter(self, ex: Exercise) -> bytes:
         committed = committed_starter(ex, self.repository_root)
