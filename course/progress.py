@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from .catalog import ROOT, Exercise, Part
+from .timestamps import elapsed_seconds, local_day, timestamp, timestamp_day, utc_now
 
 DEFAULT_PATH = ROOT / ".course_progress.json"
 
@@ -40,11 +41,11 @@ BADGES: Dict[str, Tuple[str, str]] = {
 
 
 def _today() -> str:
-    return dt.date.today().isoformat()
+    return local_day()
 
 
 def _now() -> str:
-    return dt.datetime.now().replace(microsecond=0).isoformat()
+    return timestamp()
 
 
 class Progress:
@@ -115,7 +116,7 @@ class Progress:
         days = sorted(set(self.data["days"]))
         if not days:
             return 0
-        today = dt.date.today()
+        today = dt.date.fromisoformat(_today())
         last = dt.date.fromisoformat(days[-1])
         if (today - last).days > 1:
             return 0
@@ -129,7 +130,7 @@ class Progress:
 
     def solved_today(self) -> int:
         today = _today()
-        return sum(1 for s in self.data["solved"].values() if str(s.get("passed_at", "")).startswith(today))
+        return sum(1 for s in self.data["solved"].values() if timestamp_day(s.get("passed_at")) == today)
 
     def part_stats(self, part: Part) -> Tuple[int, int, int, int]:
         """(solved_count, total_count, earned_xp, total_xp)"""
@@ -170,7 +171,7 @@ class Progress:
                 penalty = max(0.25, 1.0 - 0.25 * hints)
                 mult *= penalty
                 notes.append(f"{hints} hint{'s' if hints > 1 else ''} ×{penalty:.2f}")
-            if ex.time_limit_min and seconds is not None and seconds <= ex.time_limit_min * 60:
+            if ex.time_limit_min and seconds is not None and 0 <= seconds <= ex.time_limit_min * 60:
                 mult *= 1.1
                 notes.append("inside time limit ×1.1")
         return max(1, int(round(base * mult))), notes
@@ -178,7 +179,8 @@ class Progress:
     def record_run(self, ex: Exercise, passed: bool) -> dict:
         """Record one test run. Returns a summary dict (xp gained, new badges...)."""
         self.touch(ex)
-        today = _today()
+        now = utc_now()
+        today = local_day(now)
         if today not in self.data["days"]:
             self.data["days"].append(today)
         self.data["attempts"][ex.id] = self.attempts(ex.id) + 1
@@ -187,15 +189,10 @@ class Progress:
             attempts = self.attempts(ex.id)
             hints = self.hints_used(ex.id)
             opened = self.data["opened"].get(ex.id)
-            seconds = None
-            if opened:
-                try:
-                    seconds = (dt.datetime.now() - dt.datetime.fromisoformat(opened)).total_seconds()
-                except ValueError:
-                    seconds = None
+            seconds = elapsed_seconds(opened, now)
             xp, notes = self.xp_for(ex, attempts, hints, seconds, self.peeked(ex.id))
             self.data["solved"][ex.id] = {
-                "passed_at": _now(),
+                "passed_at": timestamp(now),
                 "attempts": attempts,
                 "hints": hints,
                 "seconds": int(seconds) if seconds is not None else None,
@@ -230,7 +227,7 @@ class Progress:
             self._award("first_try", new)
         if attempts >= 4:
             self._award("comeback", new)
-        if ex.kyu <= 5 and ex.time_limit_min and seconds is not None and seconds <= ex.time_limit_min * 60:
+        if ex.kyu <= 5 and ex.time_limit_min and seconds is not None and 0 <= seconds <= ex.time_limit_min * 60:
             self._award("speed_demon", new)
         st = self.streak()
         if st >= 7:

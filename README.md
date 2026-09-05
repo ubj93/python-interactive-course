@@ -87,6 +87,12 @@ locally, serve the `docs/` folder with any static server. Progress lives in `loc
 can be exported and imported to move between devices or merged with the terminal file
 (same JSON format).
 
+Both clients write timestamps in UTC (`2026-09-05T00:30:00.000Z`). Existing terminal
+timestamps without an offset are interpreted as local time on the device reading
+them. Streaks, daily katas and "solved today" use the device's local calendar date;
+importing progress preserves existing day keys and completions. Invalid or future
+start times do not earn a speed bonus.
+
 ```bash
 python3 tools/build_web.py           # regenerate docs/exercises.js after editing content
 python3 -m http.server -d docs 8000  # then open http://localhost:8000

@@ -17,6 +17,7 @@ from .progress import BADGES, RANKS, Progress
 from . import backup as backup_mod
 from .lessons import CARD_XP, Card, Lesson, find_lesson, load_all_lessons
 from .runner import RunResult, run_code_card, run_tests
+from .timestamps import parse_timestamp, timestamp, utc_now
 
 
 class App:
@@ -381,11 +382,12 @@ class App:
         rng = random.Random()
         picks = rng.sample(exs, min(args.count, len(exs)))
         picks.sort(key=lambda e: (-e.kyu, e.part_num, e.num))
-        deadline = dt.datetime.now() + dt.timedelta(minutes=args.minutes)
+        started = utc_now()
+        deadline = started + dt.timedelta(minutes=args.minutes)
         p.data["interview"] = {
             "ids": [e.id for e in picks],
-            "started": dt.datetime.now().replace(microsecond=0).isoformat(),
-            "deadline": deadline.replace(microsecond=0).isoformat(),
+            "started": timestamp(started),
+            "deadline": timestamp(deadline),
             "solved_before": [e.id for e in picks if p.is_solved(e.id)],
         }
         p.save()
@@ -393,15 +395,18 @@ class App:
         print("  Talk out loud, state assumptions, write the brute force first, then improve it.\n")
         for e in picks:
             print(self.ex_line(e))
-        print(f"\n  Deadline {ui.bold(deadline.strftime('%H:%M'))}.  Work them with `course show <id>` / `course run <id>`.")
+        print(f"\n  Deadline {ui.bold(deadline.astimezone().strftime('%H:%M'))}.  Work them with `course show <id>` / `course run <id>`.")
         print(f"  Check the clock with {ui.cyan('course interview')}, finish with {ui.cyan('course interview --finish')}.")
         return 0
 
     def report_interview(self, session: dict, final: bool) -> int:
         p = self.progress
         ids = session["ids"]
-        deadline = dt.datetime.fromisoformat(session["deadline"])
-        left = deadline - dt.datetime.now()
+        deadline = parse_timestamp(session.get("deadline"))
+        if deadline is None:
+            print("This mock interview has an invalid deadline. Start a new round with `course interview --new`.")
+            return 1
+        left = deadline - utc_now()
         solved = [i for i in ids if p.is_solved(i) and i not in session.get("solved_before", [])]
         print(ui.heading("Mock interview"))
         for i in ids:
