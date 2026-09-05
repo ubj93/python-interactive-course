@@ -1,4 +1,5 @@
 import math
+import random
 import unittest
 
 from exercise import bisect_first_bad
@@ -71,6 +72,37 @@ class TestBisectFirstBad(unittest.TestCase):
         calls = []
         self.assertIsNone(bisect_first_bad(n, make_predicate(n, None, calls)))
         self.assertLessEqual(len(calls), 31, len(calls))
+
+    def test_generalization_seeded(self):
+        """Generalization: varied transition points and exact integer boundaries (seed 1207)"""
+        rng = random.Random(1207)
+        cases = [(0, None)]
+        sizes = [1, 2, 3, 31, 32, 33, 255, 256, 257]
+        sizes += [rng.randint(1, 4096) for _ in range(30)]
+        for n in sizes:
+            for first_bad in (1, n, rng.randint(1, n), None):
+                # Scan a short truth table; no binary-search logic in the oracle.
+                flags = [first_bad is not None and build >= first_bad for build in range(1, n + 1)]
+                expected = next((build for build, bad in enumerate(flags, 1) if bad), None)
+                cases.append((n, expected))
+        for _ in range(8):
+            n = 2 ** 53 + rng.randint(1, 2048)
+            cases.extend([(n, n), (n, n - rng.randint(1, 100)), (n, None)])
+        for n, expected in cases:
+            # bit_length computes ceil(log2(n)) exactly, including huge integers.
+            limit = (n - 1).bit_length() + 1 if n else 0
+            calls = []
+            context = f"n={n}, first_bad={expected}"
+
+            def is_bad(build):
+                self.assertTrue(isinstance(build, int) and 1 <= build <= n,
+                                f"{context}; predicate called outside integer builds: {build!r}")
+                calls.append(build)
+                self.assertLessEqual(len(calls), limit, f"{context}; exceeded {limit} predicate calls")
+                return expected is not None and build >= expected
+
+            self.assertEqual(bisect_first_bad(n, is_bad), expected, context)
+            self.assertLessEqual(len(calls), limit, context)
 
 
 if __name__ == "__main__":

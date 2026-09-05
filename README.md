@@ -388,6 +388,19 @@ npm run test:browser
 
 These tests use an isolated browser profile and a deterministic worker response;
 the Python checks above verify exercise grading. They never edit learner answers.
+
+The Part 12 pilot also has public **generalization tests** for `two_sum`,
+`balanced_brackets`, and `bisect_first_bad`: fixed seeds vary short inputs against
+simple independent checks. To check the reference implementations and plausible
+mistakes with actual Python in the browser (downloads Pyodide on first use):
+
+```sh
+python3 -m unittest discover -s tests -p test_generalization.py
+COURSE_REAL_BROWSER_TESTS=1 npx playwright test generalization.spec.cjs --project=desktop
+```
+
+The same cases and seeds ship in the browser bundle. The normal browser suite
+skips this optional network check; no extra Python dependencies are needed.
 To use an installed Google Chrome locally, run
 `PLAYWRIGHT_CHROMIUM_CHANNEL=chrome npm run test:browser`.
 

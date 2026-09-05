@@ -1,3 +1,4 @@
+import random
 import unittest
 
 from exercise import two_sum
@@ -46,6 +47,33 @@ class TestTwoSum(unittest.TestCase):
         sizes = [2 * ((i * 7919) % 99991) + 2 for i in range(n - 1)] + [12345]
         target = sizes[5000] + sizes[-1]
         self.assertEqual(two_sum(sizes, target), (5000, n - 1))
+
+    def test_generalization_seeded(self):
+        """Generalization: varied sizes agree with a small all-pairs oracle (seed 1201)"""
+        rng = random.Random(1201)
+        cases = [([], 0), ([0], 0), ([0, 0, 0], 0), ([-9, -9], -18),
+                 ([2 ** 60, 1, 2 ** 60 + 2], 2 ** 60 + 1),
+                 ([2 ** 60, 2], 2 ** 60 + 1)]
+        for case in range(80):
+            sizes = [rng.randint(-25, 25) for _ in range(rng.randint(0, 18))]
+            target = rng.randint(-50, 50)
+            if len(sizes) >= 2 and case % 2 == 0:
+                i, j = rng.sample(range(len(sizes)), 2)
+                target = sizes[i] + sizes[j]
+            cases.append((sizes, target))
+        for sizes, target in cases:
+            # Deliberately use the simple quadratic oracle only on small lists.
+            pairs = {(i, j) for i in range(len(sizes)) for j in range(i + 1, len(sizes))
+                     if sizes[i] + sizes[j] == target}
+            result = two_sum(sizes[:], target)
+            context = f"sizes={sizes!r}, target={target}"
+            if not pairs:
+                self.assertIsNone(result, context)
+            else:
+                self.assertIsInstance(result, tuple, context)
+                self.assertEqual(len(result), 2, context)
+                self.assertTrue(all(isinstance(index, int) for index in result), context)
+                self.assertTrue(result in pairs, f"{context}; expected valid distinct indexes, got {result!r}")
 
 
 if __name__ == "__main__":
