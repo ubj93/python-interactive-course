@@ -1,6 +1,6 @@
 # Walking pages with a cursor
 
---- teach
+--- teach #card-2c4411366061573b
 ### Cursor pagination, and an injected `get`
 An API that lists thousands of devices sends them a page at a time. Each response holds `items` and a `next_cursor`, an opaque token you send back as `cursor=...` to get the next page; the last page has `next_cursor` set to `null` or missing. The function does not import the network: it takes `get`, a callable `get(url) -> dict`. Tests pass a fake that serves canned bodies by URL and records every call.
 ```python
@@ -14,14 +14,14 @@ def make_get(pages):
 ```
 Production passes a wrapper around `urllib.request.urlopen`; the loop never knows the difference.
 
---- quiz
+--- quiz #card-5cd84d2306e053c1
 In the tests, what is `get`?
 - [ ] A real HTTP call with a short timeout
 - [x] A function returning canned dicts keyed by URL and recording the URLs asked for
 - [ ] A string naming the endpoint
 > The fake lets the test assert both what came back and exactly which URLs were requested, with no network.
 
---- teach
+--- teach #card-00af2d89d681520b
 ### The loop
 Extend the result with each page's items, read the cursor, and stop when it is falsy (`None`, `""` or missing). `body.get("items") or []` handles a page without `items`. A `for` over `range(max_pages)` gives the loop a budget; finishing the loop means the budget ran out.
 ```python
@@ -37,7 +37,7 @@ raise PaginationError(f"more than {max_pages} pages")
 ```
 Do not catch exceptions from `get`; a failed request is the caller's problem.
 
---- code
+--- code #card-3e5f574cd2b05deb
 Walk the pages starting at `url` with `get`, following `next_cursor` until it is falsy, and set `items` to every item in order. This fake takes the bare cursor as the next URL, so no URL building is needed yet.
 ```python
 pages = {"start": {"items": [1, 2], "next_cursor": "c2"}, "c2": {"items": [3], "next_cursor": None}}
@@ -54,7 +54,7 @@ solution:     if not next_url:
 solution:         break
 > Two requests: `"start"` gives `[1, 2]` and a cursor, `"c2"` gives `[3]` and `None`, which ends the loop. The exercise adds the URL building and the two guards.
 
---- predict
+--- predict #card-f20aa1bc048f54b2
 What does this print?
 ```python
 body = {"next_cursor": None}
@@ -63,7 +63,7 @@ print(body.get("items") or [], bool(body.get("next_cursor")))
 answer: [] False
 > A missing `items` key gives `None`, and `None or []` is `[]`. A `None` cursor is falsy, so the walk ends.
 
---- teach
+--- teach #card-71a25a1a63ce5ed7
 ### Build the next URL from the original
 The trap is appending `&cursor=` to the previous page's URL: cursors pile up. Always start from the original `url`. `urlsplit` breaks it into parts, `parse_qsl` gives the query as an ordered list of pairs, you drop any existing `cursor`, append the new one last, and `urlunsplit` puts it back together. `parts._replace(query=...)` returns a copy with one field changed.
 ```python
@@ -76,7 +76,7 @@ def _with_cursor(url, cursor):
     return urlunsplit(parts._replace(query=urlencode(query)))
 ```
 
---- code
+--- code #card-26201d4ee87a58d2
 Write `with_cursor(url, cursor)` that drops any existing `cursor` parameter, keeps the others in order and appends the new cursor last. Then print `with_cursor(url, "new")`.
 ```python
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -91,7 +91,7 @@ solution:     return urlunsplit(parts._replace(query=urlencode(query)))
 solution: print(with_cursor(url, "new"))
 > Split, filter the pairs, append, re-encode, reassemble. Because it always starts from the original `url`, calling it for page after page never stacks cursors.
 
---- predict
+--- predict #card-4b245a3a82085943
 What does this print?
 ```python
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -103,7 +103,7 @@ print(urlunsplit(parts._replace(query=urlencode(query))))
 answer: https://x.io/v1/devices?limit=2&cursor=new
 > The stale `cursor=old` is filtered out, `limit=2` keeps its place, and the new cursor goes last.
 
---- teach
+--- teach #card-c494a61472ed5b4f
 ### Two guards against a misbehaving API
 A broken API can hand back a cursor you already used, and a naive loop would run forever. Keep a `set` of cursors seen and raise `PaginationError` on a repeat. The `max_pages` budget is the second guard: needing more requests than allowed is an error, not a longer wait. Say both before the interviewer asks "what if the API misbehaves?".
 ```python
@@ -114,7 +114,7 @@ if cursor in seen:
 seen.add(cursor)
 ```
 
---- fill
+--- fill #card-11fa31ddecf15214
 Complete the loop guard.
 ```python
 if cursor in ___:
@@ -124,9 +124,9 @@ seen.add(cursor)
 answer: seen
 > Checking the set before adding to it catches the second appearance of any cursor, which is when the API has started looping.
 
---- exercise 11.3
+--- exercise 11.3 #card-ad23948275a85163
 
---- recap
+--- recap #card-c05b001b5f1656ce
 - `get(url) -> dict` is injected; tests pass a fake that serves canned pages and records calls.
 - Extend items, read `next_cursor`, stop when it is falsy; a page without `items` adds nothing.
 - Build every next URL from the original with `urlsplit`, `parse_qsl`, `urlencode`, `urlunsplit`.

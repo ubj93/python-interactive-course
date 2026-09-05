@@ -1,6 +1,6 @@
 # Making decisions
 
---- teach
+--- teach #card-ca86cc3ff7365f9a
 ### if, elif, else
 A program decides with `if`. The first condition that is true wins; the others are skipped. Indentation (four spaces) marks what belongs to each branch.
 ```python
@@ -13,7 +13,7 @@ else:
 ```
 `elif` means "else, if". You can have as many as you need.
 
---- predict
+--- predict #card-04881f40699b5a0b
 What does this print?
 ```python
 pct = 0.85
@@ -27,7 +27,7 @@ else:
 answer: WARN
 > 0.85 is not >= 0.95, so the first branch is skipped; it is >= 0.80, so the second branch runs and the rest are ignored.
 
---- code
+--- code #card-7c2f6b71a046504c
 Print `WARN` if `pct` is 0.80 or more, otherwise print `OK`.
 ```python
 pct = 0.9
@@ -39,11 +39,11 @@ solution: else:
 solution:     print("OK")
 > The condition line ends with a colon and the branch bodies are indented four spaces.
 
---- teach
+--- teach #card-e59787df7f1356a8
 ### Order matters
 Python checks branches top to bottom and stops at the first true one. If you tested `>= 0.80` first, 0.99 would be labelled WARN and never reach the CRIT check. Put the most specific (highest) threshold first.
 
---- teach
+--- teach #card-a476e9fa37b25bf6
 ### Comparisons, and the special value None
 `==`, `!=`, `<`, `<=`, `>`, `>=` compare values. Two comparisons can be chained: `0 <= x <= 1` means "x is between 0 and 1". `None` means "no value"; test for it with `is`, not `==`.
 ```python
@@ -54,14 +54,14 @@ True
 False
 ```
 
---- quiz
+--- quiz #card-6395d925e3f75d1d
 Which expression is true only when `x` is between 0 and 1 inclusive?
 - [ ] `0 <= x or x <= 1`
 - [x] `0 <= x <= 1`
 - [ ] `x in (0, 1)`
 > Chained comparison reads like maths. The `or` version is true for every number, and `in (0, 1)` only matches exactly 0 or 1.
 
---- fill
+--- fill #card-ad2f56a3a0915ce8
 Complete the guard so it catches a missing value.
 ```python
 if used ___ None:
@@ -70,7 +70,7 @@ if used ___ None:
 answer: is
 > `is None` is the idiom. `== None` usually works but `is` is faster, clearer, and what reviewers expect.
 
---- code
+--- code #card-885d8c37fbe25509
 Write the body of `status`: return `"UNKNOWN"` when `used` is None, otherwise return `"OK"`. Then print `status(None)`.
 ```python
 def status(used):
@@ -83,7 +83,7 @@ solution:     return "OK"
 solution: print(status(None))
 > The guard returns early, so the last `return "OK"` only runs for real values. The body lines are indented four spaces; the `print` is not, because it is outside the function.
 
---- teach
+--- teach #card-7f52ed3525c85091
 ### Return early
 Handle the bad cases first and `return` immediately. Every line after a guard can then assume the input is good, which keeps the function flat instead of nested.
 ```python
@@ -96,9 +96,9 @@ def disk_status(used):
 ```
 Once a function returns, nothing below runs, so no `else` is needed.
 
---- exercise 1.3
+--- exercise 1.3 #card-b56b51796738586c
 
---- recap
+--- recap #card-d0257b8ed6cf5382
 - `if` / `elif` / `else`: the first true branch runs, the rest are skipped.
 - Put the most specific condition first.
 - `0 <= x <= 1` chains comparisons; `x is None` tests for no value.

@@ -1,6 +1,6 @@
 # The last n lines
 
---- teach
+--- teach #card-b40f98bd634259a2
 ### `deque(maxlen=n)` keeps only the newest items
 A `deque` (say "deck") is a list-like container from `collections`. Give it `maxlen=n` and it forgets the oldest item whenever a new one pushes it past `n`. Push every line through it and what is left is the tail of the file, oldest first.
 ```python
@@ -12,7 +12,7 @@ A `deque` (say "deck") is a list-like container from `collections`. Give it `max
 [3, 4]
 ```
 
---- code
+--- code #card-a72e65b2386357db
 Push every item of `events` through a deque that holds at most 3, then set `last` to a list of what remains.
 ```python
 from collections import deque
@@ -25,7 +25,7 @@ solution:     d.append(event)
 solution: last = list(d)
 > Each `append` past the third item evicts the oldest one. `list(d)` turns the deque back into a plain list, oldest first.
 
---- predict
+--- predict #card-50d51fdb90bc5c42
 What does this print?
 ```python
 from collections import deque
@@ -34,7 +34,7 @@ print(list(deque(["l1", "l2", "l3", "l4", "l5"], maxlen=2)))
 answer: ['l4', 'l5']
 > `deque` accepts any iterable directly. With `maxlen=2` only the last two survive, in their original order.
 
---- teach
+--- teach #card-a03d63bc77615c71
 ### Feed the file straight into the deque
 A file object is an iterable of lines, so `deque(f, maxlen=n)` reads the whole file one line at a time and keeps `n` of them. Memory is `n` lines, not the whole file. Calling `f.read()` or `f.readlines()` would defeat the point, and the last test forbids it.
 ```python
@@ -42,7 +42,7 @@ with open(path, encoding="utf-8") as f:
     last = deque(f, maxlen=n)
 ```
 
---- fill
+--- fill #card-8064b5d9985e5222
 Complete the line so only the newest `n` lines are kept.
 ```python
 with open(path, encoding="utf-8") as f:
@@ -51,7 +51,7 @@ with open(path, encoding="utf-8") as f:
 answer: n
 > `maxlen=n` is the whole trick: the deque drops old lines as new ones arrive, so the file is never held in memory.
 
---- teach
+--- teach #card-4b8b1cb1d61c5fd2
 ### Remove the line ending, and nothing else
 The lines still carry `"\n"`, or `"\r\n"` from a Windows file. `strip()` would also delete the spaces inside a line that the spec says to keep. `rstrip("\r\n")` removes only those two characters from the right end.
 ```python
@@ -61,7 +61,7 @@ The lines still carry `"\n"`, or `"\r\n"` from a Windows file. `strip()` would a
 'last'
 ```
 
---- code
+--- code #card-8cd74fa7a8505c3d
 Set `lines` to the items of `raw` with their line endings removed, keeping the spaces inside.
 ```python
 raw = ["  a  \r\n", "b\n", "c"]
@@ -70,7 +70,7 @@ check: lines == ["  a  ", "b", "c"]
 solution: lines = [line.rstrip("\r\n") for line in raw]
 > `rstrip("\r\n")` strips only carriage returns and newlines from the right. The final `"c"` has no ending and is returned as it is.
 
---- predict
+--- predict #card-e7679510862c5ef0
 What does this print?
 ```python
 print(repr("  x  \n".rstrip("\r\n")))
@@ -78,7 +78,7 @@ print(repr("  x  \n".rstrip("\r\n")))
 answer: '  x  '
 > `rstrip("\r\n")` takes the argument as a set of characters to remove from the right. Spaces are not in it, so they stay.
 
---- teach
+--- teach #card-c88f9a37dac859ba
 ### Check `n` before opening the file
 A negative `n` makes no sense: raise `ValueError`. `n == 0` should give `[]`, and `deque(maxlen=0)` handles that on its own. Do the check first, before any file work, so a bad argument never opens a file.
 ```python
@@ -86,16 +86,16 @@ if n < 0:
     raise ValueError("n must be >= 0")
 ```
 
---- quiz
+--- quiz #card-7c235f974ace51ab
 `tail_lines(path, 0)` is called on a five-line file. What should happen?
 - [ ] It raises `ValueError`
 - [x] It returns `[]`
 - [ ] It returns all five lines
 > Zero lines is a valid request; only a negative `n` is an error. A `deque(maxlen=0)` keeps nothing, so the result is empty.
 
---- exercise 6.5
+--- exercise 6.5 #card-e9869cbae862531a
 
---- recap
+--- recap #card-e46865e7efd45cf1
 - `deque(maxlen=n)` keeps the newest `n` items and drops the rest.
 - `deque(f, maxlen=n)` streams the file with `n` lines of memory.
 - `rstrip("\r\n")` removes the line ending only; `strip()` would eat inner spaces.

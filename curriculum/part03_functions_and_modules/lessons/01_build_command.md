@@ -1,6 +1,6 @@
 # Defaults and keyword arguments
 
---- teach
+--- teach #card-88f548ed2b39592e
 ### Defaults make arguments optional
 A parameter with `= value` in the `def` gets that value when the caller leaves it out. Parameters with defaults must come after those without.
 ```python
@@ -12,7 +12,7 @@ build_command("zoom", "remove")       # positional, in order
 ```
 The first call gives one argument; the other two fall back to their defaults.
 
---- teach
+--- teach #card-5f07f59227355cdb
 ### Keyword arguments name what you pass
 Write `name=value` in the call to set one parameter and skip the ones before it. Keyword arguments can come in any order, but positional ones must come first.
 ```python
@@ -21,7 +21,7 @@ build_command(package="zoom", action="update")   # all by name
 ```
 `build_command(verbose=True, "zoom")` is a syntax error: positional after keyword.
 
---- predict
+--- predict #card-dfd32368cf355446
 What does this print?
 ```python
 def label(host, prefix="mbp", sep="-"):
@@ -32,7 +32,7 @@ print(label("doe", sep="_"))
 answer: mbp_doe
 > `prefix` keeps its default "mbp"; `sep` is set by keyword to "_". Keywords let you skip a parameter in the middle.
 
---- teach
+--- teach #card-22ed7628a0175a4b
 ### The mutable-default trap
 A default is evaluated once, when `def` runs, not once per call. A default `[]` is therefore a single list shared by every call: whatever one caller appends, the next caller sees.
 ```python
@@ -51,7 +51,7 @@ def add_target(host, targets=None):
         targets = []
 ```
 
---- code
+--- code #card-1a1bfde011f9529c
 Write the body of `add_target`: when `targets` is None create a new list, append `host`, and return the list. Then print `add_target("a")` and `add_target("b")` on separate lines.
 ```python
 def add_target(host, targets=None):
@@ -66,14 +66,14 @@ solution: print(add_target("a"))
 solution: print(add_target("b"))
 > Each call that omits `targets` creates its own fresh list, so the second call prints `['b']`, not `['a', 'b']`. The body lines are indented; the two prints are not.
 
---- quiz
+--- quiz #card-7ee026b10a465709
 Why is `def build_command(package, extra_args=[])` wrong?
 - [ ] Lists are not allowed as defaults
 - [x] The same list object is reused by every call that omits `extra_args`
 - [ ] The default is recreated on every call, which is slow
 > Defaults are created once, at `def` time. A mutable default like `[]` is shared across calls. Use `None` and create the list inside.
 
---- teach
+--- teach #card-69d434b787fe59bb
 ### Validate first, then build
 Check the inputs at the top and `raise ValueError` for anything unacceptable; the rest of the function can then assume clean input. Build the result as a fresh list and grow it with `append` (one item) and `extend` (all items of another sequence). `str(30)` is `"30"`: every element of an argv list must be text.
 ```python
@@ -85,7 +85,7 @@ if timeout is not None:
 ```
 Test `timeout is not None`, not `if timeout:`, because `0` is a valid timeout. `!r` in the f-string shows the value with quotes: `unknown action 'purge'`.
 
---- code
+--- code #card-40c3bf22147c53d5
 Build `argv` as `pkgctl`, the action, the package, then `--timeout` and its value as a string only when `timeout` is not None.
 ```python
 action = "remove"
@@ -98,7 +98,7 @@ solution: if timeout is not None:
 solution:     argv.extend(["--timeout", str(timeout)])
 > Start from a fresh three-item list, then `extend` with both the flag and `str(timeout)`. Every element stays a string, and the `is not None` test keeps a timeout of 0 working.
 
---- fill
+--- fill #card-52d07944a0a752b8
 Complete the line so both `--timeout` and its value are added to `argv`.
 ```python
 argv.___(["--timeout", str(timeout)])
@@ -106,7 +106,7 @@ argv.___(["--timeout", str(timeout)])
 answer: extend
 > `extend` adds every item of the given list. `append` would add the whole two-item list as a single element.
 
---- predict
+--- predict #card-a86f0d36fa2f5c40
 What does this print?
 ```python
 argv = ["pkgctl", "install"]
@@ -116,9 +116,9 @@ print(len(argv))
 answer: 3
 > `append` adds one item, here a whole list, so `argv` has three elements. `extend` would have made it four.
 
---- exercise 3.1
+--- exercise 3.1 #card-ae02a87f4a9451f6
 
---- recap
+--- recap #card-0fdde7ec094b599a
 - `param=value` in a `def` makes the argument optional; defaults come last.
 - `name=value` in a call sets a parameter by name and can skip others.
 - Never default to `[]` or `{}`; use `None` and create inside.

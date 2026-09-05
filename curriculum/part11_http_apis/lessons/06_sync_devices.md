@@ -1,6 +1,6 @@
 # Sync: plan, then apply
 
---- teach
+--- teach #card-55f1b2889339544f
 ### Index both sides by a normalised key
 Local and remote both identify a device by serial, but one side says `" c02x "` and the other `"C02X"`. Normalise with `.strip().upper()` and build a dict from serial to record for each side. While indexing, validate: a blank or missing serial, or the same serial twice on one side, raises `ValueError`. Everything is checked **before** the first API call, so a bad file fails the run instead of half of it.
 ```python
@@ -16,7 +16,7 @@ def _index(records, label):
     return by_serial
 ```
 
---- code
+--- code #card-3ca53ad576545523
 Build `by_serial`, a dict from normalised serial (`strip().upper()`) to record, raising `ValueError` on a duplicate. Then print `sorted(by_serial)`.
 ```python
 records = [{"serial": " c02x ", "name": "mbp"}, {"serial": "A1", "name": "air"}]
@@ -32,7 +32,7 @@ solution:     by_serial[serial] = record
 solution: print(sorted(by_serial))
 > The key is the cleaned serial, the value is the original record. Checking `serial in by_serial` before storing catches a duplicate on the spot.
 
---- predict
+--- predict #card-d2c1a0b062c25ded
 What does this print?
 ```python
 print(" c02x ".strip().upper())
@@ -40,7 +40,7 @@ print(" c02x ".strip().upper())
 answer: C02X
 > `strip` removes the padding and `upper` folds the case, so both sides produce the same key.
 
---- teach
+--- teach #card-39b4c31154145aac
 ### Three groups from two sets of keys
 With both dicts keyed the same way, set arithmetic names the groups: in local only means create, in remote only means delete, in both means compare. Walking `sorted(set(local_by) | set(remote_by))` visits every serial once in a deterministic order, and `.get(serial)` on each dict tells you which side has it.
 ```python
@@ -52,7 +52,7 @@ for serial in sorted(set(local_by) | set(remote_by)):
 ```
 Sorted order makes logs diffable and tests simple.
 
---- predict
+--- predict #card-1a7d2cd7568b54f9
 What does this print?
 ```python
 local = {"A1", "B2", "C3"}
@@ -62,7 +62,7 @@ print(sorted(local - remote), sorted(remote - local))
 answer: ['B2', 'C3'] ['Z9']
 > `local - remote` is what only local has (to create); `remote - local` is what only remote has (to delete). `A1` is in both.
 
---- teach
+--- teach #card-b6a8ff39c7f153e8
 ### Send only what changed
 For a device on both sides, compare each field in `fields`. A field missing on either side counts as `None`, so use `.get(f)`. The update carries only the differing fields, with the local value: smaller requests, readable logs, and nothing you do not own gets clobbered. An empty `changes` dict means unchanged. A create record holds `serial` plus every field, missing ones as `None`.
 ```python
@@ -70,7 +70,7 @@ changes = {f: mine.get(f) for f in fields if mine.get(f) != theirs.get(f)}
 record = {"serial": serial, **{f: mine.get(f) for f in fields}}
 ```
 
---- code
+--- code #card-f6c10bfcd45a537b
 Set `changes` to the fields from `fields` whose local value differs from the remote one, holding the local value. A missing field counts as `None`.
 ```python
 fields = ("name", "group")
@@ -81,7 +81,7 @@ check: changes == {"group": None}
 solution: changes = {f: mine.get(f) for f in fields if mine.get(f) != theirs.get(f)}
 > `name` matches, so it is left out. `group` is missing locally, so `mine.get("group")` is `None`, which differs from `"eng"` and becomes the update.
 
---- fill
+--- fill #card-961431d4ea0855c9
 Complete the comprehension so `changes` holds only fields whose local value differs.
 ```python
 changes = {f: mine.get(f) for f in fields if mine.get(f) ___ theirs.get(f)}
@@ -89,7 +89,7 @@ changes = {f: mine.get(f) for f in fields if mine.get(f) ___ theirs.get(f)}
 answer: !=
 > The condition keeps a field only when the two sides disagree. `.get` makes a missing field `None` on either side.
 
---- teach
+--- teach #card-bfa85a0c25ab598b
 ### Plan first, apply second
 Compute the actions as plain data (a dict of lists), then loop over them calling `client.create`, `client.update(remote_id, changes)` and `client.delete(remote_id)`, in that order. The planner is a pure function you can test with no client, and `dry_run` simply skips the apply step. The tests pass a fake client that records every call, the same injection idea as `runner` and `get`.
 ```python
@@ -104,16 +104,16 @@ if not dry_run:
 ```
 The summary lists the normalised serials of each group, sorted.
 
---- quiz
+--- quiz #card-f0ed53ab04e15e1b
 `sync_devices(local, remote, client, dry_run=True)` finds one device to update. What happens?
 - [ ] `client.update` is called and the summary is returned
 - [x] The summary lists it under `"updated"` and the client is never called
 - [ ] It returns `None`
 > Dry run means "show me the plan". The planning half runs in full; the applying half is skipped.
 
---- exercise 11.6
+--- exercise 11.6 #card-10164dfbe6e45d18
 
---- recap
+--- recap #card-951141c7ac2a5eac
 - Index each side by `serial.strip().upper()`; blanks and duplicates raise before any call.
 - `local - remote` creates, `remote - local` deletes, the intersection compares.
 - Updates carry only the fields that differ; missing fields count as `None`.

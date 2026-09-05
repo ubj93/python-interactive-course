@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from .catalog import ROOT, Exercise, Part
+from .card_ids import card_key, migrate_card_progress
 from .timestamps import elapsed_seconds, local_day, timestamp, timestamp_day, utc_now
 from .sessions import finish_session, new_session, normalize_session, record_attempt
 
@@ -67,7 +68,7 @@ class Progress:
             "interview": None, # {"ids": [...], "started": iso, "deadline": iso}
             "last_interview": None, # frozen result of the most recently finished round
             "last": None,      # last exercise id touched
-            "cards": {},       # "lesson_id:card_index" -> {"done": bool, "correct": bool|None, "tries": int}
+            "cards": {},       # "authored_card_id" -> {"done": bool, "correct": bool|None, "tries": int}
             "last_lesson": None,
         }
         self.load()
@@ -82,6 +83,7 @@ class Progress:
         session = normalize_session(self.data.get("interview"))
         if session is not None:
             self.data["interview"] = session
+        migrate_card_progress(self.data)
 
     def save(self) -> None:
         self.path.write_text(json.dumps(self.data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -307,16 +309,16 @@ class Progress:
 
     def restart_lesson(self, lesson) -> None:
         self._card_reward_history()
-        for i in range(len(lesson.cards)):
-            self.data.setdefault("cards", {}).pop(f"{lesson.id}:{i}", None)
+        for card in lesson.cards:
+            self.data.setdefault("cards", {}).pop(card_key(card.id), None)
         self.save()
 
-    def card_state(self, lesson_id: str, idx: int) -> dict:
-        return self.data.setdefault("cards", {}).get(f"{lesson_id}:{idx}", {"done": False, "correct": None, "tries": 0})
+    def card_state(self, lesson_id: str, card_id: str) -> dict:
+        return self.data.setdefault("cards", {}).get(card_key(card_id), {"done": False, "correct": None, "tries": 0})
 
-    def record_card(self, lesson_id: str, idx: int, checkable: bool, correct: Optional[bool] = None) -> int:
+    def record_card(self, lesson_id: str, card_id: str, checkable: bool, correct: Optional[bool] = None) -> int:
         """Mark a card as seen/answered. Returns xp awarded (only for a correct first try)."""
-        key = f"{lesson_id}:{idx}"
+        key = card_key(card_id)
         cards = self.data.setdefault("cards", {})
         state = cards.get(key, {"done": False, "correct": None, "tries": 0})
         xp = 0
@@ -348,7 +350,7 @@ class Progress:
 
     def lesson_progress(self, lesson) -> Tuple[int, int, bool]:
         """(cards_done, cards_total, complete) where complete also needs the lesson's exercises solved."""
-        done = sum(1 for i in range(len(lesson.cards)) if self.card_state(lesson.id, i)["done"])
+        done = sum(1 for card in lesson.cards if self.card_state(lesson.id, card.id)["done"])
         ex_ok = all(self.is_solved(e) for e in lesson.exercise_ids)
         return done, len(lesson.cards), done == len(lesson.cards) and ex_ok
 

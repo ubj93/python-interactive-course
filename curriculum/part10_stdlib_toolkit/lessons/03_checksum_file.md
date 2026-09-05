@@ -1,6 +1,6 @@
 # Hashing a file in chunks
 
---- teach
+--- teach #card-fbbd40119e1855e6
 ### A hash turns bytes into a fixed-size fingerprint
 `hashlib.sha256(data).hexdigest()` gives 64 hex characters that change completely if one byte of `data` changes. Vendors publish this digest next to a package so you can check the download. The input must be **bytes**, never `str`: encode text first.
 ```python
@@ -11,14 +11,14 @@
 True
 ```
 
---- quiz
+--- quiz #card-bca88f4ecc7551df
 What does `hashlib.sha256("hello")` do?
 - [ ] Returns the digest of the text
 - [x] Raises `TypeError` because the input is `str`, not bytes
 - [ ] Returns `None`
 > Hash functions work on bytes. `"hello".encode("utf-8")` or `b"hello"` is what you pass.
 
---- teach
+--- teach #card-90ba1a967a9b527f
 ### The hash object accumulates
 Create an empty hash with `hashlib.sha256()` and feed it pieces with `.update()`. The final digest is the same as hashing everything at once. That is what makes it possible to hash a 4 GB installer without loading it into memory.
 ```python
@@ -29,7 +29,7 @@ Create an empty hash with `hashlib.sha256()` and feed it pieces with `.update()`
 'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9'
 ```
 
---- code
+--- code #card-b964ead78d665da4
 Feed every chunk in `chunks` to `h`, then print the first 8 characters of the digest.
 ```python
 import hashlib
@@ -43,7 +43,7 @@ solution:     h.update(chunk)
 solution: print(h.hexdigest()[:8])
 > Each `update` adds bytes to the running hash. After both chunks the digest equals that of `b"hello world"`, which starts `b94d27b9`.
 
---- predict
+--- predict #card-cc08225e5a26553f
 What does this print?
 ```python
 import hashlib
@@ -55,7 +55,7 @@ print(h.hexdigest() == hashlib.sha256(b"hello world").hexdigest())
 answer: True
 > Where the pieces are cut does not matter. The digest depends only on the bytes in order.
 
---- teach
+--- teach #card-09154ba954ac5fb2
 ### Read a file in chunks
 Open with `"rb"` (read, binary) so reads return bytes. `f.read(n)` returns **at most** `n` bytes, and `b""` (empty bytes) once the file is exhausted. So: read a chunk, stop when it is empty, otherwise update the hash. Anything with a `.read(n)` method works, including `io.BytesIO` in tests.
 ```python
@@ -69,7 +69,7 @@ with open(path, "rb") as f:
 ```
 Never call `f.read()` with no argument: that reads the whole file at once.
 
---- code
+--- code #card-f6001bf49399547f
 Write the loop that reads `f` in pieces of `chunk_size` bytes until `read` returns `b""`, feeding each piece to `h`. Then print the first 8 characters of the digest.
 ```python
 import hashlib, io
@@ -85,7 +85,7 @@ solution:     h.update(chunk)
 solution: print(h.hexdigest()[:8])
 > Three reads of 4, 4 and 3 bytes, then an empty `b""` that ends the loop. `io.BytesIO` behaves like a file opened with `"rb"`, which is why tests use it.
 
---- fill
+--- fill #card-bdffdf2e29c95fab
 Complete the loop so it stops when the file is exhausted.
 ```python
 while True:
@@ -97,7 +97,7 @@ while True:
 answer: break
 > An empty `b""` is falsy, so `not chunk` is True at the end of the file and `break` leaves the loop.
 
---- teach
+--- teach #card-6955f2dfef995f55
 ### Compare digests tolerantly
 `hexdigest()` is already lowercase hex. What people paste is not: uppercase, trailing newline, sometimes a `sha256:` prefix. Normalise the **expected** value, then compare. `None` or an empty string can never match, so return `False` early.
 ```python
@@ -109,7 +109,7 @@ if want.startswith("sha256:"):
 return want == sha256_file(path)
 ```
 
---- predict
+--- predict #card-1c1bf488a02a5800
 What does this print?
 ```python
 want = "  SHA256:AbC1\n".strip().lower()
@@ -120,7 +120,7 @@ print(want)
 answer: abc1
 > `strip` removes the spaces and newline, `lower` folds the case, and the slice drops the seven-character prefix.
 
---- teach
+--- teach #card-719e9f6b2e0f5d7a
 ### Validate what is yours, let the rest raise
 `chunk_size` is your rule, so check it first and raise `ValueError` for zero or negatives. A missing file is not your rule: `open` raises `FileNotFoundError` with a good message, so do not catch it.
 ```python
@@ -128,9 +128,9 @@ if not isinstance(chunk_size, int) or chunk_size <= 0:
     raise ValueError("chunk_size must be a positive int")
 ```
 
---- exercise 10.3
+--- exercise 10.3 #card-6b60ac8f2b415774
 
---- recap
+--- recap #card-9ed46793caa15ce1
 - `hashlib.sha256(data).hexdigest()` hashes bytes; encode text first.
 - `.update(chunk)` accumulates; the digest depends only on the bytes in order.
 - Read files with `"rb"` and `f.read(n)` in a loop; `b""` means end of file.

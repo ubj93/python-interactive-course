@@ -1,6 +1,6 @@
 # Keyword overrides
 
---- teach
+--- teach #card-624f75f602945aca
 ### `**kwargs` collects extra keyword arguments
 Two stars before a parameter name mean "gather every keyword argument the caller passed into a dict". The names are the keys, the values the values. `kwargs` is a convention; a descriptive name like `overrides` reads better.
 ```python
@@ -12,7 +12,7 @@ Two stars before a parameter name mean "gather every keyword argument the caller
 {}
 ```
 
---- code
+--- code #card-0811e2cc776250d0
 Define `names(**opts)` that returns a sorted list of the option names it was given. Then print `names(backoff=2, max_attempts=5)`.
 ```python
 # your code here
@@ -24,7 +24,7 @@ solution:     return sorted(opts)
 solution: print(names(backoff=2, max_attempts=5))
 > `opts` is a dict of the keyword arguments, and `sorted` on a dict gives its keys in order. With no arguments the dict is empty, so the list is too.
 
---- predict
+--- predict #card-4c098cbeb2d35385
 What does this print?
 ```python
 def collect(**opts):
@@ -35,7 +35,7 @@ print(collect(a=1, b=2, c=3))
 answer: 3
 > Three keyword arguments become a three-key dict. `len` of a dict is the number of keys.
 
---- teach
+--- teach #card-7418a2fa8aca5e59
 ### Start from a copy of the defaults
 `dict(DEFAULTS)` makes a new dict with the same keys and values. Change the copy, return the copy: the module-level `DEFAULTS` stays untouched, and each call hands out an independent dict. `policy.update(overrides)` writes every key of `overrides` into `policy`.
 ```python
@@ -45,7 +45,7 @@ return policy
 ```
 `policy = DEFAULTS` would be a second name for the same dict: the aliasing trap from Part 2, now with a dict.
 
---- code
+--- code #card-001b6bcb86f85964
 Set `policy` to a fresh copy of `DEFAULTS` with `overrides` applied. `DEFAULTS` itself must stay unchanged.
 ```python
 DEFAULTS = {"max_attempts": 3, "base_delay": 1.0}
@@ -57,14 +57,14 @@ solution: policy = dict(DEFAULTS)
 solution: policy.update(overrides)
 > `dict(DEFAULTS)` copies; `update` writes the overrides into the copy only. Had you written `policy = DEFAULTS`, the second check would fail because both names point at one dict.
 
---- quiz
+--- quiz #card-c7fb142a9a0552ac
 A caller does `p = retry_policy(); p["max_attempts"] = 99`. Which line in `retry_policy` keeps the next call's defaults intact?
 - [ ] `policy = DEFAULTS`
 - [x] `policy = dict(DEFAULTS)`
 - [ ] `policy = DEFAULTS.keys()`
 > `dict(DEFAULTS)` (or `DEFAULTS.copy()`) is a new dict. `policy = DEFAULTS` just aliases the shared one, so the caller's change would leak into every later call.
 
---- teach
+--- teach #card-cebc67acc8635863
 ### `**kwargs` swallows typos, so check the keys
 With a normal parameter, `retry_policy(max_attemps=5)` fails immediately: Python raises `TypeError` for an unexpected keyword. With `**overrides` nothing happens unless you check. Do it first, and raise the same `TypeError` Python would.
 ```python
@@ -74,14 +74,14 @@ for name in overrides:
 ```
 `TypeError` is for "wrong kind of thing" (an unknown option); `ValueError` is for "right kind, bad value" (`max_attempts=0`).
 
---- quiz
+--- quiz #card-5ed3baa6fa5c5aef
 `retry_policy(max_attempts=0)` and `retry_policy(max_attemps=5)` both must fail. Which errors?
 - [ ] Both `ValueError`
 - [x] `ValueError` for `0`, `TypeError` for the misspelled name
 - [ ] Both `TypeError`
 > A bad value of a known option is a `ValueError`. An unknown option name is a `TypeError`, matching what Python raises for an unexpected keyword.
 
---- teach
+--- teach #card-fde61b40dd3b55b4
 ### `isinstance` checks a type; `sorted(set(...))` normalises
 `isinstance(x, int)` is True only when `x` is an int, so `2.5` fails and `max_attempts` can be checked properly. For `retry_on`, any iterable is allowed: `set(...)` drops duplicates, `sorted(...)` orders them into a list, `tuple(...)` makes the final unchangeable value.
 ```python
@@ -92,7 +92,7 @@ False
 ```
 Read the chain inside out: set, then sorted, then tuple.
 
---- fill
+--- fill #card-eada13f3ab085ef0
 Complete the line so `retry_on` becomes a sorted tuple without duplicates.
 ```python
 policy["retry_on"] = tuple(sorted(___(policy["retry_on"])))
@@ -100,9 +100,9 @@ policy["retry_on"] = tuple(sorted(___(policy["retry_on"])))
 answer: set
 > `set` removes duplicates, `sorted` gives an ascending list, and `tuple` fixes the result. Works for a list, a set, a tuple or a `range`.
 
---- exercise 3.2
+--- exercise 3.2 #card-6d463f2a39b95f3e
 
---- recap
+--- recap #card-c9ef06498ca95b29
 - `**overrides` gathers keyword arguments into a dict.
 - Copy the defaults with `dict(DEFAULTS)`, then `.update(overrides)`.
 - Unknown option name: `TypeError`; bad value: `ValueError`.

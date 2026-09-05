@@ -13,6 +13,15 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-05
+
+### Added
+- Give all lesson cards stable authored IDs and validate their uniqueness, so
+  answers and code drafts follow the same card when lessons are reorganized.
+- Migrate positional progress and reward history using the frozen shipped layout,
+  preserve original records and drafts for recovery, and prefer existing stable
+  records when both versions exist.
+
 ## [0.4.1] - 2026-09-05
 
 ### Fixed

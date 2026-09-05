@@ -1,6 +1,6 @@
 # Top N, with ties decided
 
---- teach
+--- teach #card-d238a5e5b4b85847
 ### `most_common` leaves ties to chance
 `Counter(items).most_common(n)` returns the `n` biggest `(item, count)` pairs. When two counts are equal, the one seen **first** wins. So the same inventory in a different order gives a different report, and a dashboard that changes for no reason gets ignored.
 ```python
@@ -11,7 +11,7 @@
 [('Chrome', 2)]
 ```
 
---- predict
+--- predict #card-8afc9d1b42fc575b
 What does this print?
 ```python
 from collections import Counter
@@ -20,7 +20,7 @@ print(Counter(["Zoom", "Chrome", "Zoom", "Chrome"]).most_common(1))
 answer: [('Zoom', 2)]
 > Both have count 2. `most_common` keeps first-seen order for ties, and `"Zoom"` appeared first.
 
---- teach
+--- teach #card-a1c9145b3a94532b
 ### A composite key makes the order yours
 Sort the pairs yourself with the key from lesson 10.5: count descending (negate it), then item ascending. Now equal counts are alphabetical no matter how the input arrived. `Counter` accepts any iterable, so a generator works too, and `[:n]` on a short list simply returns everything.
 ```python
@@ -30,7 +30,7 @@ Sort the pairs yourself with the key from lesson 10.5: count descending (negate 
 [('Chrome', 2)]
 ```
 
---- code
+--- code #card-41d5a90900fa52dd
 Set `top` to the two most common apps as `(name, count)` pairs, with ties in alphabetical order.
 ```python
 from collections import Counter
@@ -41,7 +41,7 @@ solution: ranked = sorted(Counter(apps).items(), key=lambda kv: (-kv[1], kv[0]))
 solution: top = ranked[:2]
 > `Counter` counts, the composite key orders, and `[:2]` keeps two. `most_common(2)` would have put `"Zoom"` first because it was seen first.
 
---- predict
+--- predict #card-ff3e11f21a7a52b7
 What does this print?
 ```python
 from collections import Counter
@@ -52,7 +52,7 @@ print(ranked[:2])
 answer: [('Chrome', 2), ('Zoom', 2)]
 > Both have count 2, so the second part of the key decides: `"Chrome"` sorts before `"Zoom"`. `"Slack"` with 1 is cut by the slice.
 
---- teach
+--- teach #card-1cc8cf825a6d57b7
 ### Including everything tied with the last place
 With `include_ties`, "top 3" means the top 3 plus anyone with the same count as the third. Read the cutoff count from `ranked[n - 1]`, then walk forward while the count still equals it.
 ```python
@@ -64,7 +64,7 @@ return ranked[:end]
 ```
 The `end < len(ranked)` test comes first so you never index past the list.
 
---- code
+--- code #card-6ad4ac2882785157
 Move `end` past `n` while the counts stay tied with the n-th entry, then print `ranked[:end]`.
 ```python
 ranked = [("Slack", 3), ("Zoom", 2), ("Chrome", 1), ("Firefox", 1)]
@@ -78,7 +78,7 @@ solution:     end += 1
 solution: print(ranked[:end])
 > The third entry has count 1, and so does `"Firefox"`, so `end` moves from 3 to 4 and the slice includes all four.
 
---- fill
+--- fill #card-a78a637c802559ce
 Complete the loop that extends the slice past `n` while counts stay tied.
 ```python
 cutoff = ranked[n - 1][1]
@@ -89,7 +89,7 @@ while end < len(ranked) and ranked[end][1] == ___:
 answer: cutoff
 > `cutoff` is the count of the n-th entry. Every following entry with that same count belongs in the result.
 
---- teach
+--- teach #card-e5891554ed75580b
 ### Edge cases first
 Handle the degenerate inputs before the real work: `n <= 0` returns `[]`, and so does an empty `items` (the sorted list is empty). When `n` is at least the number of distinct items there is nothing beyond the slice to extend, so return `ranked[:n]` straight away.
 ```python
@@ -100,16 +100,16 @@ if not ranked or not include_ties or n >= len(ranked):
     return ranked[:n]
 ```
 
---- quiz
+--- quiz #card-57d504a203685268
 `ranked` has 4 entries. What does `ranked[:10]` return?
 - [x] All 4 entries
 - [ ] `IndexError`
 - [ ] 4 entries padded with `None`
 > Slicing never raises for a stop beyond the end; it stops at the last item. That is why "n larger than distinct items" needs no special code.
 
---- exercise 10.7
+--- exercise 10.7 #card-26e5108cea5855d0
 
---- recap
+--- recap #card-91fd97806db3565c
 - `Counter.most_common` orders ties by first appearance, so output depends on input order.
 - `sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))` makes ties alphabetical.
 - To include ties, read the n-th count and extend while the next count equals it.

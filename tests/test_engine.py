@@ -464,20 +464,20 @@ class TestBackupRestore(unittest.TestCase):
 class TestLessons(unittest.TestCase):
     SAMPLE = """# Sample
 
---- teach
+--- teach #fixture-card-1
 ### One idea
 Text.
 ```python
 x = 1
 ```
 
---- quiz
+--- quiz #fixture-card-2
 Pick one
 - [ ] no
 - [x] yes
 > because
 
---- predict
+--- predict #fixture-card-3
 What prints?
 ```python
 print(7 // 2)
@@ -485,7 +485,7 @@ print(7 // 2)
 answer: 3 | 3.0
 > floor
 
---- fill
+--- fill #fixture-card-4
 Blank
 ```python
 name = raw.___()
@@ -493,9 +493,9 @@ name = raw.___()
 answer: strip
 > strip
 
---- exercise 1.1
+--- exercise 1.1 #fixture-card-5
 
---- recap
+--- recap #fixture-card-6
 - done
 """
 
@@ -545,15 +545,15 @@ answer: strip
 
     def test_card_progress_xp(self):
         p = Progress(self.tmp / "p.json")
-        self.assertEqual(p.record_card("1.1", 1, checkable=True, correct=True), 1)
-        self.assertEqual(p.record_card("1.1", 1, checkable=True, correct=True), 0)   # no double xp
-        self.assertEqual(p.record_card("1.1", 2, checkable=True, correct=False), 0)
-        self.assertFalse(p.card_state("1.1", 2)["done"])
-        self.assertEqual(p.record_card("1.1", 2, checkable=True, correct=True), 0)   # second try: done, no xp
-        self.assertTrue(p.card_state("1.1", 2)["done"])
-        self.assertEqual(p.record_card("1.1", 3, checkable=True, correct=False), 0)
-        self.assertEqual(p.record_card("1.1", 3, checkable=True, correct=False), 0)
-        self.assertTrue(p.card_state("1.1", 3)["done"])   # two misses: move on
+        self.assertEqual(p.record_card("1.1", self.lesson.cards[1].id, checkable=True, correct=True), 1)
+        self.assertEqual(p.record_card("1.1", self.lesson.cards[1].id, checkable=True, correct=True), 0)   # no double xp
+        self.assertEqual(p.record_card("1.1", self.lesson.cards[2].id, checkable=True, correct=False), 0)
+        self.assertFalse(p.card_state("1.1", self.lesson.cards[2].id)["done"])
+        self.assertEqual(p.record_card("1.1", self.lesson.cards[2].id, checkable=True, correct=True), 0)   # second try: done, no xp
+        self.assertTrue(p.card_state("1.1", self.lesson.cards[2].id)["done"])
+        self.assertEqual(p.record_card("1.1", self.lesson.cards[3].id, checkable=True, correct=False), 0)
+        self.assertEqual(p.record_card("1.1", self.lesson.cards[3].id, checkable=True, correct=False), 0)
+        self.assertTrue(p.card_state("1.1", self.lesson.cards[3].id)["done"])   # two misses: move on
         self.assertEqual(p.xp, 1)
         done, total, complete = p.lesson_progress(self.lesson)
         self.assertEqual((done, total, complete), (3, 6, False))
@@ -562,11 +562,11 @@ answer: strip
 class TestCodeCards(unittest.TestCase):
     SRC = """# Code
 
---- teach
+--- teach #fixture-card-7
 ### Idea
 Text.
 
---- code
+--- code #fixture-card-8
 Print the hostname in lowercase.
 ```python
 hostname = "MBP-J-DOE"
@@ -576,7 +576,7 @@ check: hostname == "MBP-J-DOE"
 solution: print(hostname.lower())
 > lower() returns a lowercase copy.
 
---- code
+--- code #fixture-card-9
 Set `n` to the number of characters in `serial`.
 ```python
 serial = "C02XG1234ABC"
@@ -585,13 +585,13 @@ check: n == 12
 solution: n = len(serial)
 > len counts characters.
 
---- quiz
+--- quiz #fixture-card-10
 Q
 - [x] a
 - [ ] b
 > e
 
---- exercise 1.1
+--- exercise 1.1 #fixture-card-11
 """
 
     def setUp(self):

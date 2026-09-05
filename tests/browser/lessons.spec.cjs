@@ -41,7 +41,7 @@ async function startAtExercise(page, { solved = false, recapDone = false } = {})
     saved.cards = {};
     lesson.cards.forEach((card, index) => {
       if (card.kind !== "exercise" && (card.kind !== "recap" || recapDone)) {
-        saved.cards[lesson.id + ":" + index] = { done: true, correct: null, tries: 0 };
+        saved.cards[card.id] = { done: true, correct: null, tries: 0 };
       }
     });
     if (solved) saved.solved = { "1.1": { passed_at: "2026-01-01T12:00:00Z", xp: 3 } };
@@ -134,8 +134,8 @@ test("skipping stays available and the missing exercise completes after its reca
   await expect(page.getByRole("heading", { name: "Cards done" })).toBeVisible();
   const saved = await progress(page);
   expect(saved.solved["1.1"]).toBeUndefined();
-  const exerciseIndex = await page.evaluate(() => window.COURSE_DATA.parts[0].lessons[0].cards.findIndex((card) => card.kind === "exercise"));
-  expect(saved.cards["1.1:" + exerciseIndex]).toBeUndefined();
+  const exerciseId = await page.evaluate(() => window.COURSE_DATA.parts[0].lessons[0].cards.find((card) => card.kind === "exercise").id);
+  expect(saved.cards[exerciseId]).toBeUndefined();
   await page.getByRole("link", { name: "Do exercise 1.1" }).click();
   await passExercise(page);
   await expect(page.getByRole("link", { name: /^Continue: Lesson 1\.2 / })).toBeVisible();

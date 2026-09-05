@@ -1,6 +1,6 @@
 # Your first class
 
---- teach
+--- teach #card-7f02d50716cb544e
 ### A class is a blueprint; `__init__` fills it in
 `class Device:` declares a new type. `__init__` is the method Python runs when you build one with `Device(...)`. Its first parameter, `self`, is the object being built; `self.hostname = ...` stores a value on that object as an attribute. Normalise input here, once, so no other code has to.
 ```python
@@ -13,7 +13,7 @@ d = Device("  MBP-J-DOE ", "C02XG1234ABC")
 ```
 You never pass `self` yourself; Python fills it in.
 
---- code
+--- code #card-28e635317201504d
 Write the body of `__init__` (indented eight spaces): store `hostname` stripped and lowercased, and `serial` exactly as given.
 ```python
 class Device:
@@ -25,7 +25,7 @@ solution:         self.hostname = hostname.strip().lower()
 solution:         self.serial = serial
 > Each `self.name = value` line creates an attribute on the new object. The clean-up happens once here, so every later read of `hostname` is already normalised.
 
---- teach
+--- teach #card-dbaba77ef157527f
 ### Methods are functions that get `self`
 Any `def` inside the class body is a method. Call it with a dot and Python passes the object as `self`, so the method can read its own attributes.
 ```python
@@ -39,7 +39,7 @@ class Device:
 ```
 `d.describe()` and `Device.describe(d)` are the same call. That is all `self` is: the first argument.
 
---- fill
+--- fill #card-bb7aa0c7f1135b8d
 Complete the method so it reads the object's own attribute.
 ```python
 def describe(self):
@@ -48,7 +48,7 @@ def describe(self):
 answer: self
 > Inside a method, attributes live on `self`. A bare `hostname` would be an undefined name.
 
---- teach
+--- teach #card-b490cfee66935e39
 ### `__repr__`: how the object prints
 Without it, printing `d` shows `<Device object at 0x10ad0c1f0>`. Define `__repr__` to return the constructor call that would rebuild the object. The `!r` in the f-string uses `repr()` on the value, so strings keep their quotes and numbers do not get any.
 ```python
@@ -60,7 +60,7 @@ Device(hostname='mbp-j-doe', serial='C02XG1234ABC')
 ```
 Methods whose names start and end with two underscores are "dunders": Python calls them for you at the right moment.
 
---- code
+--- code #card-879fd1895d73524a
 Add a `__repr__` method to the class (indented four spaces) so that `repr(Device("C02X"))` is `Device(serial='C02X')`.
 ```python
 class Device:
@@ -72,7 +72,7 @@ solution:     def __repr__(self):
 solution:         return f"Device(serial={self.serial!r})"
 > `!r` is what puts the quotes around the serial. Without it the output would be `Device(serial=C02X)`, which is not valid Python.
 
---- teach
+--- teach #card-63b503fba5e25e66
 ### `__eq__`: what `==` means for your type
 By default two objects are equal only when they are the same object. Override `__eq__` to say what equal means in your domain: same serial, same device. For anything that is not a Device, return `NotImplemented`; Python then tries the other side and finally answers `False` instead of crashing.
 ```python
@@ -83,14 +83,14 @@ def __eq__(self, other):
 ```
 `isinstance(x, Device)` asks whether `x` was built by `Device` (or a subclass of it).
 
---- quiz
+--- quiz #card-db7fbcb026c85b12
 `Device.__eq__` is called with `other = "C02XG1234ABC"`, a plain string. What should it return?
 - [ ] `False`
 - [x] `NotImplemented`
 - [ ] `self.serial == other`
 > `NotImplemented` lets Python try `other.__eq__` and then fall back to `False`. Returning `False` directly usually works but breaks symmetry with other types; comparing the serial to a string would make a device equal to a piece of text.
 
---- teach
+--- teach #card-a281e4fd01865f94
 ### `__hash__`: earn your place in a set
 Defining `__eq__` silently sets `__hash__` to `None`, so your objects can no longer be set members or dict keys. Add `__hash__` back, and hash on the same fields you compare, so equal objects always share a hash.
 ```python
@@ -102,16 +102,16 @@ def __hash__(self):
 ```
 Hash only on fields that never change. The rule is: equal objects must have equal hashes.
 
---- quiz
+--- quiz #card-06d74b9150765f9c
 `__eq__` compares serials. Which `__hash__` keeps sets and dicts working correctly?
 - [ ] `return hash(self.hostname)`
 - [x] `return hash(self.serial)`
 - [ ] `return id(self)`
 > Equal objects must hash equal. Two devices with the same serial but different hostnames are equal, so hashing on hostname or identity would put "equal" objects in different buckets and a set would keep both.
 
---- exercise 8.1
+--- exercise 8.1 #card-c27d64d04689583b
 
---- recap
+--- recap #card-75bac96c672a5d95
 - `class` declares a type; `__init__` builds each object and stores attributes on `self`.
 - Methods get `self` first; call them with a dot.
 - `__repr__` returns the rebuilding constructor call; `!r` quotes strings.

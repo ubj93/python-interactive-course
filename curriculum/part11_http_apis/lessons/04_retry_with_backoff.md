@@ -1,6 +1,6 @@
 # Retry with backoff
 
---- teach
+--- teach #card-2e2962f421ca54db
 ### Exponential backoff, capped
 When a server says "not now" (429) or is broken (5xx), wait and try again, waiting longer each time so it gets breathing room. Attempt `k` waits `base * 2 ** k`, and `min(cap, ...)` stops attempt 20 from waiting a week. Jitter adds a random fraction so a thousand laptops that got throttled together do not all retry in the same second.
 ```python
@@ -10,7 +10,7 @@ def backoff_delay(attempt, base=0.5, cap=30.0, jitter=0.0, rand=random.random):
 ```
 With `jitter=0.0` the result is exact: 0.5, 1, 2, 4, 8, 16, 30, 30, ...
 
---- code
+--- code #card-699502f4cb8e5fb5
 Write `backoff_delay(attempt, base=0.5, cap=30.0)` returning `min(cap, base * 2 ** attempt)`, then print the delays for attempts 0 to 6 as a list.
 ```python
 # your code here
@@ -21,7 +21,7 @@ solution:     return min(cap, base * 2 ** attempt)
 solution: print([backoff_delay(k) for k in range(7)])
 > The delay doubles each attempt until `0.5 * 64 = 32.0` would exceed the cap, so attempt 6 gives 30.0.
 
---- predict
+--- predict #card-7f153ecc0229597a
 What does this print?
 ```python
 print(min(30.0, 0.5 * 2 ** 3))
@@ -29,7 +29,7 @@ print(min(30.0, 0.5 * 2 ** 3))
 answer: 4.0
 > `2 ** 3` is 8, times 0.5 is 4.0, well under the cap. The cap only bites from attempt 6 onward.
 
---- fill
+--- fill #card-2a2d3a802a245d15
 Complete the line so the delay never exceeds `cap`.
 ```python
 delay = min(___, base * 2 ** attempt)
@@ -37,7 +37,7 @@ delay = min(___, base * 2 ** attempt)
 answer: cap
 > `min` picks the smaller of the cap and the doubled delay, so growth stops at the cap.
 
---- teach
+--- teach #card-2ea1e207caa25988
 ### Which responses to retry
 Retry only what might succeed next time: 429, any 500 to 599, and `OSError` from `send` (connection errors are subclasses). Everything else, including 404 and 401, comes back immediately: retrying a 400 with the same body is just a slower 400.
 ```python
@@ -46,14 +46,14 @@ def _retryable(response):
 ```
 A response here is any object with `.status` (an int) and `.headers` (a dict).
 
---- quiz
+--- quiz #card-1be468f07b6557c7
 Which of these responses should be retried?
 - [ ] 404
 - [ ] 401
 - [x] 503
 > 503 is the server's problem and may clear up. 404 and 401 will not change on their own; return them at once.
 
---- teach
+--- teach #card-792a94b7320554a4
 ### Inject `sleep` and `rand`
 A retry loop that calls `time.sleep` makes a test wait for real, and one that calls `random.random` gives a different delay every run. So both come in as parameters, with the real ones as defaults. A test passes a recorder for `sleep` and asserts on the list of delays instead of waiting for them, and `rand=lambda: 0.5` to pin the jitter.
 ```python
@@ -66,7 +66,7 @@ retry_with_backoff(send, sleep=delays.append)
 assert delays == [0.5, 1.0]
 ```
 
---- code
+--- code #card-e28d57e5b4bb56e6
 Call `wait_all([0.5, 1.0, 2.0], sleep=...)` with a `sleep` that appends to a list instead of waiting, then print that list.
 ```python
 def wait_all(delays, sleep):
@@ -79,7 +79,7 @@ solution: wait_all([0.5, 1.0, 2.0], sleep=recorded.append)
 solution: print(recorded)
 > `recorded.append` is a one-argument callable, exactly the shape `sleep` needs. The test finishes instantly and can assert on the delays.
 
---- predict
+--- predict #card-80b3b49169ac5aad
 What does this print?
 ```python
 delays = []
@@ -91,7 +91,7 @@ print(delays)
 answer: [0.5, 1.0, 2.0]
 > `delays.append` is a function that takes one argument, so it stands in for `sleep` and records instead of waiting.
 
---- teach
+--- teach #card-42c2de9fd9c251a0
 ### The loop
 Check `max_attempts < 1` first and raise `ValueError` before touching `send`. Then loop once per attempt: call `send`, treating `OSError` as a failure with no response; return a non-retryable response at once; if this was the last attempt, stop without sleeping; otherwise sleep a numeric `Retry-After` from the failed response if there is one, else `backoff_delay(attempt, ...)`. After the loop raise `RetryError` with `.response` (the last response, or `None` after an exception) and `.attempts`.
 ```python
@@ -110,16 +110,16 @@ for attempt in range(max_attempts):
 raise RetryError("gave up", response=last, attempts=max_attempts)
 ```
 
---- quiz
+--- quiz #card-0ab841eeeac55b95
 `max_attempts=3` and every `send()` returns 503. How many times is `sleep` called?
 - [ ] 3
 - [x] 2
 - [ ] 1
 > There is a sleep between attempts, not after the last one. Three attempts have two gaps, then `RetryError` is raised.
 
---- exercise 11.4
+--- exercise 11.4 #card-880fd65ddf895dc7
 
---- recap
+--- recap #card-3f925a55bc2753bf
 - `delay = min(cap, base * 2 ** attempt)`, plus `delay * jitter * rand()`.
 - Retry 429, 5xx and `OSError`; return everything else immediately.
 - Inject `sleep` and `rand`; tests record delays instead of waiting.

@@ -1,6 +1,6 @@
 # Functions are values
 
---- teach
+--- teach #card-14005b0fa0515ea8
 ### A function name without parentheses is a value
 `str.strip` is the function; `str.strip()` calls it. You can store the function in a variable, put it in a list, or pass it to another function. Add the parentheses only when you want it to run.
 ```python
@@ -13,7 +13,7 @@
 ```
 `[str.strip()]` is the classic slip: it calls with no argument and crashes.
 
---- code
+--- code #card-7bf6f04b00205230
 Set `steps` to a list holding the `str.strip` and `str.lower` functions (not called), then set `value` by applying each step to `raw` in a loop.
 ```python
 raw = "  MBP-J-DOE "
@@ -26,7 +26,7 @@ solution: for step in steps:
 solution:     value = step(value)
 > The list stores the functions themselves; the loop adds the parentheses, calling each one with the current value.
 
---- predict
+--- predict #card-422da16d0b2c5437
 What does this print?
 ```python
 def double(n):
@@ -38,7 +38,7 @@ print(f(4))
 answer: 8
 > `f = double` gives the same function a second name. Calling `f(4)` runs `double`'s body.
 
---- teach
+--- teach #card-86fcba20164c5bea
 ### `callable` checks before you trust
 `callable(x)` is True when `x` can be called: functions, methods, `len`, `str.strip`. Strings and `None` are not callable. Check every argument up front and raise `TypeError`, so a misplaced `"strip"` fails where it was written, not later in the middle of a pipeline.
 ```python
@@ -48,7 +48,7 @@ True
 False
 ```
 
---- fill
+--- fill #card-236f1ff33136504d
 Complete the check so a non-function argument is rejected.
 ```python
 for f in funcs:
@@ -58,7 +58,7 @@ for f in funcs:
 answer: callable
 > `callable(f)` is the built-in test. `TypeError` is right because the argument is the wrong kind of thing, not a bad value of the right kind.
 
---- teach
+--- teach #card-3ec9f24408e35c7f
 ### A function can build and return another function
 Define an inner function inside the outer one and `return` it, without calling it. The inner function keeps using the outer function's variables even after the outer has returned. That is a closure.
 ```python
@@ -73,7 +73,7 @@ def make_adder(k):
 ```
 Every call to `make_adder` makes a fresh `add` with its own `k`, so `make_adder(1)` and `make_adder(10)` do not interfere.
 
---- code
+--- code #card-83d1a816de68599a
 Write the body of `make_multiplier(k)`: it returns a function that multiplies its argument by `k`. Then print `make_multiplier(3)(5)`.
 ```python
 def make_multiplier(k):
@@ -86,7 +86,7 @@ solution:     return multiply
 solution: print(make_multiplier(3)(5))
 > The inner `multiply` remembers `k` after `make_multiplier` has returned. `make_multiplier(3)` is a function; calling it with 5 gives 15.
 
---- predict
+--- predict #card-ab3104e2c87954c1
 What does this print?
 ```python
 def make_prefixer(prefix):
@@ -100,7 +100,7 @@ print(tag("doe"))
 answer: mbp-doe
 > `make_prefixer("mbp-")` returns the inner `prefixer`, which remembers `prefix`. Calling it joins the two strings.
 
---- teach
+--- teach #card-caf90d76e13656c0
 ### Right to left with `reversed`
 `compose(f, g, h)(x)` must be `f(g(h(x)))`: the last function runs first. `reversed(funcs)` walks a sequence backwards. Inside the inner function, start with `x` and apply each function to the running result.
 ```python
@@ -111,16 +111,16 @@ def composed(x):
 ```
 With no functions at all, the loop does nothing and `x` comes back unchanged: the identity function, for free.
 
---- quiz
+--- quiz #card-2628a1083243564a
 What is `compose(lambda x: x + 1, lambda x: x * 10)(4)`?
 - [ ] `50`
 - [x] `41`
 - [ ] `14`
 > The last function runs first: `4 * 10` is `40`, then `+ 1` gives `41`. Applying them left to right would give `50`.
 
---- exercise 3.4
+--- exercise 3.4 #card-030d623540f55930
 
---- recap
+--- recap #card-1c2ce2d13ad154f9
 - A function without `()` is a value you can store and pass.
 - `callable(x)` tests it; raise `TypeError` for anything else.
 - An inner function returned from an outer one keeps the outer's variables (a closure).

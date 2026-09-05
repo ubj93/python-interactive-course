@@ -1,6 +1,6 @@
 # Reading rate-limit headers
 
---- teach
+--- teach #card-e83972eccbd558b0
 ### What the server tells you
 APIs report your quota in response headers: `X-RateLimit-Remaining` (requests left), `X-RateLimit-Reset` (a unix timestamp, seconds since 1970, when the quota refills) and, with a 429, `Retry-After` (seconds to wait). The exercise packs the answer into a `namedtuple`, a tuple whose fields have names.
 ```python
@@ -14,7 +14,7 @@ RateLimit(remaining=None, reset_in=None)
 ```
 `None` means "the server did not say".
 
---- teach
+--- teach #card-b2aa63a9d1795def
 ### Header names are case-insensitive
 HTTP does not care whether it is `X-RateLimit-Reset` or `x-ratelimit-reset`, and different libraries hand you different spellings. So never `headers["X-RateLimit-Reset"]`. Either loop and compare with `.lower()`, or lowercase all the keys once and use `.get`. Values are strings and may carry whitespace.
 ```python
@@ -26,7 +26,7 @@ def _header(headers, name):
     return None
 ```
 
---- code
+--- code #card-e0d45972dfd15eb7
 Write `get_header(headers, name)` that returns the value whose key matches `name` ignoring case, or `None`. Then print `get_header(headers, "retry-after")`.
 ```python
 headers = {"Content-Type": "application/json", "Retry-After": "30"}
@@ -41,7 +41,7 @@ solution:     return None
 solution: print(get_header(headers, "retry-after"))
 > Lowercasing both sides makes `"Retry-After"` match `"retry-after"`. Falling off the end of the loop returns `None` for a header that is not there.
 
---- predict
+--- predict #card-928cc61d29b754a8
 What does this print?
 ```python
 headers = {"X-RateLimit-Remaining": " 3 "}
@@ -51,7 +51,7 @@ print(lowered.get("x-ratelimit-remaining").strip())
 answer: 3
 > Lowercasing the keys once makes any spelling match; `strip()` removes the padding around the value.
 
---- teach
+--- teach #card-677e2218716b5cbe
 ### "A number, or None"
 A header value like `"lots"` is not an error in your code; it is a server you cannot trust. Try to convert, and turn failure into `None`, so the rest of the function only deals with numbers or "missing". One tiny helper keeps every call site clean.
 ```python
@@ -65,7 +65,7 @@ def _number(text):
 ```
 `remaining` is an int, so wrap it: `int(value)` when the value is not `None`.
 
---- code
+--- code #card-3d8f4540893d5949
 Write `to_number(text)` that returns `float(text.strip())`, or `None` when `text` is `None` or not numeric. Then print `to_number(" 12 ")`.
 ```python
 # your code here
@@ -83,7 +83,7 @@ solution:         return None
 solution: print(to_number(" 12 "))
 > The `None` guard comes first because `None.strip()` would raise `AttributeError`, not `ValueError`. The `try` turns `"soon"` into `None`.
 
---- fill
+--- fill #card-6e28e7a4db3b5796
 Complete the helper so a non-numeric value counts as missing.
 ```python
 try:
@@ -94,7 +94,7 @@ except ___:
 answer: ValueError
 > `float("soon")` raises `ValueError`. Catching exactly that, and nothing wider, turns garbage into `None` without hiding real bugs.
 
---- teach
+--- teach #card-bd476e5c27305c55
 ### `Retry-After` wins; clamp the rest
 If the server sends `Retry-After`, that is an instruction: `reset_in` is that number. Otherwise compute `reset - now`, where `now` is injected as a float unix timestamp (the same idea as the injected `now` in lesson 10.1; never call `time.time()` yourself). A reset time already in the past would go negative, so clamp with `max(0.0, ...)`.
 ```python
@@ -106,7 +106,7 @@ else:
     reset_in = max(0.0, reset_at - now) if reset_at is not None else None
 ```
 
---- predict
+--- predict #card-d1d02d5bbb665372
 What does this print?
 ```python
 reset_at, now = 1000.0, 1200.0
@@ -115,7 +115,7 @@ print(max(0.0, reset_at - now))
 answer: 0.0
 > The reset was 200 seconds ago. `max(0.0, -200.0)` clamps it to zero: there is nothing to wait for.
 
---- teach
+--- teach #card-75d04ebe9d1457e7
 ### When to actually wait
 `wait_seconds` turns the parsed values into a sleep: wait `reset_in` when the server sent `Retry-After`, or when `remaining` is 0 or below. In every other case, including `reset_in` being `None`, return `0.0`.
 ```python
@@ -128,16 +128,16 @@ def wait_seconds(headers, now):
 ```
 `rl.reset_in or 0.0` covers the `None` case in one expression.
 
---- quiz
+--- quiz #card-3181c60eb7dc59d7
 Headers are `{"X-RateLimit-Remaining": "0"}` and nothing else. What does `wait_seconds` return?
 - [ ] `None`
 - [ ] It raises `ValueError`
 - [x] `0.0`
 > Nothing is left, so we would wait, but there is no reset time, so `reset_in` is `None` and `None or 0.0` gives `0.0`.
 
---- exercise 11.2
+--- exercise 11.2 #card-5b13e1213da4589d
 
---- recap
+--- recap #card-177018a76f735803
 - A `namedtuple` is a tuple with named fields; `None` means "not sent".
 - Match header names case-insensitively; values are strings with possible whitespace.
 - Convert with `try: float(...) except ValueError: None`; garbage means missing.

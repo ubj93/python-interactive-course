@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 from course.catalog import KYU_XP, all_exercises, find_exercise, find_part, load_catalog, total_xp  # noqa: E402
 from course.runner import run_code_card, run_solution, run_tests  # noqa: E402
-from course.lessons import load_lessons, validate_lesson  # noqa: E402
+from course.lessons import load_lessons, validate_lesson, validate_card_ids  # noqa: E402
 
 FORBIDDEN_IMPORTS = re.compile(r"^\s*(?:import|from)\s+(requests|numpy|pandas|pytest|yaml|httpx|aiohttp)\b", re.M)
 NETWORK_CALLS = re.compile(r"urllib\.request\.urlopen\(|socket\.create_connection\(|http\.client\.HTTPS?Connection\(")
@@ -91,6 +91,7 @@ def main(argv: list) -> int:
     ids = [e.id for e in all_exercises(catalog)]
     if len(ids) != len(set(ids)):
         problems.append("duplicate exercise ids")
+    problems.extend(validate_card_ids([lesson for part in catalog for lesson in load_lessons(part)]))
     lesson_xp = 0
     for part in catalog:
         if not part.lesson_file.exists():

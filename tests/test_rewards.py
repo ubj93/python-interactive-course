@@ -16,6 +16,10 @@ from course.catalog import Exercise
 from course.cli import App
 from course.progress import Progress
 from course.workspace import Workspace
+from course.card_ids import LEGACY_CARD_IDS
+
+FIRST = LEGACY_CARD_IDS["1.1:0"]
+SECOND = LEGACY_CARD_IDS["1.1:1"]
 
 
 class TestRewardHistory(unittest.TestCase):
@@ -24,21 +28,21 @@ class TestRewardHistory(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / 'progress.json'
         self.p = Progress(self.path)
-        self.lesson = SimpleNamespace(id='1.1', cards=[None])
+        self.lesson = SimpleNamespace(id='1.1', cards=[SimpleNamespace(id=FIRST)])
 
     def test_restart_and_reload_do_not_repeat_card_xp(self):
-        self.assertEqual(self.p.record_card('1.1', 0, True, True), 1)
+        self.assertEqual(self.p.record_card('1.1', FIRST, True, True), 1)
         self.p.restart_lesson(self.lesson)
         self.p = Progress(self.path)
-        self.assertFalse(self.p.card_state('1.1', 0)['done'])
-        self.assertEqual(self.p.record_card('1.1', 0, True, True), 0)
-        self.assertTrue(self.p.card_state('1.1', 0)['done'])
+        self.assertFalse(self.p.card_state('1.1', FIRST)['done'])
+        self.assertEqual(self.p.record_card('1.1', FIRST, True, True), 0)
+        self.assertTrue(self.p.card_state('1.1', FIRST)['done'])
         self.assertEqual(self.p.xp, 1)
 
     def test_restart_after_a_miss_does_not_create_another_first_attempt(self):
-        self.p.record_card('1.1', 0, True, False)
+        self.p.record_card('1.1', FIRST, True, False)
         self.p.restart_lesson(self.lesson)
-        self.assertEqual(self.p.record_card('1.1', 0, True, True), 0)
+        self.assertEqual(self.p.record_card('1.1', FIRST, True, True), 0)
         self.assertEqual(self.p.xp, 0)
 
     def test_legacy_attempts_are_migrated_without_recalculating_xp(self):
@@ -47,23 +51,23 @@ class TestRewardHistory(unittest.TestCase):
                 self.path.write_text(json.dumps({'xp': 71, 'cards': {'1.1:0': {'done': tries > 1 or correct, 'correct': correct, 'tries': tries}}}))
                 p = Progress(self.path)
                 p.restart_lesson(self.lesson)
-                self.assertEqual(p.record_card('1.1', 0, True, True), 0)
+                self.assertEqual(p.record_card('1.1', FIRST, True, True), 0)
                 self.assertEqual(p.xp, 71)
                 self.assertTrue(p.data['card_reward_history']['1.1:0'])
 
     def test_browser_reward_history_survives_cli_import(self):
         self.path.write_text(json.dumps({'xp': 14, 'cards': {}, 'card_reward_history': {'1.1:0': True}}))
         p = Progress(self.path)
-        self.assertEqual(p.record_card('1.1', 0, True, True), 0)
+        self.assertEqual(p.record_card('1.1', FIRST, True, True), 0)
         self.assertEqual(p.xp, 14)
-        self.assertEqual(p.record_card('1.1', 1, True, True), 1)
+        self.assertEqual(p.record_card('1.1', SECOND, True, True), 1)
 
     def test_lesson_activity_earns_week_and_month_badges(self):
         today = dt.date.today()
         for length, badge in ((7, 'week_streak'), (30, 'month_streak')):
             with self.subTest(length=length):
                 self.p.data['days'] = [(today - dt.timedelta(days=d)).isoformat() for d in range(1, length)]
-                self.p.record_card('1.1', 0, False)
+                self.p.record_card('1.1', FIRST, False)
                 self.assertIn(badge, self.p.data['badges'])
                 self.assertNotIn('first_blood', self.p.data['badges'])
                 self.assertEqual(self.p.xp, 0)

@@ -8,21 +8,21 @@ A lesson file is a title line followed by cards separated by ``--- <type>`` line
 
     # Values and names
 
-    --- teach
+    --- teach #example-card-1
     ### A name is a label on a value
     Two or three sentences. Then a snippet.
     ```python
     ram_gb = 16
     ```
 
-    --- quiz
+    --- quiz #example-card-2
     What does `type(16)` return?
     - [ ] `<class 'str'>`
     - [x] `<class 'int'>`
     - [ ] `16`
     > `16` is a whole number, so Python calls it an int.
 
-    --- predict
+    --- predict #example-card-3
     What does this print?
     ```python
     print(7 // 2)
@@ -30,7 +30,7 @@ A lesson file is a title line followed by cards separated by ``--- <type>`` line
     answer: 3
     > `//` is floor division: it throws away the remainder.
 
-    --- fill
+    --- fill #example-card-4
     Complete the line so `name` has no surrounding spaces.
     ```python
     name = raw.___()
@@ -38,12 +38,12 @@ A lesson file is a title line followed by cards separated by ``--- <type>`` line
     answer: strip
     > strip() removes whitespace from both ends.
 
-    --- exercise 1.1
+    --- exercise 1.1 #example-card-5
 
-    --- recap
+    --- recap #example-card-6
     - bullets that summarise the lesson
 
-    --- code
+    --- code #example-card-7
     Print the hostname in lowercase.
     ```python
     hostname = "MBP-J-DOE"
@@ -68,9 +68,10 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from .catalog import Part
+from .card_ids import CARD_ID_PATTERN
 
 _LESSON_FILE_RE = re.compile(r"^(\d{2})_([a-z0-9_]+)\.md$")
-_CARD_RE = re.compile(r"^---\s+(teach|quiz|predict|fill|code|exercise|recap)(?:\s+(\S+))?\s*$")
+_CARD_RE = re.compile(r"^---\s+(teach|quiz|predict|fill|code|exercise|recap)(?:\s+(?!#)(\S+))?(?:\s+#(\S+))?\s*$")
 _OPTION_RE = re.compile(r"^- \[([ xX])\]\s+(.*)$")
 _ANSWER_RE = re.compile(r"^answer:\s*(.+?)\s*$")
 _EXPECT_RE = re.compile(r"^expect:\s*(.*?)\s*$")
@@ -100,6 +101,7 @@ class Card:
     expect: Optional[str] = None                        # code: exact stdout (stripped)
     checks: List[str] = field(default_factory=list)    # code: expressions that must be true
     solution: str = ""                                  # code: model answer
+    id: str = ""                                        # stable authored identity
 
     @property
     def checkable(self) -> bool:
@@ -214,7 +216,7 @@ def parse_lesson(path: Path, part_num: int, num: int, slug: str) -> Lesson:
         m = _CARD_RE.match(line)
         if m:
             finish()
-            current = Card(kind=m.group(1))
+            current = Card(kind=m.group(1), id=m.group(3) or "")
             if current.kind == "exercise":
                 current.exercise_id = m.group(2)
             body = []
@@ -317,8 +319,14 @@ def validate_lesson(lesson: Lesson, part: Part) -> List[str]:
     if not lesson.exercise_ids:
         problems.append(f"{tag} must end in an exercise card")
     ex_ids = {e.id for e in part.exercises}
+    seen_ids = set()
     for idx, c in enumerate(lesson.cards, 1):
         ctag = f"{tag} card {idx} ({c.kind})"
+        if not CARD_ID_PATTERN.fullmatch(c.id):
+            problems.append(f"{ctag} needs a valid stable #card-id")
+        elif c.id in seen_ids:
+            problems.append(f"{ctag} duplicates card ID {c.id}")
+        seen_ids.add(c.id)
         if c.kind in ("teach", "quiz", "predict", "fill", "code") and not c.body:
             problems.append(f"{ctag} is empty")
         if c.kind == "teach" and len(c.body.split()) > 170:
@@ -346,4 +354,19 @@ def validate_lesson(lesson: Lesson, part: Part) -> List[str]:
                 problems.append(f"{ctag} references unknown exercise '{c.exercise_id}'")
             if idx != len(lesson.cards) and lesson.cards[idx].kind != "recap":
                 problems.append(f"{ctag} should be the last card (a recap may follow)")
+    return problems
+
+
+def validate_card_ids(lessons) -> List[str]:
+    """Card identities must also be unique across lessons and parts."""
+    seen = {}
+    problems = []
+    for lesson in lessons:
+        for card in lesson.cards:
+            if not CARD_ID_PATTERN.fullmatch(card.id):
+                problems.append(f"[lesson {lesson.id}] missing or invalid card ID {card.id!r}")
+            elif card.id in seen:
+                problems.append(f"Duplicate card ID {card.id} in lessons {seen[card.id]} and {lesson.id}")
+            else:
+                seen[card.id] = lesson.id
     return problems
