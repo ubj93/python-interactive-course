@@ -13,6 +13,18 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-05
+
+### Added
+- Keep saved answers and scratch practice in a separate learner workspace; grade
+  disposable copies with the course's tests and fixtures, including learner helper
+  modules. Add explicit, recoverable migration for older answers in curriculum.
+
+### Fixed
+- Back up workspace answers, scratch work and legacy recovery copies. Preflight
+  restores, preserve overwritten files, and keep recovery files out of Git.
+- Isolate backup tests from real curriculum and learner files.
+
 ## [0.3.5] - 2026-09-05
 
 ### Fixed
