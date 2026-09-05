@@ -18,6 +18,7 @@ from . import __version__
 from .catalog import Part, all_exercises, load_catalog
 from .workspace import Workspace, committed_starter, recovery_copy
 from .practice import SESSION_ID
+from .browser_backup import unpack_progress_document
 
 DEFAULT_DIR = Path.home() / "course-backups"
 _FILE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*\.py(?:\.bak\.[a-f0-9]{32})*")
@@ -188,8 +189,7 @@ def restore(archive: Path, progress_path: Path, force: bool = False,
         entries = manifest.get("exercises", [])
         if not exercises_only and "progress.json" in names:
             data = zf.read("progress.json")
-            if not isinstance(json.loads(data), dict):
-                raise ValueError("Invalid progress data: expected a JSON object")
+            unpack_progress_document(json.loads(data), allow_partial_legacy=True)
             staged.append(("progress", "progress.json", Path(progress_path), data, None))
         if not progress_only:
             for name in entries:

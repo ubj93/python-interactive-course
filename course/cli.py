@@ -25,10 +25,10 @@ from .sessions import normalize_session, session_summary
 
 
 class App:
-    def __init__(self) -> None:
+    def __init__(self, *, load_progress: bool = True) -> None:
         self.catalog = load_catalog()
         self.workspace = Workspace()
-        self.progress = Progress()
+        self.progress = Progress(load_existing=load_progress)
         self.lessons = load_all_lessons(self.catalog)
         self.total_xp = total_xp(self.catalog) + sum(l.xp for ls in self.lessons.values() for l in ls)
 
@@ -985,13 +985,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = ap.parse_args(argv)
     if args.no_color:
         ui.enable_color(False)
+    cmd = args.cmd or "status"
     try:
-        app = App()
+        # Backup and restore use the file bytes/path, including corrupt data that
+        # needs recovery. The incoming archive is validated before any restore.
+        app = App(load_progress=cmd not in ("backup", "restore"))
     except (OSError, ValueError) as e:
         App.die(str(e))
     if not app.catalog:
         App.die("No curriculum found. Run from the repository root.")
-    cmd = args.cmd or "status"
     handler = getattr(app, "cmd_" + cmd.replace("-", "_"))
     try:
         return int(handler(args) or 0)

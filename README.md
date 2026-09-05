@@ -167,6 +167,52 @@ containing curriculum answer paths are restored into the learner workspace. Rest
 never writes to curriculum files. Explicit backup ZIP filenames must be new; default
 backup filenames are unique.
 
+### Browser progress and code backups
+
+In **Profile → Back up progress and code**, choose **Export** and save the JSON as a file. The versioned
+backup includes all progress, exercise drafts, and guided code-card drafts, including
+older positional card drafts. Diagnostic and review code, reflections, and saved path
+activities travel inside progress. Keep the complete document when transferring it.
+
+To import, paste the JSON and choose **Import**. Review the XP, solved-exercise and
+draft changes, then choose **Replace progress and drafts** or **Cancel import**.
+Replacement uses the incoming progress and drafts in full; it does not merge them.
+A legacy progress-only JSON file instead offers **Replace progress only** and keeps
+all current browser drafts. Unsupported versions and invalid data are rejected
+before any saved data changes, and the pasted input stays available.
+
+Every confirmed import first saves a complete copy of the current data. **Recovery
+copies → Load recovery JSON for preview** lets you inspect and restore a previous
+copy through the same confirmation flow. If storage cannot hold a recovery copy,
+import stops. Failed writes restore the previous data; an interrupted import retries
+recovery on reload. If storage still prevents recovery, study stays paused and the
+recovery screen exposes the saved JSON and a **Retry recovery** button. Copy that
+JSON to a separate file before freeing browser storage. Recovery copies stay in this
+browser; export copies you need before clearing site data.
+
+The envelope uses `format: "python-cpe-course-backup"`, `version: 1`, an `exported_at`
+timestamp, nested `progress`, and a `drafts` map. Draft keys start with
+`cpe-course-draft:`; exercise keys and both stable and legacy `card:` keys are opaque
+identifiers, not filesystem paths. Unknown progress and envelope fields are retained.
+The terminal can use the same complete JSON file directly:
+
+```bash
+COURSE_PROGRESS=/path/to/browser-backup.json python3 course.py status
+COURSE_PROGRESS=/path/to/browser-backup.json python3 course.py learn
+```
+
+Terminal saves update nested progress while preserving the envelope, its metadata,
+and every browser draft. Import that entire updated file back into the browser.
+The CLI does not turn ordinary browser drafts into learner answer files; use the
+workspace for terminal answers. Diagnostic practice still initializes its separate
+copies from saved diagnostic drafts as described below. Terminal ZIP backup/restore
+also preserves the complete envelope. Study commands reject invalid JSON or an
+unsupported shape without rewriting the file. You can still back up the original
+bytes or restore a valid ZIP with `--force`, which keeps a recovery copy of the
+damaged file. Progress saves replace the file atomically after validation and a
+successful temporary write. Existing plain progress files continue to use their
+original format.
+
 ### Fundamentals diagnostic
 
 Start with six untimed problems (1.2, 1.3, 2.1, 2.2, 3.1, and 5.1) to choose
