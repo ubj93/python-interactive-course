@@ -216,6 +216,7 @@ class Progress:
                 self.data["xp"] = self.xp + 5
                 summary["daily_bonus"] = 5
             summary["new_badges"] = self._check_badges(ex, attempts, hints, seconds)
+        self._check_streak_badges(summary["new_badges"])
         self.save()
         return summary
 
@@ -265,14 +266,17 @@ class Progress:
             self._award("comeback", new)
         if ex.kyu <= 5 and ex.time_limit_min and seconds is not None and 0 <= seconds <= ex.time_limit_min * 60:
             self._award("speed_demon", new)
+        self._check_streak_badges(new)
+        if sum(1 for d in self.data["daily"].values() if d.get("done")) >= 5:
+            self._award("daily_5", new)
+        return new
+
+    def _check_streak_badges(self, new: List[str]) -> None:
         st = self.streak()
         if st >= 7:
             self._award("week_streak", new)
         if st >= 30:
             self._award("month_streak", new)
-        if sum(1 for d in self.data["daily"].values() if d.get("done")) >= 5:
-            self._award("daily_5", new)
-        return new
 
     def award_badge(self, name: str) -> bool:
         new: List[str] = []
@@ -289,6 +293,24 @@ class Progress:
         return self.data["daily"].get(_today())
 
     # ---- guided lessons -------------------------------------------
+    def _card_reward_history(self) -> dict:
+        """Remember consumed first-answer opportunities independently of replay.
+
+        Legacy card state cannot always reveal the exact XP originally earned,
+        so preserve total XP and only remember that an assessment already happened.
+        """
+        history = self.data.setdefault("card_reward_history", {})
+        for key, state in self.data.get("cards", {}).items():
+            if state.get("tries", 0) or state.get("correct") is not None:
+                history[key] = True
+        return history
+
+    def restart_lesson(self, lesson) -> None:
+        self._card_reward_history()
+        for i in range(len(lesson.cards)):
+            self.data.setdefault("cards", {}).pop(f"{lesson.id}:{i}", None)
+        self.save()
+
     def card_state(self, lesson_id: str, idx: int) -> dict:
         return self.data.setdefault("cards", {}).get(f"{lesson_id}:{idx}", {"done": False, "correct": None, "tries": 0})
 
@@ -302,9 +324,12 @@ class Progress:
         if today not in self.data["days"]:
             self.data["days"].append(today)
         if checkable:
+            history = self._card_reward_history()
+            first_assessment = key not in history
+            history[key] = True
             state["tries"] = int(state.get("tries", 0)) + 1
             if correct and not state["done"]:
-                if state["tries"] == 1:
+                if first_assessment and state["tries"] == 1:
                     xp = 1
                     self.data["xp"] = self.xp + xp
                 state["done"] = True
@@ -317,6 +342,7 @@ class Progress:
             state["done"] = True
         cards[key] = state
         self.data["last_lesson"] = lesson_id
+        self._check_streak_badges([])
         self.save()
         return xp
 

@@ -191,6 +191,9 @@ shows each test's one-line description, and trims tracebacks down to your code.
   hint −25%, peeking at the solution before passing ×0.1.
 - **Rank** is your share of the total XP: 8 kyu Help Desk → 1 kyu Principal CPE.
 - **Streaks** count days with at least one test run. **Badges** for milestones.
+- Lesson activity also keeps the streak and earns eligible streak badges. Restarting
+  a lesson replays its cards while preserving each card's first-answer reward
+  history and all earned XP. Watch mode starts grading after the next file save.
 - **Daily kata** picks one unsolved exercise near your frontier, deterministic per day.
 - **Mock interview** picks three problems from Part 9 onward and starts a 45-minute clock.
   Every round requires fresh passing runs, including for exercises solved before.
