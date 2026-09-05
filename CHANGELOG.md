@@ -13,6 +13,12 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-04
+
+### Changed
+- Make Todoist the authoritative product backlog in the README and repository agent
+  instructions, including task reuse, PR/release links and delivery status rules.
+
 ## [0.3.0] - 2026-09-02
 
 ### Added

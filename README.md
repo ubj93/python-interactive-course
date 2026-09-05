@@ -165,9 +165,16 @@ CI runs all three on Python 3.9 and 3.12.
 Versioning: MAJOR when saved progress or the exercise format breaks, MINOR for new
 parts, exercises, or commands, PATCH for fixes and wording.
 
-**Backlog** lives in Todoist, project *Python Interactive Course* (board view: Backlog
-→ In progress → In review (PR open) → Done). One task per PR-sized change; move it
-to "In review" when the PR opens and "Done" when the release tag exists.
+**Todoist is the authoritative product backlog**, in the personal
+[*Python Interactive Course* project](https://app.todoist.com/app/project/6hQCc7vr8jPJ4VV3).
+Use the board workflow: Backlog → In progress → In review (PR open) → Done.
+Keep priorities, scope, acceptance criteria, dependencies and delivery status there,
+with one task per PR-sized change. Update existing tasks instead of creating
+duplicates, and link each task to its PR and validation results. Move it to
+"In review" when the PR opens and "Done" after merging and confirming the release
+tag. GitHub is for code, PRs and releases; do not maintain a parallel product backlog
+in GitHub Issues, repository TODO/ROADMAP files or Codex tasks. Agent instructions
+and the Todoist project/section IDs are in [`AGENTS.md`](AGENTS.md).
 
 ## Layout
 
