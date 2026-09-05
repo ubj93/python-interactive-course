@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Tuple
 
 from .catalog import ROOT, Exercise, Part
 from .timestamps import elapsed_seconds, local_day, timestamp, timestamp_day, utc_now
+from .sessions import finish_session, new_session, normalize_session, record_attempt
 
 DEFAULT_PATH = ROOT / ".course_progress.json"
 
@@ -64,6 +65,7 @@ class Progress:
             "badges": {},      # name -> iso date earned
             "daily": {},       # date -> {"id": .., "done": bool}
             "interview": None, # {"ids": [...], "started": iso, "deadline": iso}
+            "last_interview": None, # frozen result of the most recently finished round
             "last": None,      # last exercise id touched
             "cards": {},       # "lesson_id:card_index" -> {"done": bool, "correct": bool|None, "tries": int}
             "last_lesson": None,
@@ -77,6 +79,9 @@ class Progress:
                 self.data.update(json.loads(self.path.read_text(encoding="utf-8")))
             except json.JSONDecodeError:
                 pass
+        session = normalize_session(self.data.get("interview"))
+        if session is not None:
+            self.data["interview"] = session
 
     def save(self) -> None:
         self.path.write_text(json.dumps(self.data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -184,6 +189,10 @@ class Progress:
         if today not in self.data["days"]:
             self.data["days"].append(today)
         self.data["attempts"][ex.id] = self.attempts(ex.id) + 1
+        session = self.active_interview()
+        if session is not None:
+            record_attempt(session, ex.id, passed, now)
+            self.data["interview"] = session
         summary = {"xp": 0, "notes": [], "new_badges": [], "already_solved": self.is_solved(ex.id), "daily_bonus": 0}
         if passed and not self.is_solved(ex.id):
             attempts = self.attempts(ex.id)
@@ -209,6 +218,33 @@ class Progress:
             summary["new_badges"] = self._check_badges(ex, attempts, hints, seconds)
         self.save()
         return summary
+
+    def active_interview(self) -> Optional[dict]:
+        session = normalize_session(self.data.get("interview"))
+        return session if session and session["kind"] == "interview" and session["status"] == "active" else None
+
+    def start_interview(self, ids: list, minutes: int) -> dict:
+        session = new_session(ids, minutes, now=utc_now())
+        # Explicitly starting over retains a reviewable result of the old round.
+        previous = self.active_interview()
+        if previous and self.finish_interview() is None:
+            raise ValueError("The current round cannot finish before its start or latest attempt. Check the device clock before starting another round.")
+        self.data["interview"] = session
+        self.save()
+        return session
+
+    def finish_interview(self) -> Optional[dict]:
+        session = self.active_interview()
+        finished = finish_session(session, utc_now()) if session else None
+        if finished is None:
+            return None
+        self.data["last_interview"] = finished
+        self.data["interview"] = None
+        summary = finished["summary"]
+        if summary["total"] and summary["on_time"] == summary["total"]:
+            self._award("interviewer", [])
+        self.save()
+        return finished
 
     def _award(self, name: str, new: List[str]) -> None:
         if name not in self.data["badges"]:

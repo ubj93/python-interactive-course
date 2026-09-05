@@ -128,6 +128,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-r
 const DATA = window.COURSE_DATA;
 const STORE_KEY = "cpe-course-progress-v1";
 const DRAFT_KEY = "cpe-course-draft:";
+const LEGACY_INTERVIEW_KEY = "cpe-course-interview";
 const ALL = [];
 const BY_ID = {};
 for (const p of DATA.parts) for (const e of p.exercises) { e.part = p; ALL.push(e); BY_ID[e.id] = e; }
@@ -165,14 +166,119 @@ function elapsedSeconds(value, now = Date.now()) {
   const seconds = (now - start.getTime()) / 1000;
   return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
 }
+// Portable practice sessions use attempt events, never lifetime solved flags.
+function sessionInstant(value, legacy = false) {
+  const date = legacy && typeof value === "number" && Number.isFinite(value) ? new Date(value) : parseTimestamp(value);
+  return date && Number.isFinite(date.getTime()) && date.getUTCFullYear() >= 1 && date.getUTCFullYear() <= 9999 ? date : null;
+}
+function normalizeSession(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const ids = value.ids;
+  if (!Array.isArray(ids) || !ids.length || ids.some((id) => typeof id !== "string" || !/^[1-9]\d*\.[1-9]\d*$/.test(id)) || new Set(ids).size !== ids.length) return null;
+  const legacy = !("version" in value) && !("attempts" in value);
+  if (!legacy && value.version !== 1) return null;
+  const started = sessionInstant(value.started, legacy), deadline = sessionInstant(value.deadline, legacy);
+  if (!started || !deadline || deadline <= started) return null;
+  const status = value.status === undefined ? "active" : value.status, kind = value.kind === undefined ? "interview" : value.kind;
+  if (!["active", "finished"].includes(status) || typeof kind !== "string" || !kind) return null;
+  const finished = status === "finished" ? sessionInstant(value.finished_at) : null;
+  if (status === "finished" && (!finished || finished < started)) return null;
+  const raw = legacy ? [] : value.attempts;
+  if (!Array.isArray(raw)) return null;
+  const attempts = [];
+  for (const event of raw) {
+    if (!event || typeof event !== "object" || !ids.includes(event.exercise_id) || typeof event.passed !== "boolean") continue;
+    const at = sessionInstant(event.at);
+    if (!at || at < started || (finished && at > finished)) continue;
+    attempts.push({ exercise_id: event.exercise_id, at: at.toISOString(), passed: event.passed });
+  }
+  const result = Object.assign({}, value, { version: 1, kind, ids: ids.slice(), started: started.toISOString(), deadline: deadline.toISOString(), status, attempts });
+  result.id = typeof value.id === "string" && value.id ? value.id : "legacy-" + result.started;
+  if (legacy) result.legacy = true;
+  if (finished) result.finished_at = finished.toISOString();
+  return result;
+}
+function newSession(ids, minutes, kind = "interview", now = Date.now()) {
+  if (typeof minutes !== "number" || !Number.isFinite(minutes) || minutes <= 0) return null;
+  const started = sessionInstant(now, true), deadline = sessionInstant(now + minutes * 60000, true);
+  if (!started || !deadline) return null;
+  return normalizeSession({ version: 1, id: `session-${now}-${Math.random().toString(36).slice(2)}`, kind, ids, started: started.toISOString(), deadline: deadline.toISOString(), status: "active", attempts: [] });
+}
+function recordSessionAttempt(session, exId, passed, at = nowIso()) {
+  const valid = normalizeSession(session), instant = sessionInstant(at);
+  if (!valid || valid.status !== "active" || !valid.ids.includes(exId) || !instant || instant < sessionInstant(valid.started)) return false;
+  Object.assign(session, valid);
+  session.attempts.push({ exercise_id: exId, at: instant.toISOString(), passed: !!passed });
+  return true;
+}
+function sessionSummary(session) {
+  const valid = normalizeSession(session);
+  if (!valid) return null;
+  const deadline = sessionInstant(valid.deadline);
+  const results = valid.ids.map((id) => {
+    const events = valid.attempts.filter((event) => event.exercise_id === id);
+    const passes = events.filter((event) => event.passed).map((event) => sessionInstant(event.at)).sort((a, b) => a - b);
+    const first = passes[0];
+    return { id, attempts: events.length, passed_at: first ? first.toISOString() : null, on_time: !!first && first <= deadline };
+  });
+  return { total: results.length, passed: results.filter((row) => row.passed_at).length, on_time: results.filter((row) => row.on_time).length, results, started: valid.started, deadline: valid.deadline };
+}
+function finishSession(session, at = nowIso()) {
+  const valid = normalizeSession(session), finished = sessionInstant(at);
+  if (!valid) return null;
+  if (valid.status === "finished") return valid;
+  if (!finished || finished < sessionInstant(valid.started) || valid.attempts.some((event) => sessionInstant(event.at) > finished)) return null;
+  valid.status = "finished"; valid.finished_at = finished.toISOString();
+  valid.summary = sessionSummary(valid);
+  return JSON.parse(JSON.stringify(valid));
+}
+function activeInterview() {
+  const session = normalizeSession(P.interview);
+  return session && session.kind === "interview" && session.status === "active" ? session : null;
+}
+function saveInterviewState(session, finished = null) {
+  const before = P;
+  P = Object.assign({}, P, { interview: session, last_interview: finished || P.last_interview, legacy_interview_migrated: true, badges: Object.assign({}, P.badges) });
+  const badges = [];
+  if (finished && finished.summary.total && finished.summary.on_time === finished.summary.total) award("interviewer", badges);
+  if (!saveProgress()) { P = before; toast("Could not save this round. Free browser storage and try again."); return false; }
+  if (badges.length) toast("🎤 Badge: aced a mock interview");
+  return true;
+}
+function beginInterview(ids, minutes = 45) {
+  const session = newSession(ids, minutes), previous = activeInterview();
+  const finished = previous ? finishSession(previous) : null;
+  if (previous && !finished) { toast("The current round cannot finish yet. Check the device clock before starting another."); return false; }
+  return !!session && saveInterviewState(session, finished);
+}
+function completeInterview() {
+  const previous = activeInterview(), finished = previous ? finishSession(previous) : null;
+  if (!finished) { toast("This round cannot finish yet. Check its saved start time and the device clock."); return false; }
+  return saveInterviewState(null, finished);
+}
+function migrateInterview(data) {
+  const current = normalizeSession(data.interview);
+  if (current) data.interview = current;
+  if (data.interview != null || data.legacy_interview_migrated) return data;
+  try {
+    const legacy = normalizeSession(JSON.parse(localStorage.getItem(LEGACY_INTERVIEW_KEY) || "null"));
+    if (!legacy || legacy.kind !== "interview") return data;
+    const migrated = Object.assign({}, data, { interview: legacy, legacy_interview_migrated: true });
+    // Persist the replacement before removing the old key; failed saves keep it.
+    localStorage.setItem(STORE_KEY, JSON.stringify(migrated));
+    try { localStorage.removeItem(LEGACY_INTERVIEW_KEY); } catch (e) {}
+    return migrated;
+  } catch (e) { return data; }
+}
 function blankProgress() {
-  return { version: 1, xp: 0, solved: {}, attempts: {}, hints: {}, opened: {}, peeked: [], days: [], badges: {}, daily: {}, last: null };
+  return { version: 1, xp: 0, solved: {}, attempts: {}, hints: {}, opened: {}, peeked: [], days: [], badges: {}, daily: {}, last: null, interview: null, last_interview: null };
 }
 function loadProgress() {
-  try { const raw = localStorage.getItem(STORE_KEY); if (raw) return Object.assign(blankProgress(), JSON.parse(raw)); } catch (e) {}
-  return blankProgress();
+  let data = blankProgress();
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) data = Object.assign(data, JSON.parse(raw)); } catch (e) {}
+  return migrateInterview(data);
 }
-function saveProgress() { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); } catch (e) {} }
+function saveProgress() { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); return true; } catch (e) { return false; } }
 let P = loadProgress();
 
 function rankFor(xp) {
@@ -220,12 +326,16 @@ function checkBadges(ex, attempts, hints, seconds) {
   if (ALL.every((e) => P.solved[e.id])) award("graduate", list);
   return list;
 }
-function recordRun(ex, passed) {
+function recordRun(ex, passed, submittedSessionId = undefined) {
   if (!Object.prototype.hasOwnProperty.call(P.opened, ex.id)) P.opened[ex.id] = nowIso();
   P.last = ex.id;
   const t = today();
   if (!P.days.includes(t)) P.days.push(t);
   P.attempts[ex.id] = (P.attempts[ex.id] || 0) + 1;
+  const session = activeInterview();
+  if (session && (submittedSessionId === undefined || session.id === submittedSessionId)) {
+    recordSessionAttempt(session, ex.id, passed); P.interview = session;
+  }
   const out = { xp: 0, notes: [], badges: [], already: !!P.solved[ex.id], daily: 0 };
   if (passed && !P.solved[ex.id]) {
     const attempts = P.attempts[ex.id], hints = P.hints[ex.id] || 0;
@@ -312,6 +422,7 @@ function bootWorker() {
 }
 function runInPython(ex, code) {
   return bootWorker().then(() => new Promise((resolve, reject) => {
+    if (pending) { reject(new Error("Another test run is still running. Wait for it to finish.")); return; }
     const id = Math.random().toString(36).slice(2);
     const files = { "exercise.py": code, "test_exercise.py": ex.tests };
     for (const [name, content] of Object.entries(ex.fixtures || {})) files[name] = content;
@@ -610,13 +721,25 @@ function viewExercise(id, fromLesson) {
   bootWorker().catch(() => {});
 
   async function runTests() {
-    const btn = $("#runbtn"); btn.disabled = true; setStatus("Running…"); $("#results").innerHTML = "";
+    const btn = $("#runbtn"), results = $("#results");
+    if (btn.disabled) return;
+    const session = activeInterview(), submittedSessionId = session ? session.id : null;
+    const code = getCode();
+    btn.disabled = true; setStatus("Running…"); results.innerHTML = "";
+    const isCurrentView = () => results.isConnected && $("#results") === results;
     try {
-      const res = await runInPython(ex, getCode());
-      renderResults(ex, res, lessonOf);
+      const res = await runInPython(ex, code);
+      const summary = recordExerciseResult(ex, res, submittedSessionId);
+      if (isCurrentView()) renderResults(ex, res, lessonOf, summary);
+      else if (location.hash.startsWith("#/interview")) viewInterview();
+      renderHeader();
     } catch (e) {
-      $("#results").innerHTML = `<div class="banner fail">Could not run tests: ${esc(e.message || e)}</div>`;
-    } finally { btn.disabled = false; setStatus(""); }
+      if (isCurrentView()) results.innerHTML = `<div class="banner fail">Could not run tests: ${esc(e.message || e)}</div>`;
+      else toast("Could not run tests: " + (e.message || e));
+    } finally {
+      btn.disabled = false;
+      if (isCurrentView()) setStatus("");
+    }
   }
 }
 function shortTb(tb) {
@@ -634,10 +757,22 @@ function shortTb(tb) {
   for (const f of keep) { out.push(f[0].replace(/^\s*File "(?:.*\/)?([^/"]+)", line (\d+)(?:, in (.+))?$/, (m, a, b, c) => a + ":" + b + (c ? " in " + c : ""))); for (const l of f.slice(1)) if (l.trim()) out.push("    " + l.trim()); }
   out.push(exc); return out.join("\n");
 }
-function renderResults(ex, res, lessonOf) {
+function recordExerciseResult(ex, res, submittedSessionId) {
+  const tests = (res.tests || []).filter((test) => test.status !== "skip");
+  const passed = !res.timed_out && !res.import_error && !res.crashed && tests.length > 0 && tests.every((test) => test.status === "pass");
+  const summary = recordRun(ex, passed, submittedSessionId);
+  if (passed) {
+    for (const lesson of LESSONS) lesson.cards.forEach((card, index) => {
+      if (card.kind === "exercise" && card.exercise_id === ex.id) recordCard(lesson.id, index, false);
+    });
+  }
+  return summary;
+}
+function renderResults(ex, res, lessonOf, summary) {
   const box = $("#results"); let html = "";
-  if (res.timed_out) { html = `<div class="banner fail">⏱ Timed out. Infinite loop? Each run is limited to ${ex.timeout_s || 10} seconds.</div>`; box.innerHTML = html; recordRun(ex, false); renderHeader(); return; }
-  if (res.import_error) { html = `<div class="banner fail">Your code could not be imported</div><pre class="sol">${esc(shortTb(res.import_error))}</pre>`; box.innerHTML = html; recordRun(ex, false); renderHeader(); return; }
+  if (res.timed_out) { html = `<div class="banner fail">⏱ Timed out. Infinite loop? Each run is limited to ${ex.timeout_s || 10} seconds.</div>`; box.innerHTML = html; return; }
+  if (res.import_error) { html = `<div class="banner fail">Your code could not be imported</div><pre class="sol">${esc(shortTb(res.import_error))}</pre>`; box.innerHTML = html; return; }
+  if (res.crashed) { box.innerHTML = `<div class="banner fail">The test runner stopped unexpectedly.</div>`; return; }
   const tests = res.tests || []; const total = tests.filter((t) => t.status !== "skip").length; const passed = tests.filter((t) => t.status === "pass").length;
   for (const t of tests) {
     const icon = t.status === "pass" ? '<span class="ok">✔</span>' : t.status === "skip" ? '<span class="warn">–</span>' : '<span class="bad">✘</span>';
@@ -645,7 +780,6 @@ function renderResults(ex, res, lessonOf) {
   }
   if (res.stdout && res.stdout.trim()) html += `<div class="tc muted">── your output ──<pre>${esc(res.stdout.trim())}</pre></div>`;
   const ok = total > 0 && passed === total;
-  const summary = recordRun(ex, ok);
   if (ok) {
     let line = `✔ All ${total} tests passed`;
     if (summary.already) line += " · already solved, no extra xp";
@@ -658,7 +792,6 @@ function renderResults(ex, res, lessonOf) {
   }
   box.innerHTML = html; renderHeader();
   if (ok) {
-    for (const l of LESSONS) l.cards.forEach((c, i) => { if (c.kind === "exercise" && c.exercise_id === ex.id) recordCard(l.id, i, false); });
     showAfterPass(ex, nextUnsolved(ex), lessonOf);
   }
 }
@@ -681,32 +814,61 @@ function viewProfile() {
   <textarea class="fallback" id="io" style="margin-top:10px;min-height:120px;border:1px solid var(--line);border-radius:8px" placeholder="Exported JSON appears here; paste JSON here to import."></textarea></div>`;
   app.innerHTML = html;
   $("#exportbtn").onclick = () => { $("#io").value = JSON.stringify(P, null, 2); $("#io").select(); toast("Copy the JSON from the box"); };
-  $("#importbtn").onclick = () => { try { const d = JSON.parse($("#io").value); if (!d || typeof d.xp !== "number") throw new Error("not a progress file"); P = Object.assign(blankProgress(), d); saveProgress(); renderHeader(); toast("Imported"); viewProfile(); } catch (e) { toast("Import failed: " + e.message); } };
-  $("#wipebtn").onclick = () => { if (confirm("Delete all progress in this browser?")) { P = blankProgress(); saveProgress(); renderHeader(); viewProfile(); } };
+  $("#importbtn").onclick = () => { try { const d = JSON.parse($("#io").value); if (!d || typeof d.xp !== "number") throw new Error("not a progress file"); P = Object.assign(blankProgress(), d, { legacy_interview_migrated: true }); saveProgress(); renderHeader(); toast("Imported"); viewProfile(); } catch (e) { toast("Import failed: " + e.message); } };
+  $("#wipebtn").onclick = () => { if (confirm("Delete all progress in this browser?")) { P = Object.assign(blankProgress(), { legacy_interview_migrated: true }); saveProgress(); renderHeader(); viewProfile(); } };
+}
+let interviewTimer = null;
+function interviewRows(summary) {
+  return summary.results.map((row) => {
+    const ex = BY_ID[row.id], state = row.on_time ? "Passed on time" : row.passed_at ? "Passed late" : "Not passed";
+    const title = ex ? ex.title : "Exercise unavailable in this catalog";
+    const details = `${row.attempts} attempt(s) · ${state}${row.passed_at ? " · " + new Date(row.passed_at).toLocaleString() : ""}`;
+    return `<${ex ? `a href="#/ex/${row.id}"` : "div"} class="item"><span class="mark ${row.on_time ? "ok" : "muted"}">${row.passed_at ? "✔" : row.attempts ? "…" : "○"}</span><span class="t"><b>${esc(row.id)} · ${esc(title)}</b><small>${esc(details)}</small></span></${ex ? "a" : "div"}>`;
+  }).join("");
 }
 function viewInterview() {
-  const key = "cpe-course-interview"; let s = null; try { s = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
   const render = () => {
-    if (!s) {
-      app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › Mock interview</div><div class="card"><h1>Mock interview</h1><p>Three random problems from Part 9 onward, 45 minutes. Talk out loud, restate the problem, write the brute force, then improve. Finish when the clock runs out, not when you are happy.</p><div class="row"><button class="btn" id="start">Start a 45-minute round</button></div></div>`;
-      $("#start").onclick = () => {
-        let pool = ALL.filter((e) => e.part.num >= 9 && !P.solved[e.id]); if (pool.length < 3) pool = ALL.filter((e) => e.part.num >= 9);
-        const picks = []; const arr = pool.slice(); while (picks.length < 3 && arr.length) picks.push(arr.splice(Math.floor(Math.random() * arr.length), 1)[0]);
-        s = { ids: picks.map((e) => e.id), started: Date.now(), deadline: Date.now() + 45 * 60000, before: picks.filter((e) => P.solved[e.id]).map((e) => e.id) };
-        localStorage.setItem(key, JSON.stringify(s)); render();
-      };
-      return;
+    if (interviewTimer) { clearInterval(interviewTimer); interviewTimer = null; }
+    const session = activeInterview(), stored = normalizeSession(P.interview), recent = normalizeSession(P.last_interview);
+    const finished = stored && stored.kind === "interview" && stored.status === "finished" ? stored : recent && recent.kind === "interview" && recent.status === "finished" ? recent : null;
+    let html = `<div class="crumbs"><a href="#/">Home</a> › Mock interview</div><div class="card"><h1>Mock interview</h1><p>Three random problems from Part 9 onward, 45 minutes. Talk out loud, state assumptions, then improve your solution. Every selected exercise needs a fresh passing run during this round. On-time credit uses the pass time, including a pass exactly at the deadline.</p>`;
+    if (session) {
+      const summary = sessionSummary(session);
+      html += `<p id="interviewclock"></p><p><b>${summary.passed}/${summary.total} passed · ${summary.on_time}/${summary.total} on time</b></p>`;
+      if (session.legacy) html += `<p class="muted">This older round did not save session attempts. Only fresh runs since migration count.</p>`;
+      html += `<div class="list">${interviewRows(summary)}</div><div class="row" style="margin-top:12px"><button class="btn" id="finish">Finish and save result</button></div>`;
+    } else if (P.interview != null && !finished) {
+      html += `<p class="bad">This round has invalid saved data. Start a new round to continue.</p>`;
     }
-    const left = Math.round((s.deadline - Date.now()) / 60000);
-    const done = s.ids.filter((id) => P.solved[id] && !s.before.includes(id));
-    app.innerHTML = `<div class="crumbs"><a href="#/">Home</a> › Mock interview</div><div class="card"><h1>Mock interview</h1><p class="${left > 0 ? "" : "bad"}">${left > 0 ? "⏱ " + left + " minutes left" : "⏱ Time is up"} · ${done.length}/${s.ids.length} passed</p><div class="list">${s.ids.map((id) => itemHtml(BY_ID[id])).join("")}</div><div class="row" style="margin-top:12px"><button class="btn" id="finish">Finish round</button></div></div>`;
-    $("#finish").onclick = () => { if (done.length === s.ids.length && Date.now() < s.deadline) { const l = []; award("interviewer", l); if (l.length) toast("🎤 Badge: aced a mock interview"); saveProgress(); } localStorage.removeItem(key); s = null; render(); renderHeader(); };
+    if (finished) {
+      const summary = sessionSummary(finished);
+      html += `<details ${session ? "" : "open"} style="margin-top:16px"><summary><b>Last round: ${summary.passed}/${summary.total} passed · ${summary.on_time}/${summary.total} on time</b></summary><p class="muted">Finished ${esc(new Date(finished.finished_at).toLocaleString())}. This saved result stays unchanged as you practise.</p><div class="list">${interviewRows(summary)}</div></details>`;
+    }
+    html += `<div class="row" style="margin-top:16px"><button class="btn secondary" id="start">${session ? "Save this round and start another" : "Start a 45-minute round"}</button></div></div>`;
+    app.innerHTML = html;
+    $("#start").onclick = () => {
+      let pool = ALL.filter((e) => e.part.num >= 9 && !P.solved[e.id]); if (pool.length < 3) pool = ALL.filter((e) => e.part.num >= 9);
+      if (!pool.length) { toast("No interview exercises are available in this catalog."); return; }
+      const picks = [], arr = pool.slice(); while (picks.length < 3 && arr.length) picks.push(arr.splice(Math.floor(Math.random() * arr.length), 1)[0].id);
+      if (beginInterview(picks)) { render(); renderHeader(); }
+    };
+    if (session) {
+      $("#finish").onclick = () => { if (completeInterview()) { render(); renderHeader(); } };
+      const updateClock = () => {
+        const node = $("#interviewclock"); if (!node) return;
+        const left = sessionInstant(session.deadline).getTime() - Date.now();
+        node.textContent = left > 0 ? `⏱ ${Math.ceil(left / 60000)} minutes left` : "⏱ Time is up. Later passes are recorded as late.";
+        node.className = left > 0 ? "" : "bad";
+      };
+      updateClock(); interviewTimer = setInterval(updateClock, 1000);
+    }
   };
   render();
 }
 
 // ------------------------------------------------------------------ router
 function route() {
+  if (interviewTimer) { clearInterval(interviewTimer); interviewTimer = null; }
   const h = location.hash || "#/";
   window.scrollTo(0, 0);
   let m;

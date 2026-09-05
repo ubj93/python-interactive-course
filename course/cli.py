@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import math
 import random
 import re
 import subprocess
@@ -17,7 +18,8 @@ from .progress import BADGES, RANKS, Progress
 from . import backup as backup_mod
 from .lessons import CARD_XP, Card, Lesson, find_lesson, load_all_lessons
 from .runner import RunResult, run_code_card, run_tests
-from .timestamps import parse_timestamp, timestamp, utc_now
+from .timestamps import parse_timestamp, utc_now
+from .sessions import normalize_session, session_summary
 
 
 class App:
@@ -370,61 +372,92 @@ class App:
 
     def cmd_interview(self, args) -> int:
         p = self.progress
-        session = p.data.get("interview")
-        if args.finish or (session and not args.new):
-            if not session:
+        if getattr(args, "last", False):
+            if args.finish or args.new:
+                print("Use --last by itself to review the previous result.")
+                return 2
+            recent = normalize_session(p.data.get("last_interview"))
+            if recent and recent["status"] == "finished":
+                return self.report_interview(recent, final=False)
+            print("No saved interview result yet. Finish a round with `course interview --finish`.")
+            return 0
+        if args.finish and args.new:
+            print("Choose either --finish or --new.")
+            return 2
+        if not args.new:
+            session = p.active_interview()
+            if session:
+                return self.report_interview(session, final=args.finish)
+            if p.data.get("interview") is not None:
+                return self.report_interview(p.data["interview"], final=False)
+            recent = normalize_session(p.data.get("last_interview"))
+            if recent and recent["status"] == "finished":
+                return self.report_interview(recent, final=False)
+            if args.finish:
                 print("No mock interview in progress. Start one with `course interview`.")
                 return 0
-            return self.report_interview(session, final=args.finish)
+        if args.count <= 0 or args.minutes <= 0:
+            print("Choose a positive problem count and duration.")
+            return 2
         exs = [e for e in all_exercises(self.catalog) if e.part_num >= args.min_part and not p.is_solved(e.id)]
         if len(exs) < args.count:
             exs = [e for e in all_exercises(self.catalog) if e.part_num >= args.min_part]
+        if not exs:
+            print("No exercises match this round. Choose an earlier --min-part.")
+            return 2
         rng = random.Random()
         picks = rng.sample(exs, min(args.count, len(exs)))
         picks.sort(key=lambda e: (-e.kyu, e.part_num, e.num))
-        started = utc_now()
-        deadline = started + dt.timedelta(minutes=args.minutes)
-        p.data["interview"] = {
-            "ids": [e.id for e in picks],
-            "started": timestamp(started),
-            "deadline": timestamp(deadline),
-            "solved_before": [e.id for e in picks if p.is_solved(e.id)],
-        }
-        p.save()
+        try:
+            session = p.start_interview([e.id for e in picks], args.minutes)
+        except ValueError as error:
+            print(str(error))
+            return 2
         print(ui.heading(f"Mock interview · {len(picks)} problems · {args.minutes} minutes"))
         print("  Talk out loud, state assumptions, write the brute force first, then improve it.\n")
         for e in picks:
-            print(self.ex_line(e))
-        print(f"\n  Deadline {ui.bold(deadline.astimezone().strftime('%H:%M'))}.  Work them with `course show <id>` / `course run <id>`.")
+            print(f"  ○ {e.id:<5} {e.title} · awaiting a fresh passing attempt")
+        print(f"\n  Deadline {ui.bold(_local_time(session['deadline'], '%H:%M'))}.  Work them with `course show <id>` / `course run <id>`.")
         print(f"  Check the clock with {ui.cyan('course interview')}, finish with {ui.cyan('course interview --finish')}.")
         return 0
 
     def report_interview(self, session: dict, final: bool) -> int:
         p = self.progress
-        ids = session["ids"]
-        deadline = parse_timestamp(session.get("deadline"))
-        if deadline is None:
-            print("This mock interview has an invalid deadline. Start a new round with `course interview --new`.")
+        session = normalize_session(session)
+        if session is None or session["kind"] != "interview":
+            print("This mock interview has invalid saved data. Start a new round with `course interview --new`.")
             return 1
-        left = deadline - utc_now()
-        solved = [i for i in ids if p.is_solved(i) and i not in session.get("solved_before", [])]
-        print(ui.heading("Mock interview"))
-        for i in ids:
-            ex = find_exercise(self.catalog, i)
-            if ex:
-                print(self.ex_line(ex))
-        mins = int(left.total_seconds() // 60)
-        if left.total_seconds() > 0:
-            print(f"\n  ⏱ {mins} min left")
+        had_badge = "interviewer" in p.data["badges"]
+        if final and session["status"] == "active":
+            active = p.active_interview()
+            if active is None or active["id"] != session["id"]:
+                print("This round is no longer active. Run `course interview` to see the current round.")
+                return 1
+            session = p.finish_interview()
+            if session is None:
+                print("This round cannot finish before its start or latest attempt. Check the device clock.")
+                return 1
+        summary = session_summary(session)
+        finished = session["status"] == "finished"
+        print(ui.heading("Mock interview · results" if finished else "Mock interview"))
+        if session.get("legacy"):
+            print("  This older round did not save session attempts. Only fresh runs since migration count.\n")
+        for row in summary["results"]:
+            ex = find_exercise(self.catalog, row["id"])
+            title = ex.title if ex else "Exercise unavailable in this catalog"
+            state = "passed on time" if row["on_time"] else "passed late" if row["passed_at"] else "not passed"
+            mark = "✔" if row["passed_at"] else "…" if row["attempts"] else "○"
+            print(f"  {mark} {row['id']:<5} {title} · {row['attempts']} attempt(s) · {state}")
+        print(f"\n  Result: {summary['passed']}/{summary['total']} passed · {summary['on_time']}/{summary['total']} on time")
+        if finished:
+            when = _local_time(session["finished_at"], "%Y-%m-%d %H:%M:%S %Z")
+            print(f"  Finished {when}. This result is saved; start another with `course interview --new`.")
         else:
-            print(ui.red(f"\n  ⏱ Time is up ({-mins} min over)"))
-        if final:
-            print(f"\n  Result: {ui.bold(f'{len(solved)}/{len(ids)}')} passed"
-                  + (ui.green(" inside the time limit") if left.total_seconds() > 0 else ui.red(" over time")))
-            if len(solved) == len(ids) and left.total_seconds() > 0 and p.award_badge("interviewer"):
-                print(ui.magenta("  🎤 Badge unlocked: aced a mock interview"))
-            p.data["interview"] = None
-            p.save()
+            seconds = (parse_timestamp(session["deadline"]) - utc_now()).total_seconds()
+            print(f"  ⏱ {math.ceil(seconds / 60)} min left" if seconds > 0 else "  ⏱ Time is up. Later passes are recorded as late.")
+            print("  Finish and save this result with `course interview --finish`.")
+        if not had_badge and "interviewer" in p.data["badges"]:
+            print(ui.magenta("  🎤 Badge unlocked: aced a mock interview"))
         return 0
 
     def cmd_badges(self, args) -> int:
@@ -795,6 +828,17 @@ class App:
         return 0
 
 
+def _local_time(value: str, pattern: str) -> str:
+    """Show local time when representable, otherwise retain the valid UTC instant."""
+    instant = parse_timestamp(value)
+    if instant is None:
+        return "invalid saved time"
+    try:
+        return instant.astimezone().strftime(pattern)
+    except (ValueError, OverflowError, OSError):
+        return instant.isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
 def _short_tb(tb: str, keep_frames: int = 3) -> str:
     """Keep only the frames inside the learner's files plus the final exception line."""
     lines = tb.rstrip().splitlines()
@@ -853,7 +897,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("solution", help="show reference solutions (after passing)"); s.add_argument("exercise", nargs="?"); s.add_argument("--force", action="store_true")
     s = sub.add_parser("lesson", help="read a part's lesson"); s.add_argument("part", nargs="?")
     sub.add_parser("daily", help="today's kata (+5 xp bonus)")
-    s = sub.add_parser("interview", help="timed mock interview"); s.add_argument("--count", type=int, default=3); s.add_argument("--minutes", type=int, default=45); s.add_argument("--min-part", type=int, default=9); s.add_argument("--new", action="store_true"); s.add_argument("--finish", action="store_true")
+    s = sub.add_parser("interview", help="timed mock interview"); s.add_argument("--count", type=int, default=3); s.add_argument("--minutes", type=int, default=45); s.add_argument("--min-part", type=int, default=9); s.add_argument("--new", action="store_true"); s.add_argument("--finish", action="store_true"); s.add_argument("--last", action="store_true", help="review the most recently finished round")
     sub.add_parser("badges", help="list badges")
     s = sub.add_parser("reset", help="restore an exercise to its original stub"); s.add_argument("exercise")
     s = sub.add_parser("repl", help="open an interactive Python with the exercise loaded"); s.add_argument("exercise", nargs="?")
