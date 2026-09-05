@@ -13,6 +13,12 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-05
+
+### Fixed
+- Explain floor division with negative operands and correct the argparse lesson's
+  claims about parser reuse and mutable defaults, preserving all saved card IDs.
+
 ## [0.9.0] - 2026-09-05
 
 ### Added
