@@ -13,6 +13,16 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-09-05
+
+### Fixed
+- Continue a passed guided exercise through its own lesson's remaining recap;
+  reopening completed lessons now shows completion. Preserve skipped exercises and
+  resume correctly after reloads, including exercises solved before the lesson.
+
+### Added
+- Isolated browser navigation regressions in CI at desktop and mobile sizes.
+
 ## [0.3.2] - 2026-09-05
 
 ### Changed
