@@ -13,6 +13,13 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-05
+
+### Changed
+- Enable and document main-branch protection: require pull requests, current Python
+  3.9/3.12 verification and version checks, and resolved review conversations,
+  including for administrators. Disable force pushes and branch deletion.
+
 ## [0.3.1] - 2026-09-04
 
 ### Changed
