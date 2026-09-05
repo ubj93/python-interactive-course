@@ -13,6 +13,17 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-09-05
+
+### Fixed
+- Score mock interviews from fresh attempts in the current round, including
+  previously solved exercises, while preserving lifetime completions and XP.
+- Save the latest finished round and grade deadline credit by the first passing
+  attempt time. Resume active rounds and migrate legacy sessions safely across
+  terminal and browser progress.
+- Preserve session boundaries while browser tests run and handle invalid or
+  extreme timestamps without losing a round's recorded results.
+
 ## [0.3.4] - 2026-09-05
 
 ### Fixed

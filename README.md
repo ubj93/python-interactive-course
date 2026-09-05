@@ -137,6 +137,16 @@ shows each test's one-line description, and trims tracebacks down to your code.
 - **Streaks** count days with at least one test run. **Badges** for milestones.
 - **Daily kata** picks one unsolved exercise near your frontier, deterministic per day.
 - **Mock interview** picks three problems from Part 9 onward and starts a 45-minute clock.
+  Every round requires fresh passing runs, including for exercises solved before.
+  Credit uses each exercise's first passing time; a pass exactly at the deadline
+  is on time. Finish with `course interview --finish` to retain the result, review
+  it with `course interview`, and start another round with `course interview --new`.
+  Starting another round also saves the previous round's result. Only the most
+  recently finished result is retained; `course interview --last` shows it even
+  during a new round. The browser has the same scoring and keeps that result in
+  exported progress. Finishing while a browser test is still running freezes the
+  round immediately; that later result counts as ordinary practice and cannot
+  change the finished result or earn credit in a new round.
 
 ## Adding or editing content
 

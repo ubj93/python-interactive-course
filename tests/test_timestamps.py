@@ -131,7 +131,7 @@ class TestProgressTimestamps(unittest.TestCase):
         before = json.dumps(app.progress.data, sort_keys=True)
         for deadline in ("2026-09-05T01:00:00Z", "2026-09-04T21:00:00-04:00", "2026-09-04T21:00:00"):
             with self.subTest(deadline=deadline), contextlib.redirect_stdout(io.StringIO()), patch("course.cli.utc_now", return_value=NOW):
-                self.assertEqual(app.report_interview({"ids": [], "deadline": deadline}, final=False), 0)
+                self.assertEqual(app.report_interview({"ids": ["9.1"], "started": "2026-09-05T00:00:00Z", "deadline": deadline}, final=False), 0)
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(app.report_interview({"ids": [], "deadline": None}, final=False), 1)
         self.assertEqual(json.dumps(app.progress.data, sort_keys=True), before)
