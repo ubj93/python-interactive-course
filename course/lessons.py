@@ -28,7 +28,7 @@ A lesson file is a title line followed by cards separated by ``--- <type>`` line
     print(7 // 2)
     ```
     answer: 3
-    > `//` is floor division: it throws away the remainder.
+    > `//` is floor division: it rounds the quotient toward negative infinity.
 
     --- fill #example-card-4
     Complete the line so `name` has no surrounding spaces.

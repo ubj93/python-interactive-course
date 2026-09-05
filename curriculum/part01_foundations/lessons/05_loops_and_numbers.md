@@ -43,12 +43,14 @@ while value >= 1024:
 
 --- teach #card-4be8933504e552ba
 ### Two kinds of division
-`/` always gives a float. `//` gives the whole part only, and `%` gives the remainder. `**` is power.
+With these integer operands, `/` gives a float. `//` floors the quotient toward negative infinity, and `%` gives the remainder. Flooring matters for negative values: `-3.5` floors to `-4`, not `-3`. `**` is power.
 ```python
 >>> 7 / 2
 3.5
 >>> 7 // 2
 3
+>>> -7 // 2
+-4
 >>> 7 % 2
 1
 >>> 2 ** 10
@@ -109,6 +111,6 @@ Your function is given a negative byte count, which makes no sense. The descript
 
 --- recap #card-0ed7f61acd4e524d
 - `for item in list:` runs the block once per item; `while cond:` runs until the condition fails.
-- `/` float division, `//` whole part, `%` remainder, `**` power.
+- `/` float division; `//` floors toward negative infinity (`-7 // 2 == -4`); `%` remainder; `**` power.
 - `f"{x:.1f}"` formats with one decimal.
 - `raise ValueError("...")` reports bad input.

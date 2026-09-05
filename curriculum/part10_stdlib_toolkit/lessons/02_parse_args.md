@@ -98,7 +98,7 @@ answer: add_mutually_exclusive_group
 
 --- teach #card-673368b49b055545
 ### Build the parser in a function, pass argv in
-Put the parser inside `build_parser()` and call it fresh for every parse. Two reasons: tests can inspect the parser, and the `default=[]` of an `append` option is not shared between parses, so tags cannot leak from one call to the next. Only the `if __name__ == "__main__":` block calls `parse_args()` with no argument, which reads `sys.argv`.
+Put the parser inside `build_parser()` so tests can inspect its configuration. The wrapper below builds a fresh parser for each call and takes an explicit argument list, making it easy to test without changing `sys.argv`. A parser can also be reused: the built-in `append` action copies an existing list before adding a value; it does not append into the parser's default list. Only the `if __name__ == "__main__":` block calls `parse_args()` with no argument, which reads `sys.argv`.
 ```python
 def build_parser():
     parser = argparse.ArgumentParser(prog="devreport")
@@ -110,11 +110,11 @@ def parse_args(argv):
 ```
 
 --- quiz #card-5cff30fc93235159
-Why does `parse_args(argv)` build a new parser on every call?
+Why separate `build_parser()` from `parse_args(argv)` in this design?
 - [ ] Parsers can only be used once
-- [x] So each parse starts from fresh defaults; the `tags` list is not shared between calls
+- [x] Tests can inspect the parser and pass explicit arguments without changing `sys.argv`
 - [ ] It makes parsing faster
-> A single parser object keeps its `default=[]` list, and `append` writes into it. A fresh parser per call keeps tests independent.
+> The separation makes configuration and parsing easy to test. Reusing a parser is valid: `append` copies the list before adding values. If an option is absent, a returned mutable default may still be shared, so caller code should avoid mutating it.
 
 --- exercise 10.2 #card-8f3e3d72892955d4
 
