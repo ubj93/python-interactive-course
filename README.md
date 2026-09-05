@@ -149,8 +149,11 @@ CI runs all three on Python 3.9 and 3.12.
 **Nothing is committed to `main` directly.** Every change lands through a pull request.
 
 1. Install the guard hooks once: `sh tools/install-hooks.sh`. They refuse commits and
-   pushes to `main` locally. Add a branch protection rule on GitHub for the server side
-   (require a PR and green CI).
+   pushes to `main` locally. GitHub also protects `main`: changes require a PR,
+   up-to-date successful `verify (3.9)`, `verify (3.12)` and `version` checks, and
+   resolved review conversations. The rule applies to administrators too; force
+   pushes and branch deletion are disabled. Independent review is part of the
+   workflow; a separate approving GitHub account is not required.
 2. Branch from `main`, make the change, add a note under **Unreleased** in
    [`CHANGELOG.md`](CHANGELOG.md).
 3. Bump the version before merging: `python3 tools/release.py bump patch|minor|major`.
