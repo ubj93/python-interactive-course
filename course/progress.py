@@ -14,6 +14,7 @@ from .card_ids import card_key, migrate_card_progress
 from .timestamps import elapsed_seconds, local_day, timestamp, timestamp_day, utc_now
 from .sessions import finish_session, new_session, normalize_session, record_attempt
 from .practice import DIAGNOSTIC_IDS, new_practice, normalize_diagnostic, update_practice
+from .review import ReviewProgress, reflect_queue
 
 DEFAULT_PATH = ROOT / ".course_progress.json"
 
@@ -52,7 +53,7 @@ def _now() -> str:
     return timestamp()
 
 
-class Progress:
+class Progress(ReviewProgress):
     def __init__(self, path: Optional[Path] = None):
         env = os.environ.get("COURSE_PROGRESS")
         self.path = Path(path or env or DEFAULT_PATH)
@@ -94,11 +95,13 @@ class Progress:
     def diagnostic_state(self):
         return normalize_diagnostic(self.data.get("diagnostic"))
 
-    def _save_diagnostic(self, state, history=None):
+    def _save_diagnostic(self, state, history=None, queue=None):
         previous = self.data
         self.data = {**previous, "diagnostic": state}
         if history is not None:
             self.data["diagnostic_history"] = history
+        if queue is not None:
+            self.data["review_queue"] = queue
         try:
             self.save()
         except OSError:
@@ -124,7 +127,12 @@ class Progress:
         state = self.diagnostic_state()
         if state is None or state["id"] != session_id:
             raise ValueError("The diagnostic round changed; this result was not added to the new round")
-        return self._save_diagnostic(update_practice(state, ex_id, action, **fields))
+        changed = update_practice(state, ex_id, action, **fields)
+        queue = None
+        if action == "reflect" and fields.get("confidence") is not None:
+            unchanged_confidence = state["reflections"].get(ex_id, {}).get("confidence") == fields["confidence"]
+            queue = reflect_queue(self.data.get("review_queue"), ex_id, fields["confidence"], fields["note"], source="diagnostic", now=fields.get("now"), preserve_schedule=unchanged_confidence)
+        return self._save_diagnostic(changed, queue=queue)
 
     def record_diagnostic_attempt(self, ex_id, passed, session_id, code=None):
         return self.update_diagnostic(ex_id, "attempt", session_id, passed=passed, code=code)

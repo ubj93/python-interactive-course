@@ -46,10 +46,11 @@ function practiceSummary(value) {
   });
 }
 function diagnosticSummary(value = P.diagnostic) { const state = diagnosticState(value); return state ? practiceSummary(state) : null; }
-function saveDiagnostic(state, history) {
+function saveDiagnostic(state, history, queue) {
   const previous = P;
   P = {...P, diagnostic: state};
   if (history !== undefined) P.diagnostic_history = history;
+  if (queue !== undefined) P.review_queue = queue;
   if (!saveProgress()) { P = previous; throw new Error("Diagnostic could not be saved. Export your progress and free browser storage before continuing."); }
   return practiceClone(state);
 }
@@ -69,6 +70,7 @@ function updateDiagnostic(exId, action, sessionId, fields = {}) {
   const state = diagnosticState();
   if (!state || state.id !== sessionId) throw new Error("The diagnostic round changed; this result was not added to the new round.");
   if (!state.ids.includes(exId)) throw new Error("Unknown diagnostic exercise.");
+  const priorConfidence = (state.reflections[exId] || {}).confidence;
   const at = nowIso();
   if (parseTimestamp(at) < parseTimestamp(state.started)) throw new Error("The clock is earlier than this diagnostic round.");
   if (action === "attempt") {
@@ -85,7 +87,8 @@ function updateDiagnostic(exId, action, sessionId, fields = {}) {
     state.drafts[exId] = fields.code;
   }
   state.last_exercise = exId;
-  return saveDiagnostic(state);
+  const queue = action === "reflect" && fields.confidence != null ? reflectReviewQueue(P.review_queue, exId, fields.confidence, fields.note, null, "diagnostic", new Date(), priorConfidence === fields.confidence) : undefined;
+  return saveDiagnostic(state, undefined, queue);
 }
 function diagnosticLesson(id) { return LESSONS.find(lesson => lesson.cards.some(card => card.kind === "exercise" && card.exercise_id === id)); }
 function diagnosticLessonLink(id) {
@@ -118,9 +121,9 @@ function diagnosticTestOutcome(result) {
   const tests = (result.tests || []).filter(test => test.status !== "skip");
   return !result.timed_out && !result.import_error && !result.crashed && tests.length > 0 && tests.every(test => test.status === "pass");
 }
-function diagnosticResultHtml(result) {
+function diagnosticResultHtml(result, label = "Diagnostic") {
   const passed = diagnosticTestOutcome(result);
-  let html = `<div class="banner ${passed ? "pass" : "fail"}">${passed ? "Diagnostic tests passed" : "Diagnostic tests not yet passing"}</div>`;
+  let html = `<div class="banner ${passed ? "pass" : "fail"}">${esc(label)} tests ${passed ? "passed" : "not yet passing"}</div>`;
   if (result.timed_out) html += '<p>The run timed out. Check for an infinite loop.</p>';
   if (result.import_error || result.crashed) html += `<pre class="sol">${esc(shortTb(result.import_error || result.crashed))}</pre>`;
   for (const test of result.tests || []) html += `<div class="tc">${test.status === "pass" ? "✔" : test.status === "skip" ? "–" : "✘"} ${esc(test.doc || test.name)}${test.traceback || test.message ? `<pre>${esc(shortTb(test.traceback || test.message))}</pre>` : ""}</div>`;

@@ -108,7 +108,7 @@ class DiagnosticFlowTests(unittest.TestCase):
 
     def assert_lifetime_preserved(self):
         current = Progress(self.p.path).data
-        self.assertEqual({key: value for key, value in current.items() if not key.startswith("diagnostic")}, self.lifetime)
+        self.assertEqual({key: value for key, value in current.items() if not key.startswith("diagnostic") and key != "review_queue"}, self.lifetime)
 
     def test_cli_fresh_work_multiple_attempts_help_reflections_reload_and_new(self):
         ex = find_exercise(self.app.catalog, "1.2")
@@ -128,6 +128,7 @@ class DiagnosticFlowTests(unittest.TestCase):
         self.assertEqual(self.command("run", "1.2")[0], 0)
         self.command("help", "1.2")
         self.command("reflect", "1.2", "--confidence", "needs-review", "--note", "Remember to strip first")
+        self.assertEqual(self.app.progress.data["review_queue"]["items"]["1.2"]["confidence"], "needs_review")
         self.app = App()
         _, output = self.command()
         self.assertIn("1.2 Normalize a hostname · passed · 3 attempt(s)", output)

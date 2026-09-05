@@ -13,6 +13,15 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-05
+
+### Added
+- Save confidence, mistake notes and next-review dates in one queue shared by
+  diagnostic reflections and ordinary exercise practice, with optional 7/30-day
+  intervals and manual revisits.
+- Resume untimed review rounds in fresh scratch work, keeping drafts, outcomes
+  and history separate from saved answers, original passes and completion XP.
+
 ## [0.7.0] - 2026-09-05
 
 ### Added
