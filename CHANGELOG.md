@@ -13,6 +13,15 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-09-05
+
+### Fixed
+- Share UTC timestamp handling between terminal and browser progress, including
+  existing local timestamps and explicit offsets. Imported progress can pass
+  exercises without crashing; invalid or future start times earn no speed bonus.
+- Use the device's local calendar day for streaks, daily kata and solved-today
+  counts while preserving existing completions, XP and day history.
+
 ## [0.3.3] - 2026-09-05
 
 ### Fixed

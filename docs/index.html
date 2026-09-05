@@ -134,8 +134,37 @@ for (const p of DATA.parts) for (const e of p.exercises) { e.part = p; ALL.push(
 const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 // ------------------------------------------------------------------ progress
-function today() { return new Date().toISOString().slice(0, 10); }
+// Timestamps are UTC ISO 8601; legacy offset-free timestamps mean local wall time.
+// Calendar-day keys use the reading device's local date. Keep existing keys intact.
+function localDay(date) {
+  return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function today() { return localDay(new Date()); }
 function nowIso() { return new Date().toISOString(); }
+function parseTimestamp(value) {
+  if (typeof value !== "string") return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)?$/.exec(value);
+  if (!m || Number(m[1]) < 1) return null;
+  // Date.parse alone silently rolls impossible dates (for example February 30).
+  const calendar = new Date(0);
+  calendar.setUTCFullYear(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  calendar.setUTCHours(Number(m[4]), Number(m[5]), Number(m[6]), 0);
+  if (calendar.getUTCFullYear() !== Number(m[1]) || calendar.getUTCMonth() + 1 !== Number(m[2]) || calendar.getUTCDate() !== Number(m[3]) || calendar.getUTCHours() !== Number(m[4]) || calendar.getUTCMinutes() !== Number(m[5]) || calendar.getUTCSeconds() !== Number(m[6])) return null;
+  const parsed = new Date(value.replace(" ", "T"));
+  // Reject nonexistent local times at a DST jump, rather than shifting the time.
+  if (!m[8] && (localDay(parsed) !== `${m[1]}-${m[2]}-${m[3]}` || parsed.getHours() !== Number(m[4]) || parsed.getMinutes() !== Number(m[5]) || parsed.getSeconds() !== Number(m[6]))) return null;
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+function timestampDay(value) {
+  const date = parseTimestamp(value);
+  return date && date.getFullYear() >= 1 && date.getFullYear() <= 9999 ? localDay(date) : null;
+}
+function elapsedSeconds(value, now = Date.now()) {
+  const start = parseTimestamp(value);
+  if (!start) return null;
+  const seconds = (now - start.getTime()) / 1000;
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
+}
 function blankProgress() {
   return { version: 1, xp: 0, solved: {}, attempts: {}, hints: {}, opened: {}, peeked: [], days: [], badges: {}, daily: {}, last: null };
 }
@@ -163,14 +192,14 @@ function streak() {
   for (let i = days.length - 1; i > 0; i--) { if (d(days[i]) - d(days[i - 1]) === 1) n++; else break; }
   return n;
 }
-function solvedToday() { const t = today(); return Object.values(P.solved).filter((s) => (s.passed_at || "").startsWith(t)).length; }
+function solvedToday() { const t = today(); return Object.values(P.solved).filter((s) => timestampDay(s.passed_at) === t).length; }
 function xpFor(ex, attempts, hints, seconds, peeked) {
   let mult = 1, notes = [];
   if (peeked) { mult *= 0.1; notes.push("solution peeked ×0.1"); }
   else {
     if (attempts === 1) { mult *= 1.25; notes.push("first try ×1.25"); }
     if (hints) { const pen = Math.max(0.25, 1 - 0.25 * hints); mult *= pen; notes.push(`${hints} hint${hints > 1 ? "s" : ""} ×${pen.toFixed(2)}`); }
-    if (ex.time_limit_min && seconds != null && seconds <= ex.time_limit_min * 60) { mult *= 1.1; notes.push("inside time limit ×1.1"); }
+    if (ex.time_limit_min && seconds != null && seconds >= 0 && seconds <= ex.time_limit_min * 60) { mult *= 1.1; notes.push("inside time limit ×1.1"); }
   }
   return { xp: Math.max(1, Math.round(ex.xp * mult)), notes };
 }
@@ -183,7 +212,7 @@ function checkBadges(ex, attempts, hints, seconds) {
   if (sv.filter((s) => !s.hints).length >= 10) award("clean_sweep", list);
   if (sv.filter((s) => s.attempts === 1).length >= 5) award("first_try", list);
   if (attempts >= 4) award("comeback", list);
-  if (ex.kyu <= 5 && ex.time_limit_min && seconds != null && seconds <= ex.time_limit_min * 60) award("speed_demon", list);
+  if (ex.kyu <= 5 && ex.time_limit_min && seconds != null && seconds >= 0 && seconds <= ex.time_limit_min * 60) award("speed_demon", list);
   const st = streak();
   if (st >= 7) award("week_streak", list);
   if (st >= 30) award("month_streak", list);
@@ -192,7 +221,7 @@ function checkBadges(ex, attempts, hints, seconds) {
   return list;
 }
 function recordRun(ex, passed) {
-  P.opened[ex.id] = P.opened[ex.id] || nowIso();
+  if (!Object.prototype.hasOwnProperty.call(P.opened, ex.id)) P.opened[ex.id] = nowIso();
   P.last = ex.id;
   const t = today();
   if (!P.days.includes(t)) P.days.push(t);
@@ -200,9 +229,9 @@ function recordRun(ex, passed) {
   const out = { xp: 0, notes: [], badges: [], already: !!P.solved[ex.id], daily: 0 };
   if (passed && !P.solved[ex.id]) {
     const attempts = P.attempts[ex.id], hints = P.hints[ex.id] || 0;
-    const seconds = (Date.now() - new Date(P.opened[ex.id]).getTime()) / 1000;
+    const seconds = elapsedSeconds(P.opened[ex.id]);
     const r = xpFor(ex, attempts, hints, seconds, P.peeked.includes(ex.id));
-    P.solved[ex.id] = { passed_at: nowIso(), attempts, hints, seconds: Math.round(seconds), xp: r.xp };
+    P.solved[ex.id] = { passed_at: nowIso(), attempts, hints, seconds: seconds == null ? null : Math.round(seconds), xp: r.xp };
     P.xp += r.xp; out.xp = r.xp; out.notes = r.notes;
     const d = P.daily[t];
     if (d && d.id === ex.id && !d.done) { d.done = true; P.xp += 5; out.daily = 5; }
@@ -533,7 +562,7 @@ function lessonForExercise(ex, fromLesson) {
 function viewExercise(id, fromLesson) {
   const ex = BY_ID[id]; if (!ex) return viewHome();
   const lessonOf = lessonForExercise(ex, fromLesson);
-  P.opened[ex.id] = P.opened[ex.id] || nowIso(); P.last = ex.id; saveProgress();
+  if (!Object.prototype.hasOwnProperty.call(P.opened, ex.id)) P.opened[ex.id] = nowIso(); P.last = ex.id; saveProgress();
   const solved = !!P.solved[ex.id], hintsUsed = P.hints[ex.id] || 0, d = P.daily[today()];
   let draft = null; try { draft = localStorage.getItem(DRAFT_KEY + ex.id); } catch (e) {}
   const code = draft != null ? draft : ex.stub;
