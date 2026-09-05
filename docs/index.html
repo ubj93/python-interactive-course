@@ -113,6 +113,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-r
 <body>
 <header>
   <a class="brand" href="#/">Python for CPE <small>interactive course</small></a>
+  <a href="#/refresher">Refresher</a>
   <span class="spacer"></span>
   <a class="rank" href="#/profile" id="rankbox"></a>
 </header>
@@ -121,6 +122,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-r
 
 <script src="exercises.js"></script>
 <script src="practice.js"></script>
+<script src="refresher.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
@@ -566,6 +568,7 @@ function viewHome() {
       ${nxt ? `<a class="btn secondary" href="#/ex/${nxt.id}">Practice: ${nxt.id} ${esc(nxt.title)}</a>` : ""}
       <a class="btn secondary" href="#/ex/${daily.id}">Daily kata ${d && d.done ? "✔" : "· +5 xp"}</a>
       <a class="btn secondary" href="#/interview">Mock interview</a>
+      <a class="btn secondary" href="#/refresher">Interview refresher</a>
       <a class="btn secondary" href="#/diagnostic">Fundamentals diagnostic</a>
     </div>
   </div>`;
@@ -892,8 +895,10 @@ function viewInterview() {
   const render = () => {
     if (interviewTimer) { clearInterval(interviewTimer); interviewTimer = null; }
     const session = activeInterview(), stored = normalizeSession(P.interview), recent = normalizeSession(P.last_interview);
+    const pathMock = refresherMock(session);
     const finished = stored && stored.kind === "interview" && stored.status === "finished" ? stored : recent && recent.kind === "interview" && recent.status === "finished" ? recent : null;
     let html = `<div class="crumbs"><a href="#/">Home</a> › Mock interview</div><div class="card"><h1>Mock interview</h1><p>Three random problems from Part 9 onward, 45 minutes. Talk out loud, state assumptions, then improve your solution. Every selected exercise needs a fresh passing run during this round. On-time credit uses the pass time, including a pass exactly at the deadline.</p>`;
+    if (pathMock) html = `<div class="crumbs"><a href="#/refresher/${pathMock.id}">Interview refresher</a> › Mock interview</div><div class="card"><h1>${esc(pathMock.title)}</h1><p>${pathMock.exercises.length} practised problems, ${pathMock.minutes} minutes. Every problem needs a fresh passing run, including already-solved exercises. Explain assumptions and edge cases aloud. Finish this round before marking its path activity done.</p>`;
     if (session) {
       const summary = sessionSummary(session);
       html += `<p id="interviewclock"></p><p><b>${summary.passed}/${summary.total} passed · ${summary.on_time}/${summary.total} on time</b></p>`;
@@ -906,9 +911,10 @@ function viewInterview() {
       const summary = sessionSummary(finished);
       html += `<details ${session ? "" : "open"} style="margin-top:16px"><summary><b>Last round: ${summary.passed}/${summary.total} passed · ${summary.on_time}/${summary.total} on time</b></summary><p class="muted">Finished ${esc(new Date(finished.finished_at).toLocaleString())}. This saved result stays unchanged as you practise.</p><div class="list">${interviewRows(summary)}</div></details>`;
     }
-    html += `<div class="row" style="margin-top:16px"><button class="btn secondary" id="start">${session ? "Save this round and start another" : "Start a 45-minute round"}</button></div></div>`;
+    const completedPathMock = finished && refresherMock(finished);
+    html += `<div class="row" style="margin-top:16px">${pathMock ? `<a class="btn secondary" href="#/refresher/${pathMock.id}">Return to refresher activity</a>` : `<button class="btn secondary" id="start">${session ? "Save this round and start another" : "Start a 45-minute round"}</button>`}${!pathMock && completedPathMock ? `<a class="btn secondary" href="#/refresher/${completedPathMock.id}">Return to refresher activity</a>` : ""}</div></div>`;
     app.innerHTML = html;
-    $("#start").onclick = () => {
+    if ($("#start")) $("#start").onclick = () => {
       let pool = ALL.filter((e) => e.part.num >= 9 && !P.solved[e.id]); if (pool.length < 3) pool = ALL.filter((e) => e.part.num >= 9);
       if (!pool.length) { toast("No interview exercises are available in this catalog."); return; }
       const picks = [], arr = pool.slice(); while (picks.length < 3 && arr.length) picks.push(arr.splice(Math.floor(Math.random() * arr.length), 1)[0].id);
@@ -940,6 +946,7 @@ function route() {
   if ((m = h.match(/^#\/lesson\/(\d+)/))) return viewLesson(parseInt(m[1], 10));
   if ((m = h.match(/^#\/diagnostic(?:\/([\d.]+))?$/))) return viewDiagnostic(m[1]);
   if (h.startsWith("#/profile")) return viewProfile();
+  if ((m = h.match(/^#\/refresher(?:\/([a-z0-9-]+))?$/))) return viewRefresher(m[1]);
   if (h.startsWith("#/interview")) return viewInterview();
   viewHome();
 }

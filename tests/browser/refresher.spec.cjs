@@ -1,0 +1,136 @@
+const { test: base, expect } = require("playwright/test");
+const KEY = "cpe-course-progress-v1";
+const test = base.extend({
+  page: async ({page}, use) => {
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.route("**/*", route => new URL(route.request().url()).hostname === "127.0.0.1" ? route.continue() : route.abort());
+    await page.route("**/worker.js", route => route.fulfill({contentType:"application/javascript",body:'self.onmessage=({data})=>{if(data.type==="boot")self.postMessage({type:"ready"});if(data.type==="run")self.postMessage({type:"result",id:data.id,result:{tests:[{name:"test_answer",status:"pass"}]}})}'}));
+    await use(page);
+    expect(errors).toEqual([]);
+  },
+});
+const progress = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), KEY);
+
+test("diagnostic attempts and reflections lead back to the saved refresher activity", async ({page}) => {
+  await page.goto("/#/refresher/baseline-diagnostic");
+  await page.getByRole("link", {name:"Open diagnostic",exact:true}).click();
+  await expect(page.getByRole("heading", {name:"Fundamentals diagnostic",exact:true})).toBeVisible();
+  await page.getByRole("link", {name:"Resume diagnostic",exact:true}).click();
+  await page.locator("#diagnostic-code").fill("# first independent attempt");
+  await page.locator("#diagnostic-run").click();
+  await expect(page.locator("#diagnostic-results")).toContainText("Diagnostic tests passed");
+  await page.getByLabel("Confidence",{exact:true}).selectOption("needs_review");
+  await page.locator("#diagnostic-note").fill("Strip before splitting");
+  await page.reload();
+  await expect(page.locator("#diagnostic-code")).toHaveValue("# first independent attempt");
+  await page.getByRole("link", {name:"Refresher",exact:true}).click();
+  await expect(page.getByText("Your note: Strip before splitting",{exact:false})).toBeVisible();
+  await expect(page.getByRole("link", {name:/Resume activity/})).toHaveAttribute("href","#/refresher/baseline-diagnostic");
+  await page.locator('.card').filter({has:page.getByRole("heading",{name:"Diagnostic review suggestions"})}).locator('a[href="#/learn/1.2"]').click();
+  await page.getByRole("link", {name:"Refresher",exact:true}).click();
+  await expect(page.getByRole("link", {name:/Resume activity/})).toHaveAttribute("href","#/refresher/baseline-diagnostic");
+  const saved = await progress(page);
+  expect(saved.diagnostic.attempts).toHaveLength(1);
+  expect(saved.xp).toBe(0);
+  expect(saved.solved).toEqual({});
+});
+
+test("saved next activity, skip, revisit and notes round-trip without changing mastery", async ({page}) => {
+  await page.goto("/#/refresher");
+  await page.evaluate(() => {
+    const diagnostic = beginDiagnostic();
+    updateDiagnostic("1.2", "reflect", diagnostic.id, {confidence:"needs_review",note:"forgot strip"});
+    P.xp = 123; P.solved = {"1.2":{xp:7}}; P.cards = {legacy:{done:true}}; saveProgress();
+  });
+  await page.reload();
+  await expect(page.getByRole("heading", {name:"Two-week Interview refresher"})).toBeVisible();
+  await expect(page.getByText("Your note: forgot strip", {exact:false})).toBeVisible();
+  await expect(page.locator('.card').filter({has:page.getByRole("heading",{name:"Diagnostic review suggestions"})}).locator('a[href="#/learn/1.2"]')).toBeVisible();
+  await page.getByRole("link", {name:/Resume activity/}).click();
+  await expect(page.getByRole("link", {name:"Open diagnostic",exact:true})).toHaveAttribute("href","#/diagnostic");
+  await page.getByRole("button", {name:"Mark done",exact:true}).click();
+  await page.getByRole("link", {name:/Resume activity/}).click();
+  await page.getByRole("button", {name:"Skip activity",exact:true}).click();
+  await page.reload();
+  await page.getByRole("link", {name:/Resume activity/}).click();
+  await expect(page.getByRole("heading", {name:"Choose your emphasis"})).toBeVisible();
+  await page.getByLabel("Your takeaway or next practice").fill("Practise dictionary defaults");
+  await page.getByRole("button", {name:"Save note"}).click();
+  await page.goto("/#/profile");
+  await page.getByRole("button", {name:"Export",exact:true}).click();
+  const exported = await page.locator("#io").inputValue();
+  await page.evaluate(key => localStorage.removeItem(key), KEY);
+  await page.reload();
+  await page.locator("#io").fill(exported);
+  await page.getByRole("button", {name:"Import",exact:true}).click();
+  await page.getByRole("link", {name:"Refresher",exact:true}).click();
+  await page.getByRole("link", {name:/Resume activity/}).click();
+  await expect(page.getByLabel("Your takeaway or next practice")).toHaveValue("Practise dictionary defaults");
+  await page.goto("/#/refresher/baseline-diagnostic");
+  await page.getByRole("button", {name:"Revisit activity",exact:true}).click();
+  await page.goto("/#/");
+  await page.getByRole("link", {name:"Interview refresher",exact:true}).click();
+  await expect(page.getByRole("link", {name:/Resume activity/})).toHaveAttribute("href","#/refresher/baseline-diagnostic");
+  const saved = await progress(page);
+  expect(saved.xp).toBe(123);
+  expect(saved.solved).toEqual({"1.2":{xp:7}});
+  expect(saved.cards).toEqual({legacy:{done:true}});
+  expect(saved.refresher.activities["baseline-review"].status).toBe("skipped");
+  expect(saved.diagnostic.reflections["1.2"].confidence).toBe("needs_review");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test("curated mock resumes the same round and a pass never completes the path activity", async ({page}) => {
+  await page.goto("/#/refresher");
+  await page.evaluate(key => localStorage.setItem(key, JSON.stringify({xp:300,solved:{"5.4":{xp:20},"10.1":{xp:30}}})), KEY);
+  await page.reload();
+  await page.goto("/#/refresher/mocks-a");
+  await page.getByRole("button", {name:"Start or resume curated mock"}).click();
+  await expect(page.getByRole("heading", {name:"Mock A: collections and dates"})).toBeVisible();
+  await expect(page.getByText("0/2 passed · 0/2 on time",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button", {name:"Save this round and start another"})).toHaveCount(0);
+  await expect(page.getByRole("link", {name:"Return to refresher activity"})).toHaveAttribute("href","#/refresher/mocks-a");
+  const started = (await progress(page)).interview;
+  expect(started.ids).toEqual(["5.4","10.1"]);
+  await page.reload();
+  await page.goto("/#/refresher/mocks-a");
+  await page.getByRole("button", {name:"Start or resume curated mock"}).click();
+  expect((await progress(page)).interview.id).toBe(started.id);
+  await page.goto("/#/refresher/mocks-b");
+  await page.getByRole("button", {name:"Start or resume curated mock"}).click();
+  await expect(page.locator("#toast")).toContainText("A different mock is active");
+  expect((await progress(page)).interview.id).toBe(started.id);
+  await page.goto("/#/ex/5.4");
+  await page.getByRole("button", {name:"Run tests"}).click();
+  await expect(page.locator("#results")).toContainText("already solved");
+  await page.goto("/#/interview");
+  await expect(page.getByText("1/2 passed · 1/2 on time",{exact:true})).toBeVisible();
+  expect((await progress(page)).refresher.activities["mocks-a"].status).toBeUndefined();
+  expect((await progress(page)).xp).toBe(300);
+  await page.getByRole("button", {name:"Finish and save result"}).click();
+  await page.goto("/#/refresher/mocks-a");
+  await page.getByRole("button", {name:"Mark done"}).click();
+  expect((await progress(page)).refresher.activities["mocks-a"].status).toBe("done");
+  await page.getByRole("link", {name:/Resume activity/}).click();
+  await expect(page.getByRole("heading", {name:"Mock B: API basics and a hash map"})).toBeVisible();
+});
+
+test("failed storage cannot orphan a new mock and malformed state remains exportable", async ({page}) => {
+  await page.goto("/#/refresher/mocks-a");
+  const before = await progress(page);
+  await page.evaluate(() => { window.originalSetItem = Storage.prototype.setItem; Storage.prototype.setItem = function(){throw new Error("quota");}; });
+  await page.getByRole("button", {name:"Start or resume curated mock"}).click();
+  await expect(page.locator("#toast")).toContainText("Could not save the path");
+  await page.evaluate(() => { Storage.prototype.setItem = window.originalSetItem; });
+  expect(await progress(page)).toEqual(before);
+  await page.getByRole("button", {name:"Start or resume curated mock"}).click();
+  const saved = await progress(page);
+  expect(saved.refresher.mock_sessions["mocks-a"]).toBe(saved.interview.id);
+  await page.evaluate(key => localStorage.setItem(key, JSON.stringify({xp:0,refresher:{version:99,custom:"recover me"}})), KEY);
+  await page.goto("/#/refresher");
+  await page.reload();
+  await expect(page.getByText(/saved refresher path is not supported/)).toBeVisible();
+  await expect(page.getByRole("link", {name:"Export progress"})).toHaveAttribute("href","#/profile");
+  expect((await progress(page)).refresher).toEqual({version:99,custom:"recover me"});
+});

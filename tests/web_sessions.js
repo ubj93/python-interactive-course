@@ -35,7 +35,7 @@ const app = {
     for (const match of value.matchAll(/\bid="([^"]+)"/g)) elements.set("#" + match[1], { textContent: "", className: "", onclick: null });
   },
 };
-const sandbox = { assert, Date: Clock, localStorage: storage, storage, memory, BASE, clock, imported, app, ALL: [ex1, ex2], BY_ID: { "9.1": ex1, "9.2": ex2 }, ex1, ex2, DATA: {}, STORE_KEY: "test-progress", LEGACY_INTERVIEW_KEY: "test-old-interview", $: (selector) => elements.get(selector) || null, esc: (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"), toast: () => {}, renderHeader: () => {}, setInterval: (fn) => { const id = nextTimer++; timers.set(id, fn); return id; }, clearInterval: (id) => timers.delete(id), timers };
+const sandbox = { refresherMock: () => null, assert, Date: Clock, localStorage: storage, storage, memory, BASE, clock, imported, app, ALL: [ex1, ex2], BY_ID: { "9.1": ex1, "9.2": ex2 }, ex1, ex2, DATA: {}, STORE_KEY: "test-progress", LEGACY_INTERVIEW_KEY: "test-old-interview", $: (selector) => elements.get(selector) || null, esc: (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"), toast: () => {}, renderHeader: () => {}, setInterval: (fn) => { const id = nextTimer++; timers.set(id, fn); return id; }, clearInterval: (id) => timers.delete(id), timers };
 const script = page.slice(progressStart, progressEnd) + page.slice(viewStart, viewEnd) + `
   function reset() { P = blankProgress(); memory.clear(); storage.fail = false; clock.set(BASE); }
   assert.equal(JSON.stringify(sessionSummary(imported)), JSON.stringify(imported.summary));

@@ -88,6 +88,10 @@ class App:
         return f"  {self.status_mark(ex)} {ex.id:<5} {ex.title:<34} {kyu:<8} {xp}  {tags}"
 
     # ------------------------------------------------------------ commands
+    def cmd_refresher(self, args) -> int:
+        from .refresher_cli import command
+        return command(self, args)
+
     def cmd_diagnostic(self, args) -> int:
         from .diagnostic import command
         return command(self, args)
@@ -134,6 +138,7 @@ class App:
         elif not lesson:
             print("  " + ui.green("Everything complete. 🎓"))
         print(ui.dim("  Commands: learn · list · show · run · hint · solution · lesson · daily · interview · diagnostic · watch · badges · backup"))
+        print("  Interview refresher: `course refresher` for a saved, flexible two-week path.")
         return 0
 
     def cmd_list(self, args) -> int:
@@ -930,6 +935,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = ap.add_subparsers(dest="cmd")
 
     sub.add_parser("status", help="dashboard: rank, xp, streak, progress per part")
+    s = sub.add_parser("refresher", help="saved two-week Interview refresher path"); s.add_argument("action", nargs="?", default="status", choices=["status", "list", "open", "done", "skip", "revisit", "note", "mock"]); s.add_argument("activity", nargs="?", help="activity ID from `course refresher list`; defaults to saved next activity"); s.add_argument("--text", help="personal takeaway for the note action")
     s = sub.add_parser("learn", help="guided lesson: bite-sized cards with checks, ending in an exercise"); s.add_argument("lesson", nargs="?", help="lesson id like 1.2, a part number, or 'next'"); s.add_argument("--list", action="store_true", help="list lessons and progress"); s.add_argument("--show", action="store_true", help="print all cards without the interactive checks"); s.add_argument("--restart", action="store_true", help="forget answers for this lesson and start over")
     s = sub.add_parser("list", help="list exercises"); s.add_argument("part", nargs="?"); s.add_argument("-u", "--unsolved", action="store_true")
     s = sub.add_parser("show", help="show an exercise's problem statement"); s.add_argument("exercise", nargs="?")
