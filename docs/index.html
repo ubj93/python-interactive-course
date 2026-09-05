@@ -310,6 +310,11 @@ function xpFor(ex, attempts, hints, seconds, peeked) {
   return { xp: Math.max(1, Math.round(ex.xp * mult)), notes };
 }
 function award(name, list) { if (!P.badges[name]) { P.badges[name] = today(); list.push(name); } }
+function checkStreakBadges(list) {
+  const st = streak();
+  if (st >= 7) award("week_streak", list);
+  if (st >= 30) award("month_streak", list);
+}
 function checkBadges(ex, attempts, hints, seconds) {
   const list = [];
   const sv = Object.values(P.solved);
@@ -319,9 +324,7 @@ function checkBadges(ex, attempts, hints, seconds) {
   if (sv.filter((s) => s.attempts === 1).length >= 5) award("first_try", list);
   if (attempts >= 4) award("comeback", list);
   if (ex.kyu <= 5 && ex.time_limit_min && seconds != null && seconds >= 0 && seconds <= ex.time_limit_min * 60) award("speed_demon", list);
-  const st = streak();
-  if (st >= 7) award("week_streak", list);
-  if (st >= 30) award("month_streak", list);
+  checkStreakBadges(list);
   if (Object.values(P.daily).filter((d) => d.done).length >= 5) award("daily_5", list);
   if (ALL.every((e) => P.solved[e.id])) award("graduate", list);
   return list;
@@ -347,6 +350,7 @@ function recordRun(ex, passed, submittedSessionId = undefined) {
     if (d && d.id === ex.id && !d.done) { d.done = true; P.xp += 5; out.daily = 5; }
     out.badges = checkBadges(ex, attempts, hints, seconds);
   }
+  checkStreakBadges(out.badges);
   saveProgress();
   return out;
 }
@@ -369,16 +373,26 @@ for (const p of DATA.parts) for (const l of lessonsOf(p)) { l.part = p; LESSONS.
 const LESSON_BY_ID = {};
 for (const l of LESSONS) LESSON_BY_ID[l.id] = l;
 function cardState(lessonId, i) { return (P.cards || {})[lessonId + ":" + i] || { done: false, correct: null, tries: 0 }; }
+function cardRewardHistory() {
+  const history = P.card_reward_history || (P.card_reward_history = {});
+  for (const [key, state] of Object.entries(P.cards || {})) {
+    if (state.tries || state.correct != null) history[key] = true;
+  }
+  return history;
+}
 function recordCard(lessonId, i, checkable, correct) {
   P.cards = P.cards || {};
   const key = lessonId + ":" + i; const st = Object.assign({ done: false, correct: null, tries: 0 }, P.cards[key]);
   let xp = 0; const t = today(); if (!P.days.includes(t)) P.days.push(t);
   if (checkable) {
+    const history = cardRewardHistory();
+    const firstAssessment = !Object.prototype.hasOwnProperty.call(history, key);
+    history[key] = true;
     st.tries += 1;
-    if (correct && !st.done) { if (st.tries === 1) { xp = DATA.card_xp || 1; P.xp += xp; } st.done = true; st.correct = true; }
+    if (correct && !st.done) { if (firstAssessment && st.tries === 1) { xp = DATA.card_xp || 1; P.xp += xp; } st.done = true; st.correct = true; }
     else if (correct === false && !st.done) { st.correct = false; if (st.tries >= 2) st.done = true; }
   } else st.done = true;
-  P.cards[key] = st; P.last_lesson = lessonId; saveProgress(); return xp;
+  P.cards[key] = st; P.last_lesson = lessonId; checkStreakBadges([]); saveProgress(); return xp;
 }
 function lessonProgress(l) {
   let done = 0; l.cards.forEach((c, i) => { if (cardState(l.id, i).done) done++; });

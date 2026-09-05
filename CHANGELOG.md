@@ -13,6 +13,14 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-05
+
+### Fixed
+- Keep each lesson card's first-answer reward history through retries, restart,
+  reload and progress import, preserving earned XP without repeated awards.
+- Award streak milestones for lesson activity, failed exercise attempts and
+  solved-exercise retries. Verify watch waits for a learner file save before grading.
+
 ## [0.4.0] - 2026-09-05
 
 ### Added

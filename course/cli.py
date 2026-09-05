@@ -615,9 +615,7 @@ class App:
     def run_lesson(self, lesson: Lesson, part: Part, restart: bool = False) -> int:
         p = self.progress
         if restart:
-            for i in range(len(lesson.cards)):
-                p.data.setdefault("cards", {}).pop(f"{lesson.id}:{i}", None)
-            p.save()
+            p.restart_lesson(lesson)
         print(ui.heading(f"Lesson {lesson.id} · {lesson.title}   {ui.dim(f'Part {part.num}: {part.title}')}"))
         print(ui.dim("  Enter continues · answers are a letter or text · q quits (progress is saved)\n"))
         earned = 0
