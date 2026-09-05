@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import time
+import zipfile
 from pathlib import Path
 from typing import List, Optional
 
@@ -17,7 +18,8 @@ from .catalog import ROOT, Exercise, Part, all_exercises, find_exercise, find_pa
 from .progress import BADGES, RANKS, Progress
 from . import backup as backup_mod
 from .lessons import CARD_XP, Card, Lesson, find_lesson, load_all_lessons
-from .runner import RunResult, run_code_card, run_tests
+from .runner import RunResult, run_code_card, run_learner
+from .workspace import Workspace, recovery_copy
 from .timestamps import parse_timestamp, utc_now
 from .sessions import normalize_session, session_summary
 
@@ -25,12 +27,13 @@ from .sessions import normalize_session, session_summary
 class App:
     def __init__(self) -> None:
         self.catalog = load_catalog()
+        self.workspace = Workspace()
         self.progress = Progress()
         self.lessons = load_all_lessons(self.catalog)
         self.total_xp = total_xp(self.catalog) + sum(l.xp for ls in self.lessons.values() for l in ls)
 
     # ------------------------------------------------------------ helpers
-    def resolve(self, ref: Optional[str]) -> Exercise:
+    def resolve(self, ref: Optional[str], *, record_selection: bool = True) -> Exercise:
         if ref in (None, "", "last"):
             ref = self.progress.data.get("last")
             if not ref:
@@ -41,7 +44,7 @@ class App:
                 self.die("Every exercise is solved. Run `course interview` for a fresh mock round.")
             return ex
         if ref == "daily":
-            return self.daily_exercise()
+            return self.daily_exercise(record_selection=record_selection)
         ex = find_exercise(self.catalog, ref)
         if ex is None:
             self.die(f"No exercise matches '{ref}'. Try `course list`.")
@@ -166,7 +169,7 @@ class App:
         print(ui.wrap(ex.description()))
         print()
         hints = self.progress.hints_used(ex.id)
-        print(f"  File   {ui.bold(self.rel(ex.exercise_file))}")
+        print(f"  File   {ui.bold(self.rel(self.workspace.ensure(ex)))}")
         print(f"  Tests  {self.rel(ex.test_file)}")
         print(f"  Hints  {hints}/{len(ex.hints)} revealed   {ui.dim(f'course hint {ex.id}')}")
         print(f"  Run    {ui.cyan(f'course run {ex.id}')}   {ui.dim(f'or: course watch {ex.id}')}")
@@ -185,15 +188,21 @@ class App:
         return 0
 
     def cmd_run(self, args) -> int:
-        ex = self.resolve(args.exercise)
-        return self.run_once(ex, verbose=args.verbose)
+        ex = self.resolve(args.exercise, record_selection=not args.scratch)
+        return self.run_once(ex, verbose=args.verbose, scratch=args.scratch)
 
-    def run_once(self, ex: Exercise, verbose: bool = False) -> int:
+    def run_once(self, ex: Exercise, verbose: bool = False, scratch: bool = False) -> int:
         print(ui.heading(f"Running tests · {ex.id} {ex.title}"))
         t0 = time.time()
-        res = run_tests(ex)
+        answer = self.workspace.ensure(ex, scratch=scratch)
+        res = run_learner(ex, self.workspace, answer)
         elapsed = time.time() - t0
         self.print_result(res, verbose=verbose)
+        if scratch:
+            label = f"All {res.total} tests passed" if res.ok else "Keep practising"
+            print(ui.green(f"  {label}") if res.ok else ui.yellow(f"  {label}"))
+            print(ui.dim("  Scratch practice: saved answers and progress are unchanged."))
+            return 0 if res.ok else 1
         summary = self.progress.record_run(ex, res.ok)
         if res.ok:
             print(ui.green(ui.bold(f"\n  ✔ All {res.total} tests passed")) + ui.dim(f"  ({elapsed:.2f}s)"))
@@ -266,12 +275,13 @@ class App:
         ex = self.resolve(args.exercise)
         self.progress.touch(ex)
         self.progress.save()
-        print(ui.dim(f"Watching {self.rel(ex.exercise_file)} — save the file to re-run. Ctrl-C to stop."))
-        last = None
+        answer = self.workspace.ensure(ex)
+        print(ui.dim(f"Watching {self.rel(answer)} — save the file to re-run. Ctrl-C to stop."))
+        last = answer.stat().st_mtime_ns
         try:
             while True:
                 try:
-                    mtime = ex.exercise_file.stat().st_mtime
+                    mtime = answer.stat().st_mtime_ns
                 except OSError:
                     mtime = None
                 if mtime != last:
@@ -330,20 +340,44 @@ class App:
         return 0
 
     def cmd_reset(self, args) -> int:
-        ex = self.resolve(args.exercise)
-        try:
-            stub = subprocess.run(
-                ["git", "show", f"HEAD:{ex.exercise_file.relative_to(ROOT).as_posix()}"],
-                capture_output=True, text=True, cwd=str(ROOT), check=True,
-            ).stdout
-        except (subprocess.CalledProcessError, OSError, ValueError):
-            self.die("Could not read the original stub from git. Restore exercise.py manually.")
-        ex.exercise_file.write_text(stub, encoding="utf-8")
-        self.progress.forget(ex.id)
-        print(ui.green(f"  Restored {self.rel(ex.exercise_file)} to the original stub."))
+        ex = self.resolve(args.exercise, record_selection=not args.scratch)
+        path, saved = self.workspace.reset(ex, scratch=args.scratch)
+        if not args.scratch:
+            if self.progress.path.exists():
+                progress_copy = recovery_copy(self.progress.path)
+                print(ui.dim(f"  Previous progress saved to {progress_copy}"))
+            self.progress.forget(ex.id)
+        print(ui.green(f"  Restored {self.rel(path)} to the original starter."))
+        if saved:
+            print(ui.dim(f"  Previous answer saved to {saved}"))
         return 0
 
-    def daily_exercise(self) -> Exercise:
+    def cmd_migrate_answers(self, args) -> int:
+        selected = [self.resolve(args.exercise)] if args.exercise else all_exercises(self.catalog)
+        candidates = [ex for ex in self.workspace.legacy_answers(self.catalog) if ex in selected]
+        if args.restore_starters and not args.apply:
+            self.die("Use --apply with --restore-starters after reviewing the migration preview.")
+        if not candidates:
+            print("No uncommitted curriculum answer candidates found. Migration requires git history.")
+            return 0
+        print("Local curriculum changes may be learner answers or author edits. Review them before applying:")
+        for ex in candidates:
+            print(f"  {ex.id}: {ex.exercise_file} → {self.workspace.answer_path(ex)}")
+        if not args.apply:
+            print("Preview only. Use --apply to copy these edits; add --restore-starters to restore their committed starters.")
+            return 0
+        result = self.workspace.migrate(candidates, restore_starters=args.restore_starters)
+        for path in result["copied"]:
+            print(ui.green(f"  Copied answer → {path}"))
+        for path in result["conflicts"]:
+            print(ui.yellow(f"  Existing answer preserved → {path}"))
+        for path in result["recoveries"]:
+            print(f"  Legacy recovery copy → {path}")
+        for path in result["restored"]:
+            print(f"  Restored committed starter → {path}")
+        return 0
+
+    def daily_exercise(self, *, record_selection: bool = True) -> Exercise:
         today = self.progress.today_daily()
         if today:
             ex = find_exercise(self.catalog, today["id"])
@@ -357,7 +391,8 @@ class App:
         near = [e for e in pool if e.part_num in (frontier, frontier + 1)]
         rng = random.Random(dt.date.today().isoformat())
         ex = rng.choice(near or pool)
-        self.progress.set_daily(ex.id)
+        if record_selection:
+            self.progress.set_daily(ex.id)
         return ex
 
     def cmd_daily(self, args) -> int:
@@ -472,8 +507,9 @@ class App:
 
     def cmd_repl(self, args) -> int:
         ex = self.resolve(args.exercise)
-        print(ui.dim(f"Interactive Python with {self.rel(ex.exercise_file)} loaded. exit() to leave."))
-        return subprocess.call([sys.executable, "-i", str(ex.exercise_file)], cwd=str(ex.dir))
+        print(ui.dim(f"Interactive Python with {self.rel(self.workspace.ensure(ex))} loaded. exit() to leave."))
+        with self.workspace.grading_copy(ex) as candidate:
+            return subprocess.call([sys.executable, "-i", str(candidate.exercise_file)], cwd=str(candidate.dir))
 
     # ------------------------------------------------------------ guided lessons
     def all_lessons(self) -> List[Lesson]:
@@ -638,7 +674,7 @@ class App:
             p.save()
             print(ui.bold(f"  Put it together: exercise {ex.id} · {ex.title}") + ui.dim(f"  ({ex.kyu} kyu, {ex.xp} xp)"))
             print(ui.wrap(ex.description().split("\n\n")[1] if "\n\n" in ex.description() else ex.description()))
-            print(f"\n  Edit  {ui.bold(self.rel(ex.exercise_file))}")
+            print(f"\n  Edit  {ui.bold(self.rel(self.workspace.ensure(ex)))}")
             while True:
                 if p.is_solved(ex.id):
                     print(ui.green(f"  ✔ {ex.id} solved"))
@@ -783,11 +819,15 @@ class App:
 
     def cmd_backup(self, args) -> int:
         dest = Path(args.to).expanduser() if args.to else None
-        path, n, has_progress = backup_mod.backup(self.catalog, self.progress.path, dest)
+        path, n, has_progress = backup_mod.backup(self.catalog, self.progress.path, dest, workspace=self.workspace)
         print(ui.green(f"  Backed up to {path}"))
-        print(f"  progress file: {'included' if has_progress else 'none yet'}   edited exercises: {n}")
+        print(f"  progress file: {'included' if has_progress else 'none yet'}   learner files: {n}")
+        legacy = len(backup_mod.inspect(path).get("legacy_recoveries", []))
+        if legacy:
+            print(ui.yellow(f"  Included {legacy} changed or unverified curriculum file(s) as recovery copies; workspace answers remain separate."))
+            print(ui.dim("  Review course migrate-answers before restoring curriculum starters."))
         if not has_progress and n == 0:
-            print(ui.dim("  (nothing to back up yet: no progress and no edited exercises)"))
+            print(ui.dim("  (nothing to back up yet: no progress and no workspace files)"))
         return 0
 
     def cmd_restore(self, args) -> int:
@@ -796,11 +836,11 @@ class App:
             self.die(f"No such file: {archive}")
         try:
             manifest = backup_mod.inspect(archive)
-        except (KeyError, ValueError, OSError) as e:
+        except (KeyError, ValueError, OSError, zipfile.BadZipFile) as e:
             self.die(f"Not a course backup: {e}")
         print(ui.heading(f"Restore · {archive.name}"))
         print(f"  made {manifest.get('created')} with course v{manifest.get('course_version')}")
-        print(f"  progress: {'yes' if manifest.get('progress') else 'no'}   edited exercises: {len(manifest.get('exercises', []))}")
+        print(f"  progress: {'yes' if manifest.get('progress') else 'no'}   answer/workspace files: {len(manifest.get('exercises', []))}")
         if args.list:
             for rel in manifest.get("exercises", []):
                 print("    " + rel)
@@ -809,8 +849,9 @@ class App:
             result = backup_mod.restore(
                 archive, self.progress.path, force=args.force,
                 exercises_only=args.exercises_only, progress_only=args.progress_only,
+                catalog=self.catalog, workspace=self.workspace,
             )
-        except FileExistsError as e:
+        except (ValueError, OSError, zipfile.BadZipFile) as e:
             self.die(str(e))
         if result["progress"]:
             print(ui.green(f"  Restored progress → {result['progress']}"))
@@ -818,13 +859,13 @@ class App:
             print(ui.green(f"  Restored {rel}"))
         for rel in result["skipped"]:
             print(ui.yellow(f"  Skipped {rel} (not in this course version)"))
-        if result["progress"] or result["exercises"]:
-            print(ui.dim("  Overwritten files were kept as .bak copies."))
+        for path in result.get("recoveries", []):
+            print(ui.dim(f"  Previous file saved to {path}"))
         return 0
 
     def cmd_path(self, args) -> int:
-        ex = self.resolve(args.exercise)
-        print(ex.exercise_file)
+        ex = self.resolve(args.exercise, record_selection=not args.scratch)
+        print(self.workspace.ensure(ex, scratch=args.scratch))
         return 0
 
 
@@ -891,7 +932,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("list", help="list exercises"); s.add_argument("part", nargs="?"); s.add_argument("-u", "--unsolved", action="store_true")
     s = sub.add_parser("show", help="show an exercise's problem statement"); s.add_argument("exercise", nargs="?")
     sub.add_parser("next", help="show the next unsolved exercise")
-    s = sub.add_parser("run", help="run the tests (default: last exercise touched)"); s.add_argument("exercise", nargs="?"); s.add_argument("-v", "--verbose", action="store_true", help="full tracebacks")
+    s = sub.add_parser("run", help="run the tests (default: last exercise touched)"); s.add_argument("exercise", nargs="?"); s.add_argument("-v", "--verbose", action="store_true", help="full tracebacks"); s.add_argument("--scratch", action="store_true", help="grade a separate practice copy without changing progress")
     s = sub.add_parser("watch", help="re-run tests whenever exercise.py changes"); s.add_argument("exercise", nargs="?"); s.add_argument("--exit-on-pass", action="store_true")
     s = sub.add_parser("hint", help="reveal the next hint (costs 25%% of the exercise's XP)"); s.add_argument("exercise", nargs="?")
     s = sub.add_parser("solution", help="show reference solutions (after passing)"); s.add_argument("exercise", nargs="?"); s.add_argument("--force", action="store_true")
@@ -899,11 +940,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("daily", help="today's kata (+5 xp bonus)")
     s = sub.add_parser("interview", help="timed mock interview"); s.add_argument("--count", type=int, default=3); s.add_argument("--minutes", type=int, default=45); s.add_argument("--min-part", type=int, default=9); s.add_argument("--new", action="store_true"); s.add_argument("--finish", action="store_true"); s.add_argument("--last", action="store_true", help="review the most recently finished round")
     sub.add_parser("badges", help="list badges")
-    s = sub.add_parser("reset", help="restore an exercise to its original stub"); s.add_argument("exercise")
+    s = sub.add_parser("reset", help="reset a learner answer, keeping recovery copies"); s.add_argument("exercise"); s.add_argument("--scratch", action="store_true", help="reset only the scratch practice copy")
+    s = sub.add_parser("migrate-answers", help="preview or copy legacy edits out of curriculum"); s.add_argument("exercise", nargs="?"); s.add_argument("--apply", action="store_true", help="copy legacy edits, preserving conflicting saved answers"); s.add_argument("--restore-starters", action="store_true", help="with --apply, restore committed curriculum starters after saving recovery copies")
     s = sub.add_parser("repl", help="open an interactive Python with the exercise loaded"); s.add_argument("exercise", nargs="?")
-    s = sub.add_parser("path", help="print the path to exercise.py"); s.add_argument("exercise", nargs="?")
-    s = sub.add_parser("backup", help="zip your progress and edited exercises (default: ~/course-backups/)"); s.add_argument("--to", help="file or directory to write the zip to")
-    s = sub.add_parser("restore", help="restore a backup zip"); s.add_argument("archive"); s.add_argument("--force", action="store_true", help="overwrite an existing progress file"); s.add_argument("--list", action="store_true", help="show contents without restoring"); s.add_argument("--exercises-only", action="store_true"); s.add_argument("--progress-only", action="store_true")
+    s = sub.add_parser("path", help="print the learner answer path, initializing it if needed"); s.add_argument("exercise", nargs="?"); s.add_argument("--scratch", action="store_true", help="print a separate practice copy")
+    s = sub.add_parser("backup", help="zip progress and learner workspace (default: ~/course-backups/)"); s.add_argument("--to", help="file or directory to write the zip to")
+    s = sub.add_parser("restore", help="restore a backup zip"); s.add_argument("archive"); s.add_argument("--force", action="store_true", help="overwrite existing progress or answers after saving recovery copies"); s.add_argument("--list", action="store_true", help="show contents without restoring"); s.add_argument("--exercises-only", action="store_true"); s.add_argument("--progress-only", action="store_true")
     return ap
 
 
@@ -912,11 +954,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = ap.parse_args(argv)
     if args.no_color:
         ui.enable_color(False)
-    app = App()
+    try:
+        app = App()
+    except (OSError, ValueError) as e:
+        App.die(str(e))
     if not app.catalog:
         App.die("No curriculum found. Run from the repository root.")
     cmd = args.cmd or "status"
-    handler = getattr(app, f"cmd_{cmd}")
+    handler = getattr(app, "cmd_" + cmd.replace("-", "_"))
     try:
         return int(handler(args) or 0)
     except KeyboardInterrupt:
@@ -928,3 +973,5 @@ def main(argv: Optional[List[str]] = None) -> int:
         except OSError:
             pass
         return 0
+    except (OSError, ValueError) as e:
+        App.die(str(e))

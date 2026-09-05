@@ -6,7 +6,7 @@ Layout::
       part01_foundations/
         LESSON.md
         01_greet_device/
-          exercise.py        # stub the learner edits (module docstring = problem statement)
+          exercise.py        # course starter (module docstring = problem statement)
           test_exercise.py   # unittest cases, import from ``exercise``
           solution.py        # reference solution(s), shown after a pass
           meta.json          # title, kyu, tags, hints, time_limit_min
@@ -94,7 +94,7 @@ class Exercise:
         return (doc or "").strip()
 
     def stub_source(self) -> str:
-        """The pristine stub, reconstructed from git-tracked file if available."""
+        """Course starter content; learner answers live in the separate workspace."""
         return self.exercise_file.read_text(encoding="utf-8")
 
 

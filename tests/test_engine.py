@@ -163,73 +163,302 @@ if __name__ == "__main__":
 
 
 class TestBackupRestore(unittest.TestCase):
-    """Backup/restore against the real catalog, using a temp progress file and one edited exercise."""
+    """All learner, source, archive and progress files live in a temporary fixture."""
 
     def setUp(self):
-        from course.catalog import load_catalog as _lc
+        import subprocess
+        from course.workspace import Workspace
 
-        self.tmp = Path(tempfile.mkdtemp())
-        self.catalog = _lc()
-        self.ex = self.catalog[0].exercises[0]
-        self.original = self.ex.exercise_file.read_text(encoding="utf-8")
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.tmp = Path(self.temporary.name)
+        self.ex = make_exercise(self.tmp / "curriculum", "def f(x): return x + 1\n", TESTS)
+        self.catalog = load_catalog(self.tmp / "curriculum")
+        self.original = self.ex.exercise_file.read_bytes()
+        for args in (("init", "-q"), ("add", "curriculum"),
+                     ("-c", "user.name=Course tests", "-c", "user.email=course-tests@example.invalid",
+                      "commit", "-qm", "fixture starter")):
+            subprocess.run(["git", *args], cwd=self.tmp, check=True, capture_output=True)
+        self.workspace = Workspace(self.tmp / "learner", repository_root=self.tmp)
         self.progress_path = self.tmp / "progress.json"
         Progress(self.progress_path).record_run(self.ex, True)
+        self.member = "workspace/answers/part01_demo/01_demo/exercise.py"
+        self.legacy = "curriculum/part01_demo/01_demo/exercise.py"
+        self.archive_count = 0
 
     def tearDown(self):
-        self.ex.exercise_file.write_text(self.original, encoding="utf-8")
-        bak = self.ex.exercise_file.with_suffix(".py.bak")
-        if bak.exists():
-            bak.unlink()
-        shutil.rmtree(self.tmp)
+        self.assertEqual(self.ex.exercise_file.read_bytes(), self.original)
 
-    def test_backup_contains_only_edited_exercises(self):
+    def archive(self, members, entries=None, progress=True):
+        import zipfile
+
+        self.archive_count += 1
+        archive = self.tmp / ("archive-%s.zip" % self.archive_count)
+        with zipfile.ZipFile(archive, "x") as zf:
+            zf.writestr("manifest.json", json.dumps({"exercises": list(members) if entries is None else entries}))
+            if progress:
+                zf.writestr("progress.json", self.progress_path.read_bytes())
+            for name, data in members.items():
+                zf.writestr(name, data)
+        return archive
+
+    def restore(self, archive, progress_path=None, **kwargs):
         from course import backup as b
 
-        path, n, has_progress = b.backup(self.catalog, self.progress_path, self.tmp / "b.zip")
+        return b.restore(archive, progress_path or self.tmp / "restored.json",
+                         catalog=self.catalog, workspace=self.workspace, **kwargs)
+
+    def test_backup_round_trip_includes_answers_scratch_helpers_and_recovery(self):
+        from course import backup as b
+        from course.workspace import Workspace, recovery_copy
+
+        answer = self.workspace.ensure(self.ex)
+        answer.write_text("# learner answer\n")
+        recovered = recovery_copy(answer)
+        scratch = self.workspace.ensure(self.ex, scratch=True)
+        scratch.write_text("# scratch practice\n")
+        helper = answer.with_name("helper.py")
+        helper.write_text("# helper\n")
+        migration = self.workspace.root / "recovery" / ("migration-" + "a" * 32) / "part01_demo" / "01_demo" / "exercise.py"
+        migration.parent.mkdir(parents=True)
+        migration.write_text("# migrated legacy answer\n")
+        expected = {p.relative_to(self.workspace.root).as_posix(): p.read_bytes()
+                    for p in (answer, recovered, scratch, helper, migration)}
+        archive, count, has_progress = b.backup(self.catalog, self.progress_path,
+                                               self.tmp / "backup.zip", self.workspace)
+        self.assertEqual(count, 5)
         self.assertTrue(has_progress)
-        self.assertEqual(n, 0)
-        self.ex.exercise_file.write_text(self.original + "\n# edited\n", encoding="utf-8")
-        path, n, _ = b.backup(self.catalog, self.progress_path, self.tmp / "b2.zip")
-        self.assertEqual(n, 1)
-        manifest = b.inspect(path)
-        self.assertEqual(manifest["exercises"], [self.ex.exercise_file.relative_to(ROOT).as_posix()])
+        self.assertEqual(set(b.inspect(archive)["exercises"]), {"workspace/" + p for p in expected})
+        destination = Workspace(self.tmp / "fresh")
+        result = b.restore(archive, self.tmp / "fresh-progress.json",
+                           catalog=self.catalog, workspace=destination)
+        self.assertEqual(len(result["exercises"]), 5)
+        self.assertEqual(result["recoveries"], [])
+        self.assertTrue(Progress(self.tmp / "fresh-progress.json").is_solved(self.ex.id))
+        for name, data in expected.items():
+            self.assertEqual((destination.root / name).read_bytes(), data)
 
-    def test_restore_refuses_to_clobber_progress_without_force(self):
+    def test_backup_has_no_source_answers_and_never_replaces_an_archive(self):
         from course import backup as b
 
-        path, _, _ = b.backup(self.catalog, self.progress_path, self.tmp / "b.zip")
+        archive, count, included = b.backup(self.catalog, self.progress_path,
+                                            self.tmp / "named.zip", self.workspace)
+        self.assertEqual(count, 0)
+        self.assertTrue(included)
+        original_archive = archive.read_bytes()
         with self.assertRaises(FileExistsError):
-            b.restore(path, self.progress_path)
-        result = b.restore(path, self.progress_path, force=True)
-        self.assertEqual(result["progress"], str(self.progress_path))
-        self.assertTrue(self.progress_path.with_suffix(".json.bak").exists())
+            b.backup(self.catalog, self.progress_path, archive, self.workspace)
+        self.assertEqual(archive.read_bytes(), original_archive)
+        first = b.backup(self.catalog, self.tmp / "missing.json", self.tmp / "backups", self.workspace)
+        second = b.backup(self.catalog, self.tmp / "missing.json", self.tmp / "backups", self.workspace)
+        self.assertNotEqual(first[0], second[0])
+        self.assertFalse(first[2])
 
-    def test_round_trip_restores_exercise_and_progress(self):
+    def test_backup_preserves_conflicting_legacy_and_workspace_answers_without_migrating(self):
+        from course import backup as b
+        from course.workspace import Workspace
+
+        workspace = self.workspace
+        answer = workspace.ensure(self.ex)
+        answer.write_text("# current workspace answer\n")
+        legacy = b"# older answer awaiting migration\n"
+        self.ex.exercise_file.write_bytes(legacy)
+        try:
+            archive, count, included = b.backup(self.catalog, self.progress_path,
+                                                self.tmp / "legacy-backup.zip", workspace)
+            self.assertEqual(count, 2)
+            self.assertTrue(included)
+            manifest = b.inspect(archive)
+            self.assertEqual(len(manifest["legacy_recoveries"]), 1)
+            recovery = manifest["legacy_recoveries"][0]
+            self.assertTrue(recovery.startswith("workspace/recovery/migration-"))
+            self.assertEqual(self.ex.exercise_file.read_bytes(), legacy)
+            self.assertEqual(answer.read_text(), "# current workspace answer\n")
+            self.assertFalse((workspace.root / "recovery").exists())
+            destination = Workspace(self.tmp / "fresh", repository_root=self.tmp)
+            result = b.restore(archive, self.tmp / "fresh-progress.json",
+                               catalog=self.catalog, workspace=destination)
+            self.assertEqual(len(result["exercises"]), 2)
+            self.assertEqual(destination.answer_path(self.ex).read_text(), "# current workspace answer\n")
+            self.assertEqual(destination.root.joinpath(*recovery.split("/")[1:]).read_bytes(), legacy)
+        finally:
+            # Only the temporary fixture is edited; keep the source-invariance
+            # teardown assertion for every other backup/restore test.
+            self.ex.exercise_file.write_bytes(self.original)
+
+    def test_gitless_backup_preserves_unverified_source_only_as_recovery(self):
+        from course import backup as b
+        from course.workspace import Workspace
+
+        with tempfile.TemporaryDirectory() as directory:
+            download = Path(directory)
+            ex = make_exercise(download / "curriculum", "# possibly an old answer\n", TESTS)
+            catalog = load_catalog(download / "curriculum")
+            workspace = Workspace(download / "learner", repository_root=download)
+            source = ex.exercise_file.read_bytes()
+            archive, count, _ = b.backup(catalog, self.progress_path,
+                                         self.tmp / "gitless.zip", workspace)
+            self.assertEqual(count, 1)
+            manifest = b.inspect(archive)
+            self.assertEqual(manifest["exercises"], manifest["legacy_recoveries"])
+            self.assertFalse(workspace.root.exists())
+            self.assertEqual(ex.exercise_file.read_bytes(), source)
+            restored = Workspace(download / "restored", repository_root=download)
+            b.restore(archive, download / "progress.json", catalog=catalog, workspace=restored)
+            self.assertFalse(restored.answer_path(ex).exists())
+            recovery = manifest["legacy_recoveries"][0]
+            self.assertEqual(restored.root.joinpath(*recovery.split("/")[1:]).read_bytes(), source)
+
+    def test_legacy_answers_route_to_workspace_and_unknown_exercises_are_skipped(self):
+        unknown = "curriculum/part99_missing/01_unknown/exercise.py"
+        archive = self.archive({self.legacy: b"# old answer\n", unknown: b"# unrelated\n"})
+        result = self.restore(archive)
+        self.assertEqual(self.workspace.answer_path(self.ex).read_bytes(), b"# old answer\n")
+        self.assertEqual(result["skipped"], [unknown])
+        self.assertFalse((self.tmp / "curriculum" / "part99_missing").exists())
+
+    def test_late_answer_conflict_prevents_all_writes_even_in_exercises_only(self):
+        answer = self.workspace.ensure(self.ex)
+        answer.write_text("# keep my work\n")
+        helper = self.member.replace("exercise.py", "helper.py")
+        archive = self.archive({helper: b"# new helper", self.member: b"# incoming"})
+        for options in ({}, {"exercises_only": True}):
+            with self.subTest(options=options), self.assertRaises(FileExistsError):
+                self.restore(archive, **options)
+            self.assertFalse((self.tmp / "restored.json").exists())
+            self.assertFalse(answer.with_name("helper.py").exists())
+            self.assertEqual(answer.read_text(), "# keep my work\n")
+            self.assertEqual(list(answer.parent.glob("*.bak.*")), [])
+
+    def test_progress_conflict_prevents_answer_write_and_force_keeps_unique_copies(self):
+        answer = self.workspace.ensure(self.ex)
+        answer.write_text("# prior answer\n")
+        destination_progress = self.tmp / "existing-progress.json"
+        destination_progress.write_text('{"xp": 77}')
+        archive = self.archive({self.member: b"# incoming answer\n"})
+        with self.assertRaises(FileExistsError):
+            self.restore(archive, destination_progress)
+        first = self.restore(archive, destination_progress, force=True)
+        self.assertEqual(len(first["recoveries"]), 2)
+        first_copies = {name: Path(name).read_bytes() for name in first["recoveries"]}
+        self.assertEqual(set(first_copies.values()), {b'{"xp": 77}', b"# prior answer\n"})
+        second = self.restore(archive, destination_progress, force=True)
+        self.assertTrue(set(first["recoveries"]).isdisjoint(second["recoveries"]))
+        for name, data in first_copies.items():
+            self.assertEqual(Path(name).read_bytes(), data)
+        self.assertEqual(answer.read_bytes(), b"# incoming answer\n")
+
+    def test_progress_only_and_exercises_only_preserve_excluded_destinations(self):
+        archive = self.archive({self.member: b"# answer"})
+        first = self.restore(archive, progress_only=True)
+        self.assertEqual(first["exercises"], [])
+        self.assertFalse(self.workspace.answer_path(self.ex).exists())
+        progress_before = (self.tmp / "restored.json").read_bytes()
+        second = self.restore(archive, exercises_only=True)
+        self.assertIsNone(second["progress"])
+        self.assertEqual((self.tmp / "restored.json").read_bytes(), progress_before)
+        self.assertEqual(self.workspace.answer_path(self.ex).read_bytes(), b"# answer")
+        with self.assertRaises(ValueError):
+            self.restore(archive, exercises_only=True, progress_only=True)
+
+    def test_traversal_paths_are_rejected_before_progress_write(self):
+        for name in ("../outside.py", "/outside.py", "workspace/answers/part01_demo/01_demo/../exercise.py",
+                     "workspace\\answers\\part01_demo\\01_demo\\exercise.py", "workspace//answers/exercise.py"):
+            with self.subTest(name=name):
+                archive = self.archive({self.member: b"# valid", name: b"# unsafe"})
+                with self.assertRaises(ValueError):
+                    self.restore(archive)
+                self.assertFalse((self.tmp / "restored.json").exists())
+                self.assertFalse(self.workspace.root.exists())
+
+    def test_duplicate_members_manifest_entries_and_destinations_are_rejected(self):
+        import warnings
+        import zipfile
+
+        duplicate = self.archive({self.member: b"# first"})
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            with zipfile.ZipFile(duplicate, "a") as zf:
+                zf.writestr(self.member, b"# second")
+        archives = [duplicate,
+                    self.archive({self.member: b"# data"}, [self.member, self.member]),
+                    self.archive({self.member: b"# new", self.legacy: b"# legacy"}),
+                    self.archive({self.member.replace("exercise.py", "helper.py"): b"# lower",
+                                  self.member.replace("exercise.py", "HELPER.py"): b"# upper"})]
+        for archive in archives:
+            with self.subTest(archive=archive), self.assertRaises(ValueError):
+                self.restore(archive)
+            self.assertFalse((self.tmp / "restored.json").exists())
+            self.assertFalse(self.workspace.root.exists())
+
+    def test_archive_symlink_is_rejected_without_writes(self):
+        import stat
+        import zipfile
+
+        archive = self.archive({})
+        info = zipfile.ZipInfo(self.member)
+        info.create_system = 3
+        info.external_attr = (stat.S_IFLNK | 0o777) << 16
+        with zipfile.ZipFile(archive, "a") as zf:
+            zf.writestr(info, "/tmp/outside")
+        with self.assertRaises(ValueError):
+            self.restore(archive)
+        self.assertFalse((self.tmp / "restored.json").exists())
+
+    def test_destination_symlinks_are_rejected_without_touching_link_targets(self):
         from course import backup as b
 
-        self.ex.exercise_file.write_text("def greet_device(h, o, r):\n    return 'edited'\n", encoding="utf-8")
-        path, n, _ = b.backup(self.catalog, self.progress_path, self.tmp / "b.zip")
-        self.assertEqual(n, 1)
-        # Simulate a fresh clone: stub restored, progress gone.
-        self.ex.exercise_file.write_text(self.original, encoding="utf-8")
-        self.progress_path.unlink()
-        result = b.restore(path, self.progress_path)
-        self.assertIn("edited", self.ex.exercise_file.read_text(encoding="utf-8"))
-        self.assertTrue(Progress(self.progress_path).is_solved(self.ex.id))
-        self.assertEqual(len(result["exercises"]), 1)
+        outside = self.tmp / "outside"
+        outside.mkdir()
+        self.workspace.root.mkdir()
+        (self.workspace.root / "answers").symlink_to(outside, target_is_directory=True)
+        archive = self.archive({self.member: b"# incoming"})
+        with self.assertRaises(ValueError):
+            self.restore(archive, force=True)
+        with self.assertRaises(ValueError):
+            b.backup(self.catalog, self.progress_path, self.tmp / "linked.zip", self.workspace)
+        self.assertEqual(list(outside.iterdir()), [])
+        self.assertFalse((self.tmp / "restored.json").exists())
+        linked_progress = self.tmp / "linked-progress.json"
+        linked_progress.symlink_to(self.progress_path)
+        before = self.progress_path.read_bytes()
+        with self.assertRaises(ValueError):
+            self.restore(archive, linked_progress, force=True, progress_only=True)
+        self.assertEqual(self.progress_path.read_bytes(), before)
 
-    def test_restore_rejects_paths_outside_curriculum(self):
+    def test_invalid_progress_is_rejected_before_answers_are_written(self):
+        import zipfile
+
+        archive = self.archive({self.member: b"# answer"}, progress=False)
+        with zipfile.ZipFile(archive, "a") as zf:
+            zf.writestr("progress.json", "not JSON")
+        with self.assertRaises(ValueError):
+            self.restore(archive)
+        self.assertFalse(self.workspace.root.exists())
+
+    def test_progress_and_answer_destination_collisions_do_not_write_anything(self):
+        archive = self.archive({self.member: b"# answer"})
+        answer = self.workspace.answer_path(self.ex)
+        for progress_target in (answer.parent, answer.parent / "unused" / ".." / answer.name):
+            with self.subTest(target=progress_target), self.assertRaises(ValueError):
+                self.restore(archive, progress_target)
+            self.assertFalse(self.workspace.root.exists())
+
+    def test_inspect_and_restore_reject_malformed_manifest_shapes(self):
         import zipfile
         from course import backup as b
 
-        evil = self.tmp / "evil.zip"
-        with zipfile.ZipFile(evil, "w") as zf:
-            zf.writestr("manifest.json", json.dumps({"exercises": ["../outside/exercise.py", "course/cli.py"]}))
-            zf.writestr("../outside/exercise.py", "x")
-            zf.writestr("course/cli.py", "x")
-        result = b.restore(evil, self.tmp / "p.json")
-        self.assertEqual(result["exercises"], [])
-        self.assertEqual(len(result["skipped"]), 2)
+        for number, value in enumerate(([], {"exercises": "not a list"}, {"exercises": [17]})):
+            archive = self.tmp / ("malformed-%s.zip" % number)
+            with zipfile.ZipFile(archive, "x") as zf:
+                zf.writestr("manifest.json", json.dumps(value))
+                zf.writestr("progress.json", self.progress_path.read_bytes())
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    b.inspect(archive)
+                with self.assertRaises(ValueError):
+                    self.restore(archive)
+                self.assertFalse((self.tmp / "restored.json").exists())
 
 
 class TestLessons(unittest.TestCase):

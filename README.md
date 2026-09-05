@@ -63,20 +63,76 @@ python3 course.py interview  # timed mock interview: 3 random problems, 45 minut
 
 Tip: `alias course='python3 /path/to/course.py'`. Progress is stored in
 `.course_progress.json` (gitignored; set `COURSE_PROGRESS` to put it elsewhere).
+Commands show, open, and grade answers in the gitignored `.course-workspace/answers/`
+directory. Set `COURSE_WORKSPACE` to choose another location, and keep that location
+out of version control. `course path 1.1` prints the answer file to edit and creates
+it only if missing. Existing answers are never replaced when the course updates.
+
+Curriculum files are course content. Initial answers use the committed starter when
+Git history is available, or the supplied starter in a downloaded copy. Grading and
+the REPL use disposable copies of your answer and sibling Python modules, with
+tests and fixtures supplied by the curriculum. Normal study does not modify
+curriculum files or browser starters.
+
+To practise again while keeping a saved answer and its progress:
+
+```bash
+python3 course.py path 1.1 --scratch    # edit this separate practice file
+python3 course.py run 1.1 --scratch     # grade without changing XP or completion
+python3 course.py reset 1.1 --scratch   # fresh practice starter; old copy is kept
+```
+
+`course reset 1.1` resets the saved learner answer and its attempt/hint state. It
+keeps the old answer and progress in uniquely named `.bak.*` recovery files. Earned
+XP and solved status remain intact. Scratch reset affects only scratch practice.
+
+#### Moving answers from older versions
+
+Earlier versions asked learners to edit `curriculum/**/exercise.py`. Review those
+local changes before migration: the course cannot distinguish a learner answer
+from an intentional author edit.
+
+```bash
+python3 course.py migrate-answers                  # preview only
+python3 course.py migrate-answers 1.1 --apply       # copy one legacy answer
+python3 course.py migrate-answers 1.1 --apply --restore-starters
+# The last command also restores that curriculum file from HEAD.
+```
+
+Omit the exercise ID to apply to every candidate shown in the preview. Migration
+always saves the legacy content under `.course-workspace/recovery/`. If a workspace
+answer already differs, it keeps that answer and reports the recovery path for the
+legacy version. Curriculum changes are left alone unless `--restore-starters` is
+explicitly supplied; the Git index is never changed. Review staged author changes
+separately before committing.
+
+Migration detects uncommitted differences from Git's `HEAD`. For answers already
+committed into a starter, or a download without Git history, compare and transfer
+your code into the workspace manually while retaining the original copy. Restore
+clean course starters before rebuilding browser content.
 
 Your progress and your solutions never leave your machine, and nothing about them is
 committed. To keep them safe across clones and machines:
 
 ```bash
-python3 course.py backup                 # zip progress + every edited exercise to ~/course-backups/
+python3 course.py backup                 # zip progress + workspace to ~/course-backups/
 python3 course.py backup --to ~/Dropbox/ # or anywhere you like
 python3 course.py restore ~/course-backups/course-backup-20260902-101500.zip
 python3 course.py restore backup.zip --list        # peek without restoring
-python3 course.py restore backup.zip --force       # overwrite an existing progress file (kept as .bak)
+python3 course.py restore backup.zip --force       # replace existing files, keeping unique recovery copies
 ```
 
-A backup only contains files that differ from the committed stubs, so restoring never
-touches exercises you have not started.
+Backups contain saved answers, scratch practice, workspace recovery copies, and progress.
+Before migration, detected local curriculum edits are also included as legacy recovery
+entries, even when a workspace answer already exists. When Git cannot supply a baseline,
+all supplied curriculum answers are conservatively included as unverified recovery
+copies. These recovery entries never replace the primary workspace answer on restore. The backup command reports their
+count; inspect the archive with `restore --list` to see their recovery paths.
+Restore checks all destinations before writing and refuses existing-file conflicts
+unless `--force` is supplied, including with `--exercises-only`. Earlier backups
+containing curriculum answer paths are restored into the learner workspace. Restore
+never writes to curriculum files. Explicit backup ZIP filenames must be new; default
+backup filenames are unique.
 
 ### Browser
 
@@ -211,7 +267,8 @@ and the Todoist project/section IDs are in [`AGENTS.md`](AGENTS.md).
 
 ```
 course.py            entry point
-course/              engine: catalog, lessons, runner, harness, progress, backup, cli, ui
+course/              engine: catalog, lessons, runner, workspace, harness, progress, backup, cli, ui
+.course-workspace/   gitignored answers, scratch practice, and migration recovery copies
 curriculum/          parts → lessons/ (guided cards) + exercises (stub, tests, solution, meta) + LESSON.md
 docs/                browser version (index.html, worker.js, generated exercises.js)
 tools/               verify.py, build_web.py

@@ -97,6 +97,12 @@ def run_tests(ex: Exercise, python: str = sys.executable, timeout: Optional[int]
     return res
 
 
+def run_learner(ex: Exercise, workspace, answer: Optional[Path] = None, python: str = sys.executable) -> RunResult:
+    """Grade a saved learner answer in a disposable copy of the exercise assets."""
+    with workspace.grading_copy(ex, answer) as candidate:
+        return run_tests(candidate, python=python)
+
+
 def run_code_card(card, learner_code: str, python: str = sys.executable, timeout: int = 10) -> RunResult:
     """Grade a lesson 'code' card: run the learner's snippet against the card's generated tests."""
     import tempfile

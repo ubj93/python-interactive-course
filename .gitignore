@@ -1,8 +1,11 @@
 __pycache__/
 *.pyc
 .course_progress.json
+.course_progress.json.bak
+.course_progress.json.bak.*
 .venv/
 .DS_Store
 node_modules/
 test-results/
 playwright-report/
+.course-workspace/
