@@ -444,6 +444,38 @@ To use an installed Google Chrome locally, run
 
 **Nothing is committed to `main` directly.** Every change lands through a pull request.
 
+### Bounded sprint execution
+
+Authorized work runs in explicit sprints of at most three hours. The sprint record
+names the selected Todoist task IDs and scope, and records the actual UTC start,
+closeout time (15 minutes before the deadline), and deadline. During closeout, take
+no new implementation scope: wrap bounded validation, stop builders, preserve the
+patch, evidence and Todoist updates, and write a checkpoint and brief retrospective.
+Complete all closeout actions by the three-hour deadline, when active work stops.
+Finish early when the selected scope and closeout are complete. These are
+coordination cutoffs, not platform-enforced timers. Do not start a later sprint
+automatically or maintain an unbounded heartbeat.
+
+Astra 6 owns the plan and specification, coordination, independent acceptance and
+release review, and release decisions. Implementation, debugging and routine
+validation use explicit `gpt-5.6-luna` agents with max reasoning and concise,
+bounded briefs. By default, use at most two Luna agents concurrently; an explicitly
+user-approved sprint may override that limit. Agents do not delegate recursively
+or silently change or escalate the model. Each sprint record includes the verified
+effective model and reasoning settings for every agent, describing what was
+observed without making claims about API pricing or platform-enforced limits.
+
+Run delegated Luna work in separate background contexts. Keep detailed logs and
+reviews in durable sprint files, and report only concise milestones, decisions,
+blockers and targeted acceptance evidence to the parent orchestration chat. The
+parent pulls file-based reports when needed; do not copy full transcripts or test
+logs into orchestration chat.
+
+Assign each required check to one owner and repeat a full check only after a change,
+failure or unresolved concern. Unfinished scope is recorded as carryover for a
+separately authorized sprint. Preserve the Todoist backlog and unrelated study
+schedules throughout.
+
 1. Install the guard hooks once: `sh tools/install-hooks.sh`. They refuse commits and
    pushes to `main` locally. GitHub also protects `main`: changes require a PR,
    up-to-date successful `verify (3.9)`, `verify (3.12)` and `version` checks, and

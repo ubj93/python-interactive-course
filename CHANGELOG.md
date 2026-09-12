@@ -13,6 +13,11 @@ release automatically.
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-09-12
+
+### Added
+- Document bounded three-hour sprint execution, closeout ownership and model settings.
+
 ## [0.10.0] - 2026-09-05
 
 ### Added
