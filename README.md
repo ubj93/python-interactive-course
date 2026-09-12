@@ -465,6 +465,12 @@ or silently change or escalate the model. Each sprint record includes the verifi
 effective model and reasoning settings for every agent, describing what was
 observed without making claims about API pricing or platform-enforced limits.
 
+Run delegated Luna work in separate background contexts. Keep detailed logs and
+reviews in durable sprint files, and report only concise milestones, decisions,
+blockers and targeted acceptance evidence to the parent orchestration chat. The
+parent pulls file-based reports when needed; do not copy full transcripts or test
+logs into orchestration chat.
+
 Assign each required check to one owner and repeat a full check only after a change,
 failure or unresolved concern. Unfinished scope is recorded as carryover for a
 separately authorized sprint. Preserve the Todoist backlog and unrelated study

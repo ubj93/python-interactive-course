@@ -54,6 +54,12 @@ recursively or silently change or escalate the model. For every sprint, record t
 verified effective model and reasoning settings for each agent and say what was
 observed; do not infer API pricing or platform enforcement from those settings.
 
+Run delegated Luna work in separate background contexts. Keep detailed logs and
+reviews in durable sprint files, and report only concise milestones, decisions,
+blockers and targeted acceptance evidence to the parent orchestration chat. The
+parent pulls file-based reports when needed; do not copy full transcripts or test
+logs into orchestration chat.
+
 Give each required check one owner and repeat a full check only after a change, a
 failure, or an unresolved concern. Independent review should inspect the
 implementation and its negative cases without duplicating a complete test run
