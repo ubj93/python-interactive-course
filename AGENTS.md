@@ -36,33 +36,30 @@ backlog or claim a Todoist update succeeded. Tracking does not add a permission 
 ## Bounded sprint execution
 
 Run authorized work in explicit sprints of at most three hours. At sprint start,
-record the actual UTC start time, the agreed closeout time and deadline, and the
-selected Todoist task IDs and scope in the sprint record. Reserve the final 15
-minutes for closeout: stop taking new scope at closeout, then stop active work at
-the deadline, preserve patches and evidence, and write the checkpoint and brief
-retrospective. Finish sooner when the selected scope and closeout are complete.
-These are coordination cutoffs, not platform-enforced timers.
+record the actual UTC start time, the closeout time (15 minutes before the
+deadline), the deadline, and the selected Todoist task IDs and scope in the sprint
+record. During closeout, take no new implementation scope: wrap bounded
+validation, stop builders, preserve patches, evidence and Todoist updates, and
+write the checkpoint and brief retrospective. Complete all closeout actions by
+the three-hour deadline, when active work stops. Finish sooner when the selected
+scope and closeout are complete. These are coordination cutoffs, not
+platform-enforced timers.
 
-Astra owns planning and specification, coordination, independent acceptance and
-release review, and release decisions. Assign implementation, debugging and
+Astra 6 owns planning and specification, coordination, independent acceptance
+and release review, and release decisions. Assign implementation, debugging and
 routine validation to explicit `gpt-5.6-luna` agents with max reasoning, using
-concise bounded briefs. Run at most two Luna agents concurrently. Agents do not
-delegate recursively or silently change or escalate the model. For every sprint,
-record the verified effective model and reasoning settings for each agent and say
-what was observed; do not infer API pricing or platform enforcement from those
-settings.
+concise bounded briefs. By default, run at most two Luna agents concurrently; an
+explicitly user-approved sprint may override that limit. Agents do not delegate
+recursively or silently change or escalate the model. For every sprint, record the
+verified effective model and reasoning settings for each agent and say what was
+observed; do not infer API pricing or platform enforcement from those settings.
 
 Give each required check one owner and repeat a full check only after a change, a
 failure, or an unresolved concern. Independent review should inspect the
 implementation and its negative cases without duplicating a complete test run
 needlessly. Do not start a later sprint automatically or maintain an unbounded
-heartbeat. Do not install global configuration or models. Unfinished scope is a
-checkpointed carryover for a separately authorized sprint.
-
-Implementation agents return a small reviewed-ready patch for the selected scope.
-When the sprint brief calls for a docs-only patch, leave out version, changelog and
-generated-file changes; the root/Astra owner applies the repository PR, version,
-changelog and release workflow before merge.
+heartbeat. Unfinished scope is a checkpointed carryover for a separately
+authorized sprint.
 
 ## Repository workflow
 

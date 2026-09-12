@@ -448,28 +448,27 @@ To use an installed Google Chrome locally, run
 
 Authorized work runs in explicit sprints of at most three hours. The sprint record
 names the selected Todoist task IDs and scope, and records the actual UTC start,
-closeout and deadline times. Reserve the final 15 minutes for closeout:
-stop taking new scope at closeout, then stop active work at the deadline, preserve
-the patch and evidence, and write a checkpoint and brief retrospective. Finish
-early when the selected scope and closeout are complete. These are coordination
-cutoffs, not platform-enforced timers. Do not start a later sprint automatically or
-maintain an unbounded heartbeat.
+closeout time (15 minutes before the deadline), and deadline. During closeout, take
+no new implementation scope: wrap bounded validation, stop builders, preserve the
+patch, evidence and Todoist updates, and write a checkpoint and brief retrospective.
+Complete all closeout actions by the three-hour deadline, when active work stops.
+Finish early when the selected scope and closeout are complete. These are
+coordination cutoffs, not platform-enforced timers. Do not start a later sprint
+automatically or maintain an unbounded heartbeat.
 
-Astra owns the plan and specification, coordination, independent acceptance and
+Astra 6 owns the plan and specification, coordination, independent acceptance and
 release review, and release decisions. Implementation, debugging and routine
 validation use explicit `gpt-5.6-luna` agents with max reasoning and concise,
-bounded briefs. Use at most two Luna agents concurrently. Agents do not delegate
-recursively or silently change or escalate the model. Each sprint record includes
-the verified effective model and reasoning settings for every agent, describing what
-was observed without making claims about API pricing or platform-enforced limits.
+bounded briefs. By default, use at most two Luna agents concurrently; an explicitly
+user-approved sprint may override that limit. Agents do not delegate recursively
+or silently change or escalate the model. Each sprint record includes the verified
+effective model and reasoning settings for every agent, describing what was
+observed without making claims about API pricing or platform-enforced limits.
 
 Assign each required check to one owner and repeat a full check only after a change,
-failure or unresolved concern. A docs-only sprint patch can stay limited to the
-requested source documentation, excluding version, changelog and generated-file
-changes; the root/Astra owner handles the pull request and applies the repository
-version, changelog and release rules before merge. Unfinished scope is recorded as
-carryover for a separately authorized sprint. Preserve the Todoist backlog and
-unrelated study schedules throughout.
+failure or unresolved concern. Unfinished scope is recorded as carryover for a
+separately authorized sprint. Preserve the Todoist backlog and unrelated study
+schedules throughout.
 
 1. Install the guard hooks once: `sh tools/install-hooks.sh`. They refuse commits and
    pushes to `main` locally. GitHub also protects `main`: changes require a PR,
